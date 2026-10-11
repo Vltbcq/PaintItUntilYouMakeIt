@@ -604,12 +604,12 @@ func _upgrade_weapon(i: int) -> void:
 func _end(win: bool, can_endless := false) -> bool:
 	Meta.clear_run()
 	var earned := 0 if Run.seeded else Run.pigments_earned(win)
-	var new_map := false
+	var new_map := 0
 	if not Run.seeded:   # partie avec seed : ni pigments, ni record, ni déblocage
 		new_map = Meta.record_run(Run.wave, win, Run.difficulty, earned, Run.kills, Run.map)
 	var unlocked := Meta.apply_pending_unlocks()
-	if new_map:
-		unlocked.push_front("map:2")
+	if new_map > 0:
+		unlocked.push_front("map:%d" % new_map)
 	Run.active = false
 	Sfx.play("win" if win else "lose")
 	var r = await _ask(ChoiceScreens.end_run(win, earned, unlocked, can_endless))

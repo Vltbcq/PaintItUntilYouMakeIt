@@ -33,6 +33,58 @@ func _ready() -> void:
 		_check(ItemUnlockDB.text(ItemUnlockDB.CONDS[k]) != "?", "condition lisible : " + k)
 	print("verrouillés : %d armes / %d amulettes" % [nw, na])
 
+	# Chaque condition est unique (objets ET défis de l'Atelier), et les 3 cartes ont leur part
+	var seen := {}
+	var per_map := {1: 0, 2: 0, 3: 0}
+	for k in ItemUnlockDB.CONDS:
+		var c: Dictionary = ItemUnlockDB.CONDS[k]
+		var t := ItemUnlockDB.text(c)
+		_check(not seen.has(t), "condition unique : %s et %s (%s)" % [k, seen.get(t, ""), t])
+		seen[t] = k
+		var m := int(c.get("map", 0))
+		if String(c.kind) == "boss":
+			var bd := EnemyDB.get_def(c.boss)
+			_check(not bd.is_empty(), "boss existe : " + String(c.boss))
+			m = int(bd.get("map", 1))
+			_check((MapDB.MAPS[m].bosses as Dictionary).values().any(func(l): return c.boss in l), "le boss %s est bien sur la carte %d" % [c.boss, m])
+		if m > 0:
+			per_map[m] += 1
+	for a in AchievementDB.LIST:
+		_check(not seen.has(a.desc), "défi d'Atelier unique : %s et %s" % [a.id, seen.get(a.desc, "")])
+		seen[a.desc] = a.id
+	print("par carte : ", per_map)
+	for m in per_map:
+		_check(per_map[m] >= 8, "carte %d : au moins 8 objets à y débloquer (%d)" % [m, per_map[m]])
+	for b in ["virus", "bug", "tableur", "curseur_boss", "geometre"]:
+		_check(ItemUnlockDB.CONDS.values().any(func(c): return c.get("boss", "") == b), "un objet pour le boss " + b)
+	# conditions liées à une carte : pas ailleurs
+	var C := ItemUnlockDB.CONDS
+	_check(ItemUnlockDB.met(C["w:avion"], {"cleared": 10, "map": 1}) and not ItemUnlockDB.met(C["w:avion"], {"cleared": 10, "map": 2}), "vague 10 sur La Feuille seulement")
+	_check(ItemUnlockDB.met(C["a:nuit_etoilee"], {"win": true, "map": 3, "diff": 1}) and not ItemUnlockDB.met(C["a:nuit_etoilee"], {"win": true, "map": 1}), "victoire sur L'Écran seulement")
+	_check(ItemUnlockDB.met(C["f:pavel"], {"win": true, "map": 2, "diff": 1}) and not ItemUnlockDB.met(C["f:pavel"], {"win": true, "map": 2, "diff": 0}), "victoire Tableau noir en Croquis")
+	_check(not ItemUnlockDB.met(C["w:avion"], {"cleared": 15}), "sans carte dans le contexte (anciennes sauvegardes) : pas rempli")
+	_check(ItemUnlockDB.met(C["a:spatule"], {"cleared": 4, "weapons": 2, "melee": 2}) and not ItemUnlockDB.met(C["a:spatule"], {"cleared": 4, "weapons": 2, "melee": 1, "ranged": 1}), "Spatule : que de la mêlée")
+	_check(ItemUnlockDB.met(C["a:viseur"], {"cleared": 4, "weapons": 3, "ranged": 3}) and not ItemUnlockDB.met(C["a:viseur"], {"cleared": 3, "weapons": 3, "ranged": 3}), "Viseur : que de la distance, vague 4")
+	_check(ItemUnlockDB.met(C["a:pierre_aiguiser"], {"legends": 2}) and not ItemUnlockDB.met(C["a:pierre_aiguiser"], {"legends": 1, "legend": true}), "Pierre à aiguiser : 2 légendaires")
+	var boss10 := AchievementDB.get_def("boss10")
+	_check(AchievementDB.met(boss10, {"cleared": 10, "map": 2}) and not AchievementDB.met(boss10, {"cleared": 10, "map": 1}), "défi boss 10 : Tableau noir")
+	var maitre := AchievementDB.get_def("maitre")
+	_check(AchievementDB.met(maitre, {"win": true, "map": 3}) and not AchievementDB.met(maitre, {"win": true, "map": 1, "diff": 4}), "défi Maître peintre : L'Écran")
+	# le contexte d'une vraie partie compte la mêlée et les légendaires
+	Run.start(0, 1)
+	Run.weapons.clear()
+	var wimg := Image.create_empty(24, 24, false, Image.FORMAT_RGBA8)
+	wimg.fill_rect(Rect2i(2, 8, 20, 6), Pal.INK)
+	Run.set_weapon_art("epee", 3, wimg, "", null, "")
+	Run.add_weapon("epee", 3, 0, Vector2.ZERO)
+	Run.add_weapon("epee", 3, 0, Vector2.ZERO)
+	var rc := Run.achievement_ctx(4)
+	_check(int(rc.melee) == 2 and int(rc.ranged) == 0 and int(rc.legends) == 2 and int(rc.map) == 1, "contexte : 2 armes de mêlée légendaires")
+	# déjà débloqué = gardé, même si la condition a changé
+	Meta.data.item_unlocks = {"w:eventail": true}
+	_check(Meta.item_open("w:eventail"), "un objet déjà débloqué le reste")
+	Meta.data.item_unlocks = {}
+
 	# Boutique : jamais d'objet verrouillé
 	Run.start(0, 1)
 	var bad := 0

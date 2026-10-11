@@ -95,7 +95,7 @@ const LIST := [
 	{"id": "lanterne", "ink": 54, "name": "Lanterne magique", "rar": 2, "flag": true, "desc": "Toutes les 15 s (10 s avec 2, 7,5 s avec 3...), un LEURRE de ton perso attire les ennemis 3 s · {m} PV max", "malus": ["max_hp", -4.0]},
 	{"id": "ressort", "ink": 40, "name": "Ressort", "rar": 2, "flag": true, "desc": "Armes de mêlée : +30% portée et recul ×2 · {m}% vit. d'attaque", "malus": ["atk_speed", -8.0]},
 	{"id": "metronome", "ink": 46, "name": "Métronome", "rar": 2, "flag": true, "desc": "Une attaque sur 5 de chaque arme fait ×2,5 (1 sur 4 avec 2, 1 sur 3 avec 3...) · {m}% vit. d'attaque", "malus": ["atk_speed", -8.0]},
-	{"id": "pierre_aiguiser", "ink": 44, "name": "Pierre à aiguiser", "rar": 2, "flag": true, "desc": "+1 dégât par coup par rang de rareté de l'arme (légendaire +3) · {m} PV max", "malus": ["max_hp", -3.0]},
+	{"id": "pierre_aiguiser", "ink": 44, "name": "Pierre à aiguiser", "rar": 2, "flag": true, "limit": 1, "desc": "+1 dégât par coup par rang de rareté de l'arme (légendaire +3) · {m} PV max", "malus": ["max_hp", -3.0]},
 	{"id": "boussole", "ink": 40, "name": "Boussole", "rar": 2, "flag": true, "limit": 1, "desc": "Tous tes projectiles deviennent un peu chercheurs · {m}% portée", "malus": ["range", -10.0]},
 	{"id": "papillon", "ink": 42, "name": "Effet papillon", "rar": 2, "flag": true, "desc": "Chaque critique : +3% vit. d'attaque pendant 3 s (jusqu'à ×10) · {m}% critique", "malus": ["crit", -4.0]},
 	{"id": "encre_seiche", "ink": 48, "name": "Encre de seiche", "rar": 2, "flag": true, "desc": "Touché : un nuage d'encre aveugle les ennemis proches 2 s (recharge 15 s, 10 s avec 2, 7,5 s avec 3...) · {m} armure", "malus": ["armor", -1.0]},

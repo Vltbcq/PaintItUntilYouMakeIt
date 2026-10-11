@@ -1,7 +1,15 @@
 # Carte 3 : « L'Écran » — fiche de conception
 
-> Statut : **conception validée le 2026-10-10, rien n'est codé.** À développer plus tard.
-> Les chiffres sont des points de départ (calqués sur Le Tableau noir), à régler en jouant.
+> Statut : **développée le 2026-10-11** (carte, 8 ennemis, bugs, 4 boss). Tests : `map3test`,
+> `bugstest`, `virustest`, `ecranbosstest`. Les chiffres restent des points de départ à régler en jouant.
+>
+> Écarts avec la conception d'origine :
+> - **Corbeille** : dans ce jeu l'or ne reste jamais au sol (chaque goutte file vers le joueur), donc
+>   elle rôde près du joueur et avale les gouttes qui volent vers lui, au lieu d'aller les chercher par terre.
+> - **Pas encore fait** : l'option pour adoucir les bugs visuels ; les lettres de la grille du Tableur.
+> - **Le Curseur** a été entièrement refait (voir sa section) ; Le Virus et Le Bug ont des tirs à eux
+>   (rafale et fenêtres qui tirent ; double croix et artefacts).
+> - **Captcha « recopie ce mot »** : au clavier, taper les lettres fait aussi bouger le perso (ZQSD).
 
 ## L'idée
 
@@ -38,12 +46,12 @@ boss « Le Bug ».)
 
 | Ennemi | Vague | Comportement |
 |---|---|---|
-| **Curseur** | 1 | Flèche de souris rapide : fonce en ligne droite, s'arrête net, repart. Parfois il te « clique » : un coup à distance après un bref signal. |
+| **Pointeur** (d'abord appelé Curseur) | 1 | Flèche de souris rapide : fonce en ligne droite, s'arrête net, repart. Parfois il te « clique » : un coup à distance après un bref signal. |
 | **Fichier corrompu** | 2 | Immobile et inoffensif. Au bout de ~6 s, il « s'ouvre » et libère un groupe de 3 à 5 ennemis. À détruire avant : une cible à prioriser. |
 | **Corbeille** | 3 | Avale les pièces d'or au sol. Tuée, elle recrache tout. |
 | **Pot de peinture** | 4 | Remplit une zone d'une couleur d'un coup ; la zone fait des dégâts de cet élément pendant quelques secondes. |
 | **Copier-coller** | 6 | Quand il touche un autre ennemi, il en fait une copie (pas les boss ni les gros). À tuer en priorité. |
-| **Sablier** (gros) | 8 | Lent et costaud. Tout ralentit autour de lui, le joueur compris. |
+| **Lag** (gros ; d'abord appelé Sablier) | 8 | Lent et costaud. Tout ralentit autour de lui, le joueur compris. |
 | **Lasso** | 9 | Trace un contour autour du joueur ; s'il le referme, le joueur est coincé dedans 2 s. |
 | **Barre de chargement** (gros) | 11 | Avance par à-coups, se charge en restant immobile, puis lâche une grosse attaque quand la barre est pleine. Elle se vide quand on la frappe. |
 
@@ -82,7 +90,7 @@ Arnaques, pièges à clics, faux messages :
 
 Faux captchas :
 - « Clique sur toutes les cases qui contiennent une TACHE. »
-- « Recopie ce mot », avec un mot illisible écrit à la craie (à la manette : le QTE de 3 touches à la place).
+- ~~« Recopie ce mot »~~ : retirée le 2026-10-11, trop pénible en plein combat.
 - « Prouve que tu es un artiste : clique sur le rond. » (il n'y a que des carrés ; au bout de 2 secondes, un des carrés devient rond : c'est lui qu'il faut cliquer)
 
 Mécaniques des fenêtres :
@@ -109,19 +117,28 @@ Mécaniques des fenêtres :
 
 ### Vague 15 : « Le Curseur »
 
-Une main-curseur géante qui utilise les outils de dessin ; quand elle prend cher, le jeu plante.
+> Refait le 2026-10-11 : la première version (gomme, lasso, pot, pipette, Ctrl+Z, arène qui rétrécit)
+> ressemblait trop aux autres boss. L'utilisateur a gardé les faux écrans de plantage et choisi 7
+> mécaniques « jamais vues ». Écartée : les fausses boîtes de dialogue.
 
-- **Phase 1 (100 → 60 % PV), les outils** : la gomme efface une bande de l'arène (interdite
-  quelques secondes) ; le lasso se referme autour du joueur ; le pot de peinture inonde une zone ;
-  la pipette vole la couleur du joueur et donne sa résistance au boss.
-- **Premier plantage (60 %)** : image figée, faux écran d'erreur bleu 1 s, « redémarrage » : arène
-  plus petite, entourée d'une bordure de fenêtre.
-- **Phase 2 (60 → 25 %), les outils du système** : Ctrl+Z (il récupère les PV de ses 3 dernières
-  secondes, sauf si on l'interrompt en le frappant assez fort) ; copier-coller (il duplique l'ennemi
-  le plus fort présent) ; glisser-déposer (il attrape le joueur et le lâche ailleurs).
-- **Second plantage (25 %)** : écran bleu plus long, avec un faux pourcentage de récupération.
-- **Phase finale** : il attrape le bord de la fenêtre et la referme petit à petit ; l'arène
-  rétrécit en continu, il faut le finir avant d'être écrasé.
+Une main géante. Il ne tire pas, il MANIPULE. À 60 % et 25 % de PV, le jeu plante (faux écran d'erreur).
+
+- **Phase 1 (100 → 60 %), il attrape** :
+  - il soulève un ennemi et le LANCE sur le joueur (l'ennemi explose à l'impact) ;
+  - il pourchasse le joueur : son ombre le suit, se fige (rouge), s'abat. S'il l'attrape, il le traîne
+    vers la CORBEILLE (coin bas-droit) : 6 changements de direction des touches pour se libérer (le
+    boss est alors sonné et prend +50 %), sinon gros dégâts.
+- **Phase 2 (60 → 25 %), il sélectionne** :
+  - un rectangle de sélection en pointillés se trace, puis SUPPR : tout ce qui est dedans est supprimé,
+    ses propres ennemis aussi ;
+  - il REDIMENSIONNE le joueur 6 s : énorme (lent, facile à toucher) ou minuscule (coups à 60 %).
+- **Phase 3 (sous 25 %), la fenêtre** :
+  - il RÉDUIT la fenêtre : faux bureau, à rouvrir en cliquant « PaintIt » dans la barre des tâches
+    (manette : un bouton), retour automatique après 6 s ;
+  - il TRAÎNE la fenêtre : toute l'image glisse pendant 5 s ;
+  - ALT+F4 : une barre se remplit en 3 s ; lui faire 3,5 % de ses PV l'annule et le sonne, sinon
+    « le jeu a été fermé » et gros dégâts.
+- **Fausse victoire** : sous 5 % de PV, écran « VICTOIRE ! … ou pas. », et il revient à 14 % (une seule fois).
 
 ## Points à surveiller au développement
 

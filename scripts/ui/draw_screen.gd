@@ -180,6 +180,7 @@ func _build_ui() -> void:
 		for f in fxs:
 			var fid: String = f
 			var b := UI.button(Stats.EFFECT_NAMES[f], func(): _set_effect(fid))
+			b.tooltip_text = Stats.effect_text(fid, String(cfg.kind))   # ce que cet effet fait sur CE dessin
 			left.add_child(b)
 			fx_btns[f] = b
 
@@ -248,11 +249,12 @@ func _build_ui() -> void:
 	UI.put(pv, preview_rect, Vector2(2, 2), Vector2(70, 58))
 	outline_btn = UI.button("", _toggle_outline)
 	outline_btn.tooltip_text = "Contour noir autour du dessin en jeu (touche C)"
-	UI.put(self, outline_btn, Vector2(558, 126), Vector2(74, 14))
+	# (plus large que l'aperçu vers la GAUCHE : à 74 px le texte l'élargissait et il dépassait à droite)
+	UI.put(self, outline_btn, Vector2(550, 126), Vector2(82, 14))
 	UI.put(self, UI.label("APERÇU", 10, Pal.DIM), Vector2(426, 144))
 	stats_label = StatText.new(2)   # icônes des stats (le nom au survol)
 	var with_color: bool = cfg.kind in ["character", "melee", "ranged", "bullet", "amulet", "familiar", "enemy", "boss"]
-	UI.put(self, stats_label, Vector2(426, 158), Vector2(124 if with_color else 206, 150))
+	UI.put(self, stats_label, Vector2(426, 161), Vector2(124 if with_color else 206, 147))
 	if with_color:
 		# Cercle des faiblesses à côté des stats, et la couleur principale du dessin en direct
 		color_box = Control.new()
@@ -378,6 +380,7 @@ func _refresh_buttons() -> void:
 		_mark(size_btns[n], n == brush)
 	for f in fx_btns:
 		_mark(fx_btns[f], f == effect)
+	_hint()
 	if outline_btn:
 		outline_btn.text = "Bord : %s" % ("oui" if outline else "non")
 		_mark(outline_btn, outline)
@@ -531,14 +534,25 @@ func _set_effect(f: String) -> void:
 const INK_HINT := "Seuls les contours comptent dans l'encre utilisée"
 
 
+## La ligne d'aide sous la toile : ce que fait l'effet choisi sur CE dessin (en doré), sinon le
+## rappel sur l'encre. (Il n'y a de place nulle part ailleurs sur la toile.)
+func _hint() -> void:
+	if warn_label == null:
+		return
+	if effect != "":
+		warn_label.text = Stats.effect_short(effect, String(cfg.kind))
+		warn_label.add_theme_color_override("font_color", Pal.ACCENT)
+	else:
+		warn_label.text = INK_HINT
+		warn_label.add_theme_color_override("font_color", Pal.DIM)
+
+
 func _warn(t: String) -> void:
 	warn_label.text = t
 	warn_label.add_theme_color_override("font_color", Pal.BAD)
 	var tw := create_tween()
 	tw.tween_interval(1.8)
-	tw.tween_callback(func():
-		warn_label.text = INK_HINT
-		warn_label.add_theme_color_override("font_color", Pal.DIM))
+	tw.tween_callback(_hint)
 
 
 func _unhandled_input(ev: InputEvent) -> void:

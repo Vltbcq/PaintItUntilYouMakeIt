@@ -1,7 +1,7 @@
 class_name MapDB
 extends RefCounted
 ## Cartes (lieux d'une partie). Chaque carte a ses propres ennemis, ses boss et son décor.
-## La 2e se débloque en gagnant une partie sur la 1re (Esquisse ou plus dur).
+## La 2e se débloque en gagnant une partie sur la 1re (Esquisse ou plus dur), la 3e en gagnant sur la 2e.
 
 const MAPS := {
 	1: {"name": "La Feuille", "floor": "paper",
@@ -10,7 +10,11 @@ const MAPS := {
 	2: {"name": "Le Tableau noir", "floor": "board", "events": true,
 		"desc": "Une salle de classe hantée. Punaises, trombones, gommes... et des événements surprises en pleine vague.",
 		"unlock": "Gagne une partie sur La Feuille (Esquisse ou plus dur).",
-		"bosses": {5: ["professeur"], 10: ["photocopieuse"], 15: ["encrier"]}},
+		"bosses": {5: ["professeur"], 10: ["photocopieuse", "geometre"], 15: ["encrier"]}},
+	3: {"name": "L'Écran", "floor": "screen", "bugs": true,
+		"desc": "Le dessin sur ordinateur : pointeurs, fichiers corrompus, corbeilles... et des BUGS qui frappent en pleine vague.",
+		"unlock": "Gagne une partie sur Le Tableau noir (Esquisse ou plus dur).",
+		"bosses": {5: ["virus"], 10: ["bug", "tableur"], 15: ["curseur_boss"]}},
 }
 
 

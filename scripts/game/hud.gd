@@ -4,6 +4,11 @@ extends CanvasLayer
 
 var arena: Arena
 var draw_layer: Control
+var crash_t := 0.0          # L'Écran, boss Le Curseur : faux écran d'erreur (secondes restantes)
+var crash_dur := 1.0
+var crash_pct := false      # ... avec un faux pourcentage de récupération
+var crash_view: Control     # ... dessiné sur son propre calque, par-dessus TOUT le HUD
+var popups: VirusPopups     # L'Écran, boss Le Virus : ses fenêtres de pub (créées à la demande)
 var announce_label: Label
 var announce_sub: Label      # ligne sous l'annonce (ex. l'objectif de la commande)
 var ann_tw: Tween
@@ -44,7 +49,7 @@ func _ready() -> void:
 	_amulet_btn = ab
 	_refresh_amulet_btn()
 	order_label = UI.label("", 10, Pal.ACCENT)
-	UI.put(self, order_label, Vector2(8, 70), Vector2(300, 12))
+	UI.put(self, order_label, Vector2(8, 78), Vector2(300, 12))   # (un peu sous le bouton « Amulettes »)
 
 
 func _toggle_amulets() -> void:
@@ -60,6 +65,15 @@ func _refresh_amulet_btn() -> void:
 
 func _process(delta: float) -> void:
 	hurt_flash = maxf(0.0, hurt_flash - delta * 3.0)
+	if desk:
+		desk_t -= delta
+		desk.queue_redraw()
+		if desk_t <= 0.0:
+			restore()
+	if crash_view and crash_view.visible:
+		crash_t -= delta   # (le monde est figé pendant ce temps : Arena.hitstop)
+		crash_view.visible = crash_t > 0.0
+		crash_view.queue_redraw()
 	var o: Dictionary = Run.order
 	if o.is_empty():
 		order_label.text = ""
@@ -177,10 +191,30 @@ func _draw_hud() -> void:
 	var p := arena.player
 	_draw_party()
 	_draw_arrows()
+	var cb = arena.boss
+	if cb and is_instance_valid(cb) and cb.state == "altf4":
+		# Le Curseur tente de fermer le jeu : la barre se remplit, il faut le frapper pour l'arrêter
+		var ak := clampf(1.0 - cb.st_t / Enemy.ALTF4_SEC, 0.0, 1.0)
+		draw_layer.draw_rect(Rect2(200, 62, 240, 30), Color(0.05, 0.05, 0.1, 0.9))
+		draw_layer.draw_rect(Rect2(200, 62, 240, 30), Pal.BAD, false, 2.0)
+		draw_layer.draw_string(UI.font, Vector2(200, 75), "ALT + F4 : FRAPPE-LE !", HORIZONTAL_ALIGNMENT_CENTER, 240, UI.fs(10), Color.WHITE)
+		draw_layer.draw_rect(Rect2(208, 80, 224, 6), Color(1, 1, 1, 0.25))
+		draw_layer.draw_rect(Rect2(208, 80, 224 * ak, 6), Pal.BAD)
+	if not arena.formula.is_empty():
+		# Le Tableur : la barre de formule, en haut
+		draw_layer.draw_rect(Rect2(210, 44, 220, 14), Color(0.95, 0.95, 0.9))
+		draw_layer.draw_rect(Rect2(210, 44, 220, 14), Pal.INK, false, 1.0)
+		draw_layer.draw_string(UI.font, Vector2(214, 55), "fx   " + String(arena.formula.text), HORIZONTAL_ALIGNMENT_LEFT, 212, UI.fs(10), Pal.INK)
 	var hp_txt := "♥ %d / %d" % [ceili(maxf(0.0, p.hp)), int(p.max_hp)]
 	if p.erase_mult < 1.0:
 		hp_txt += " (gommé)"
-	_bar(Vector2(8, 8), Vector2(140, 12), p.hp / p.max_hp, Color("d8433b"), hp_txt)
+	var hp_k: float = p.hp / p.max_hp
+	if arena.bugs and arena.bugs.is_on("fakehp"):
+		# L'Écran, boss Le Bug : la barre de vie affiche n'importe quoi (ça change 6 fois par seconde)
+		var hk := int(arena.elapsed * 6.0)
+		hp_txt = "♥ %d / %d" % [hash(hk) % 999, hash(hk + 7) % 999]
+		hp_k = float(hash(hk + 3) % 100) / 100.0
+	_bar(Vector2(8, 8), Vector2(140, 12), hp_k, Color("d8433b"), hp_txt)
 	_bar(Vector2(8, 24), Vector2(140, 4), float(Run.xp) / Run.xp_needed(), Pal.GOOD)
 	_text(Vector2(152, 30), "NIV %d" % Run.level, Pal.GOOD)
 	_text(Vector2(8, 42), "● %d" % Run.gold, Pal.ACCENT)
@@ -292,6 +326,10 @@ func _draw_arrows() -> void:
 
 
 func _unhandled_input(ev: InputEvent) -> void:
+	if desk and ev is InputEventJoypadButton and ev.pressed:
+		restore()   # fenêtre réduite : à la manette, n'importe quel bouton la rouvre
+		get_viewport().set_input_as_handled()
+		return
 	if ev is InputEventKey and ev.pressed and not ev.echo and ev.keycode == KEY_P and ev.ctrl_pressed and ResourceLoader.exists(DEV_PATH):
 		toggle_dev()
 		get_viewport().set_input_as_handled()
@@ -303,6 +341,118 @@ func _unhandled_input(ev: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif ev is InputEventJoypadButton and ev.pressed and ev.button_index == JOY_BUTTON_START:
 		toggle_pause()
+
+
+## Le Curseur : les écrans qu'il fait passer par-dessus le jeu (sur un calque au-dessus de tout le HUD).
+## crash : faux écran d'erreur (with_pct : avec un faux pourcentage) ; "win" : fausse victoire ;
+## "closed" : « le jeu a été fermé » (Alt+F4 réussi). Le monde est figé pendant ce temps.
+var crash_kind := "crash"
+
+
+func crash(dur: float, with_pct: bool) -> void:
+	screen("crash", dur)
+	crash_pct = with_pct
+
+
+func screen(kind: String, dur: float) -> void:
+	crash_kind = kind
+	crash_t = dur
+	crash_dur = dur
+	crash_pct = false
+	if crash_view == null:
+		crash_view = Control.new()
+		crash_view.set_anchors_preset(Control.PRESET_FULL_RECT)
+		crash_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		crash_view.draw.connect(_draw_crash)
+		add_child(crash_view)
+	move_child(crash_view, -1)
+	crash_view.visible = true
+
+
+func _draw_crash() -> void:
+	if crash_t <= 0.0:
+		return
+	var k := clampf(1.0 - crash_t / crash_dur, 0.0, 1.0)
+	match crash_kind:
+		"win":
+			# fausse victoire : comme la vraie... puis le doute
+			crash_view.draw_rect(Rect2(0, 0, 640, 360), Color(Pal.BG, 0.96))
+			crash_view.draw_string(UI.font, Vector2(0, 150), "VICTOIRE !", HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(40), Pal.ACCENT)
+			if k > 0.3:
+				crash_view.draw_string(UI.font, Vector2(0, 186), "Le Curseur est vaincu.", HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(10), Pal.TEXT)
+			if k > 0.72:
+				crash_view.draw_string(UI.font, Vector2(0, 226), "... ou pas.", HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(20), Pal.BAD)
+		"closed":
+			crash_view.draw_rect(Rect2(0, 0, 640, 360), Color(0.02, 0.02, 0.04))
+			crash_view.draw_string(UI.font, Vector2(0, 176), "PaintIt.exe a été fermé.", HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(16), Color(1, 1, 1, 0.9))
+		_:
+			crash_view.draw_rect(Rect2(0, 0, 640, 360), Color("1d3fae"))
+			crash_view.draw_string(UI.font, Vector2(60, 110), ":(", HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(40), Color.WHITE)
+			crash_view.draw_string(UI.font, Vector2(60, 160), "Une erreur est survenue dans PaintIt.exe", HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(16), Color.WHITE)
+			crash_view.draw_string(UI.font, Vector2(60, 190), "ERREUR_CURSEUR_HORS_DE_CONTRÔLE", HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Color(1, 1, 1, 0.8))
+			if crash_pct:
+				crash_view.draw_string(UI.font, Vector2(60, 230), "Récupération du dessin : %d %%" % int(k * 100.0), HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Color.WHITE)
+				crash_view.draw_rect(Rect2(60, 240, 300, 8), Color(1, 1, 1, 0.3))
+				crash_view.draw_rect(Rect2(60, 240, 300 * k, 8), Color.WHITE)
+			else:
+				crash_view.draw_string(UI.font, Vector2(60, 230), "Redémarrage...", HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Color.WHITE)
+
+
+## Le Curseur RÉDUIT la fenêtre du jeu : un faux bureau cache tout, le jeu continue derrière.
+## On rouvre en cliquant « PaintIt » dans la barre des tâches (ou n'importe quel bouton de la manette) ;
+## sinon la fenêtre revient toute seule après `max_dur` secondes.
+var desk: Control
+var desk_t := 0.0
+
+
+func minimize(max_dur: float) -> void:
+	if desk:
+		return
+	desk_t = max_dur
+	desk = Control.new()
+	desk.set_anchors_preset(Control.PRESET_FULL_RECT)
+	desk.mouse_filter = Control.MOUSE_FILTER_STOP
+	desk.draw.connect(_draw_desk.bind(desk))
+	add_child(desk)
+	var b := UI.button("PaintIt", restore, 10)
+	UI.put(desk, b, Vector2(40, 340), Vector2(90, 18))
+	desk.set_meta("btn", b)
+
+
+func restore() -> void:
+	if desk:
+		desk.queue_free()
+		desk = null
+		Sfx.play("click")
+
+
+func _draw_desk(d: Control) -> void:
+	d.draw_rect(Rect2(0, 0, 640, 360), Color("2f6f73"))
+	# quelques icônes de bureau
+	for k in 5:
+		var ip := Vector2(24, 20 + k * 52)
+		d.draw_rect(Rect2(ip, Vector2(22, 26)), Color("ece6d2"))
+		d.draw_rect(Rect2(ip, Vector2(22, 26)), Pal.INK, false, 1.0)
+		d.draw_rect(Rect2(ip + Vector2(4, 6), Vector2(14, 2)), Color("8a93a8"))
+		d.draw_rect(Rect2(ip + Vector2(4, 11), Vector2(14, 2)), Color("8a93a8"))
+		d.draw_string(UI.font, ip + Vector2(-29, 38), ["Dessin1", "Dessin2", "Brouillon", "Corbeille", "Notes"][k], HORIZONTAL_ALIGNMENT_CENTER, 80, UI.fs(10), Color.WHITE)
+	# barre des tâches
+	d.draw_rect(Rect2(0, 336, 640, 24), Color("23262e"))
+	d.draw_rect(Rect2(6, 340, 26, 16), Color("46548c"))
+	var blink := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 110.0)
+	d.draw_rect(Rect2(38, 338, 94, 22), Color(Pal.ACCENT, blink), false, 2.0)
+	d.draw_string(UI.font, Vector2(0, 150), "Le Curseur a réduit la fenêtre !", HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(16), Color.WHITE)
+	d.draw_string(UI.font, Vector2(0, 176), "Clique « PaintIt » dans la barre des tâches (manette : un bouton)", HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(10), Color(1, 1, 1, 0.85))
+	d.draw_string(UI.font, Vector2(0, 196), "Ton perso se bat toujours derrière...", HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(10), Color(1, 1, 1, 0.6))
+
+
+## Le Virus : le calque de ses fenêtres (par-dessus tout le HUD), créé la première fois qu'il en ouvre une.
+func ensure_popups() -> VirusPopups:
+	if popups == null:
+		popups = VirusPopups.new()
+		popups.arena = arena
+		add_child(popups)
+	return popups
 
 
 ## OUTIL DE DEV : ouvre / ferme le panneau (le jeu est en pause pendant qu'il est ouvert).

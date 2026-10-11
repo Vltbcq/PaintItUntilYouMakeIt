@@ -31,6 +31,12 @@ var vel := Vector2.ZERO     # vitesse actuelle (les boss anticipent tes déplace
 var sap_t := 0.0            # Élixir de sève
 var weak_t := 0.0   # affichage « FAIBLESSE ! »
 var poop_t := 0.0           # Pigeon : une fiente sur la tête, on avance moins vite
+var size_k := 1.0           # Le Curseur : perso redimensionné (1,8 = énorme, 0,55 = minuscule)
+var size_t := 0.0
+var size_base := 0.0        # son rayon d'origine
+var sand_t := 0.0           # Lag (L'Écran) : dans son aura, on avance au ralenti
+var root_t := 0.0           # Lasso (L'Écran) : coincé sur place
+var lasso_safe_t := 0.0     # ... puis à l'abri des lassos un moment (pas de prise en boucle)
 var yuki_t := 0.0           # Yuki : +30 % de vitesse : régénération boostée restante (s)
 var ghost_of: Player        # Reflet : ce perso est le double en miroir de ghost_of
 
@@ -102,8 +108,10 @@ func input_dir() -> Vector2:
 		d += joy
 	if arena and arena.stream and arena.stream.flip_t > 0.0:
 		d = -d   # Le Stream : « !flip », commandes inversées
-	if Run.amulet_count("envers") > 0:
-		d = -d   # Tête à l'envers : l'écran est retourné, les touches suivent l'écran
+	if arena and arena.cam and not arena.cam.ignore_rotation:
+		d = -d   # Tête à l'envers (ou bug de L'Écran) : l'écran est retourné, les touches suivent l'écran
+	if arena and arena.bugs and arena.bugs.is_on("controls"):
+		d = -d   # L'Écran, boss Le Bug : commandes inversées
 	return d.limit_length(1.0) if d.length() > 1.0 else d
 
 
@@ -124,6 +132,21 @@ func tick(delta: float) -> void:
 	if poop_t > 0.0:
 		poop_t -= delta
 		boost *= 0.55   # Pigeon : beurk
+	if not arena.formula.is_empty():
+		boost *= float(arena.formula.speed)   # Le Tableur : sa formule s'applique à ta vitesse
+	if size_t > 0.0:
+		size_t -= delta
+		if size_k > 1.0:
+			boost *= 0.7   # énorme : lent
+		if size_t <= 0.0:
+			resize(1.0, 0.0)
+	if sand_t > 0.0:
+		sand_t -= delta
+		boost *= 0.6   # Lag : tout ralentit autour de lui
+	lasso_safe_t -= delta
+	if root_t > 0.0:
+		root_t -= delta
+		boost = 0.0   # Lasso : coincé
 	if yuki_t > 0.0:
 		yuki_t -= delta
 		boost *= 1.3   # Yuki
@@ -314,6 +337,17 @@ func _ghost_tick(delta: float) -> void:
 
 
 ## Redessine le perso (après avoir ajouté / retiré des amulettes en cours de vague).
+## Le Curseur te redimensionne : énorme (facile à toucher, lent) ou minuscule (tes coups font
+## moins mal, voir Arena.hit_enemy). k = 1 : retour à la normale.
+func resize(k: float, dur: float) -> void:
+	if size_base <= 0.0:
+		size_base = radius
+	size_k = k
+	size_t = dur
+	radius = size_base * k
+	sprite.scale = Vector2(k, k)
+
+
 func refresh_image() -> void:
 	pimg = Gfx.padded(Run.build_player_image(bool(Meta.setting("show_amulets"))))
 	ptex = ImageTexture.create_from_image(pimg)

@@ -9,20 +9,26 @@ static func map_choice() -> Control:
 	s.build = func(root: _Screen):
 		UI.put(root, UI.label("Choisis ta salle d'exposition", 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 24), Vector2(640, 24))
 		var i := 0
+		# Les cartes côte à côte, centrées (plus étroites à partir de 3)
+		var n := MapDB.MAPS.size()
+		var pw := 240.0 if n <= 2 else 196.0
+		var gap := 20.0 if n <= 2 else 8.0
+		var x0 := (640.0 - (n * pw + (n - 1) * gap)) / 2.0
 		for id in MapDB.MAPS:
 			var d: Dictionary = MapDB.MAPS[id]
 			var open := Meta.map_unlocked(id)
-			var p := UI.panel(Color("2f4a3a") if d.floor == "board" else Pal.PAPER.darkened(0.55), Pal.ACCENT if open else Pal.BORDER, 2)
-			UI.put(root, p, Vector2(70 + i * 260, 64), Vector2(240, 230))
-			UI.put(p, UI.label(d.name, 20, Pal.ACCENT if open else Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 12), Vector2(240, 24))
+			var bg: Color = {"board": Color("2f4a3a"), "screen": Color("353c5c")}.get(d.floor, Pal.PAPER.darkened(0.55))
+			var p := UI.panel(bg, Pal.ACCENT if open else Pal.BORDER, 2)
+			UI.put(root, p, Vector2(x0 + i * (pw + gap), 64), Vector2(pw, 230))
+			UI.put(p, UI.label(d.name, 20 if n <= 2 else 16, Pal.ACCENT if open else Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 14), Vector2(pw, 24))
 			var txt: String = d.desc if open else "VERROUILLÉE\n\n" + String(d.get("unlock", ""))
 			var l := UI.label(txt, 10, Pal.TEXT if open else Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER)
 			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			UI.put(p, l, Vector2(14, 48), Vector2(212, 130))
+			UI.put(p, l, Vector2(12, 48), Vector2(pw - 24, 136))
 			var mid: int = id
 			var b := UI.button("Jouer ici", func(): root.done.emit(mid))
 			b.disabled = not open
-			UI.put(p, b, Vector2(50, 192), Vector2(140, 22))
+			UI.put(p, b, Vector2((pw - 140.0) / 2.0, 192), Vector2(140, 22))
 			i += 1
 		UI.put(root, UI.hotkey(UI.button("Retour", func(): root.done.emit(null)), [KEY_ESCAPE]), Vector2(20, 330), Vector2(80, 18))
 	return s
@@ -127,7 +133,7 @@ static func difficulty(map_id := 1) -> Control:
 			var p := Run.parse_seed(le.text)
 			if p.is_empty():
 				sl.text = "Seed mal écrite."
-			elif int(p.map) == 2 and not Meta.map_unlocked(2):
+			elif not Meta.map_unlocked(int(p.map)):
 				sl.text = "Cette seed est sur une carte que tu n'as pas encore."
 			elif int(p.diff) > Meta.max_diff(int(p.map)):
 				sl.text = "Cette seed est dans une difficulté que tu n'as pas encore."

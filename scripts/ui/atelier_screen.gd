@@ -68,7 +68,7 @@ func _bench() -> void:
 		var card := UI.panel(Color(0, 0, 0, 0.22), Color(0, 0, 0, 0), 0)
 		UI.put(shelf, card, Vector2(0, y), Vector2(288, chh))
 		var pot := _Pot.new()
-		pot.col = POT.get(d.id, Pal.ACCENT)
+		pot.col = _pot_color(d.id)
 		pot.fill = float(Meta.level(d.id)) / float(d.cost.size())
 		UI.put(card, pot, Vector2(6, 6), Vector2(30, 38))
 		var lv := Meta.level(d.id)
@@ -96,6 +96,19 @@ func _bench() -> void:
 		UI.put(card, b, Vector2(210, (chh - 18.0) / 2.0), Vector2(72, 18))
 		y += chh + 4.0
 	shelf.custom_minimum_size = Vector2(288, y)
+
+
+## Couleur du bocal d'un objet de l'établi : une teinte différente pour chacun (réparties sur tout
+## le cercle des couleurs, dans l'ordre du catalogue), sauf les quelques bocaux qui ont la leur.
+func _pot_color(id: String) -> Color:
+	if POT.has(id):
+		return POT[id]
+	var others := UnlockDB.LIST.filter(func(u): return not POT.has(u.id))
+	for i in others.size():
+		if others[i].id == id:
+			# (pas de jaune doré ni de bleu vif : ce sont les bocaux de la boutique et de la relance)
+			return Color.from_hsv(fmod(0.02 + float(i) / others.size(), 1.0), 0.62 if i % 2 == 0 else 0.42, 0.95 if i % 2 == 0 else 0.78)
+	return Pal.ACCENT
 
 
 ## Pourquoi une amélioration de l'établi n'est pas encore achetable.

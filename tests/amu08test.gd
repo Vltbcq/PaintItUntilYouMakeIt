@@ -200,7 +200,7 @@ func _ready() -> void:
 	_check(ItemUnlockDB.met(C["a:de_pipe"], {"counters": {"roulette_wins": 3.0}}), "succès : 3 victoires à la roulette")
 	_check(ItemUnlockDB.met(C["a:performance"], {"wave_kills": 150}), "succès : 150 ennemis en une vague")
 	_check(ItemUnlockDB.met(C["a:reflet"], {"bosses": {"encrier": true}}), "succès : l'Encrier")
-	_check(ItemUnlockDB.met(C["a:salle_thematique"], {"maps": 2}) and not ItemUnlockDB.met(C["a:salle_thematique"], {"maps": 1}), "succès : les deux cartes")
+	_check(ItemUnlockDB.met(C["a:salle_thematique"], {"maps": 3}) and not ItemUnlockDB.met(C["a:salle_thematique"], {"maps": 2}), "succès : les trois cartes")
 	_check(ItemUnlockDB.met(C["a:speed_painting"], {"win": true, "play_time": 24 * 60.0}) and not ItemUnlockDB.met(C["a:speed_painting"], {"win": true, "play_time": 26 * 60.0}), "succès : victoire en moins de 25 min")
 	_check(ItemUnlockDB.met(C["a:vernissage"], {"legend_buys": 3}), "succès : 3 légendaires achetées")
 	# Compteurs réels : or dépensé

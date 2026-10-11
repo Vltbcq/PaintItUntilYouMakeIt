@@ -1,5 +1,5 @@
 extends Node
-## Capture : écran de dessin (perso par défaut, ou arme) -- <capture.png> [perso|arme|boss]
+## Capture : écran de dessin (perso par défaut, ou arme) -- <capture.png> [perso|arme|boss] [tout] [arcenciel]
 
 
 func _ready() -> void:
@@ -25,6 +25,10 @@ func _ready() -> void:
 		cfg.base = img
 	var ds := DrawScreen.new(cfg)
 	add_child(ds)
+	if "arcenciel" in args:
+		Meta.data = Meta.data.duplicate(true)
+		Meta.data.unlocks["fx_rainbow"] = 1
+		ds._set_effect("rainbow")
 	for k in 4:
 		await get_tree().process_frame
 	await RenderingServer.frame_post_draw

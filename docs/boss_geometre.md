@@ -1,6 +1,7 @@
 # Le Géomètre — second boss de la vague 10 sur Le Tableau noir
 
-> Statut : **idée validée le 2026-10-10, rien n'est codé.** À développer plus tard.
+> Statut : **développé le 2026-10-11** (test `geotest`). Réglages retenus : cercle annoncé 1 s puis brûlant 3 s,
+> 46 px entre deux cercles, +50 % de dégâts quand il est planté, 6500 PV et 13 de dégâts, pas de défi.
 > Nom : « Le Géomètre » (pas « Le Compas » : une arme s'appelle déjà Compas). C'est un compas géant.
 > Il sera tiré au sort avec La Photocopieuse à la vague 10 (comme Le Critique / La Muse sur La Feuille).
 

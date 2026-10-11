@@ -7,16 +7,20 @@ extends RefCounted
 ##
 ## kind : "stat" (stat du perso >= v), "gold" (or en poche >= v), "colors" (couleurs du perso),
 ## "pixels" (pixels du perso), "solo" (vague v finie avec une seule arme), "wave" (vague finie),
-## "wave2" (vague finie sur Le Tableau noir), "win" (partie gagnée, difficulté >= v),
-## "win2" (partie gagnée sur Le Tableau noir), "kills" / "elites" (ennemis / élites tués, toutes
+## "win" (partie gagnée, difficulté >= v), "kills" / "elites" (ennemis / élites tués, toutes
 ## parties), "level", "boss" (boss vaincu), "runs" (parties jouées), "syn" (synergie de
 ## l'élément el active à la vague v ou plus), "syn2" (v synergies actives en même temps),
-## "legend" (arme légendaire), "clean" (vague >= v finie sans perdre de PV), "gallery".
+## "legends" (v armes légendaires à la fois), "clean" (vague >= v finie sans perdre de PV), "gallery",
+## "only" (vague v finie avec uniquement des armes wkind : "melee" ou "ranged").
+## "wave", "win" et "clean" acceptent "map" : la condition ne vaut que sur cette carte.
+##
+## RÈGLE : deux objets n'ont jamais la même condition (ni la même qu'un défi de l'Atelier), et
+## les conditions sont réparties sur les 3 cartes (voir tests/itemlocktest).
 ## v0.8 : "mono6" (vague finie avec 6 armes de la même couleur), "boss_clean" (boss vaincu sans
 ## perdre de PV), "boss_total" (boss vaincus, toutes parties), "damage" (dégâts infligés, toutes
 ## parties), "boss_crit" (boss achevé d'un critique), "mono_color" (vague v finie avec un perso
 ## d'une seule couleur), "spent" (or dépensé, toutes parties), "roulette" (parties gagnées à la
-## roulette), "wave_kills" (ennemis tués en une vague), "maps" (vague finie sur les 2 cartes),
+## roulette), "wave_kills" (ennemis tués en une vague), "maps" (vague finie sur v cartes),
 ## "fast_win" (partie gagnée en moins de v minutes), "legend_buys" (légendaires achetées dans une partie).
 ## v0.9 : "earned" (or ramassé, toutes parties), "win_pet" (partie gagnée avec un familier),
 ## "pets" (v familiers en même temps), "pets_wave" (vague v finie avec n familiers).
@@ -35,21 +39,21 @@ const CONDS := {
 	"w:silhouette": {"kind": "pixels", "v": 450},
 	"w:pipette": {"kind": "stat", "stat": "lifesteal", "v": 20},
 	# --- Épiques / légendaires
-	"w:ciseaux": {"kind": "elites", "v": 30},
+	"w:ciseaux": {"kind": "wave", "v": 6, "map": 3},
 	"w:loupe": {"kind": "boss", "boss": "critique"},
-	"w:avion": {"kind": "wave", "v": 10},
-	"w:eventail": {"kind": "kills", "v": 3000},
+	"w:avion": {"kind": "wave", "v": 10, "map": 1},
+	"w:eventail": {"kind": "wave", "v": 13, "map": 1},
 	"w:crayon_hb": {"kind": "level", "v": 12},
-	"w:retouche": {"kind": "win", "v": 0},
+	"w:retouche": {"kind": "win", "v": 1, "map": 1},
 	"w:miroir_deformant": {"kind": "boss", "boss": "muse"},
-	"w:grande_signature": {"kind": "kills", "v": 10000},
+	"w:grande_signature": {"kind": "boss", "boss": "curseur_boss"},
 	"w:point_final": {"kind": "boss", "boss": "toile"},
 	# --- Amulettes : vol de vie, épines, éléments
 	"a:encre_rouge": {"kind": "stat", "stat": "lifesteal", "v": 8},
 	"a:encre_carmin": {"kind": "stat", "stat": "lifesteal", "v": 15},
 	"a:calice": {"kind": "stat", "stat": "lifesteal", "v": 25},
 	"a:chauve_souris": {"kind": "kills", "v": 2000},
-	"a:pacte_sang": {"kind": "win2"},
+	"a:pacte_sang": {"kind": "win", "v": 0, "map": 2},
 	"a:carapace": {"kind": "stat", "stat": "armor", "v": 10},
 	"a:oursin": {"kind": "stat", "stat": "thorns", "v": 5},
 	"a:cactus": {"kind": "stat", "stat": "max_hp", "v": 70},
@@ -70,43 +74,43 @@ const CONDS := {
 	"a:cercle_chromatique": {"kind": "colors", "v": 6},
 	"a:alchimie": {"kind": "syn2", "v": 2},
 	# --- Amulettes : le reste
-	"a:spatule": {"kind": "wave", "v": 4},
-	"a:viseur": {"kind": "wave", "v": 4},
-	"a:chiffon": {"kind": "runs", "v": 3},
+	"a:spatule": {"kind": "only", "v": 4, "wkind": "melee"},
+	"a:viseur": {"kind": "only", "v": 4, "wkind": "ranged"},
+	"a:chiffon": {"kind": "wave", "v": 1, "map": 2},
 	"a:encre_sympathique": {"kind": "stat", "stat": "luck", "v": 15},
 	"a:godet": {"kind": "stat", "stat": "el_power", "v": 20},
 	"a:etiquette_prix": {"kind": "gold", "v": 100},
 	"a:timbre": {"kind": "stat", "stat": "thorns", "v": 3},
 	"a:gommette": {"kind": "level", "v": 6},
-	"a:aimant_pepites": {"kind": "gold", "v": 120},
+	"a:aimant_pepites": {"kind": "boss", "boss": "tableur"},
 	"a:crayon_couleur": {"kind": "colors", "v": 3},
 	"a:ombre_portee": {"kind": "stat", "stat": "dodge", "v": 30},
-	"a:pansement": {"kind": "level", "v": 10},
-	"a:cadran_solaire": {"kind": "wave", "v": 8},
+	"a:pansement": {"kind": "level", "v": 8},
+	"a:cadran_solaire": {"kind": "wave", "v": 9, "map": 3},
 	"a:taille_douce": {"kind": "stat", "stat": "armor", "v": 12},
 	"a:encre_invisible": {"kind": "elites", "v": 15},
-	"a:papier_verre": {"kind": "kills", "v": 1500},
-	"a:bulle_soin": {"kind": "runs", "v": 5},
-	"a:elastique": {"kind": "wave", "v": 9},
-	"a:correcteur": {"kind": "wave2", "v": 3},
+	"a:papier_verre": {"kind": "wave", "v": 6, "map": 1},
+	"a:bulle_soin": {"kind": "boss", "boss": "virus"},
+	"a:elastique": {"kind": "wave", "v": 7, "map": 3},
+	"a:correcteur": {"kind": "wave", "v": 3, "map": 2},
 	"a:cachet_cire": {"kind": "elites", "v": 40},
 	"a:kaleidoscope": {"kind": "colors", "v": 5},
 	"a:lanterne": {"kind": "boss", "boss": "rature"},
 	"a:ressort": {"kind": "stat", "stat": "range", "v": 40},
 	"a:metronome": {"kind": "stat", "stat": "atk_speed", "v": 50},
-	"a:pierre_aiguiser": {"kind": "legend"},
-	"a:boussole": {"kind": "wave", "v": 11},
+	"a:pierre_aiguiser": {"kind": "legends", "v": 2},
+	"a:boussole": {"kind": "boss", "boss": "geometre"},
 	"a:papillon": {"kind": "stat", "stat": "crit", "v": 50},
-	"a:encre_seiche": {"kind": "wave2", "v": 8},
+	"a:encre_seiche": {"kind": "wave", "v": 8, "map": 2},
 	"a:echelle": {"kind": "level", "v": 15},
 	"a:accordeon": {"kind": "stat", "stat": "speed", "v": 50},
-	"a:bouclier_papier": {"kind": "clean", "v": 10},
-	"a:mise_abyme": {"kind": "win", "v": 1},
+	"a:bouclier_papier": {"kind": "clean", "v": 10, "map": 1},
+	"a:mise_abyme": {"kind": "wave", "v": 12, "map": 3},
 	"a:midas": {"kind": "gold", "v": 300},
 	"a:palimpseste": {"kind": "level", "v": 20},
 	"a:fresque": {"kind": "gallery", "v": 100},
 	"a:autographe": {"kind": "boss", "boss": "professeur"},
-	"a:nuit_etoilee": {"kind": "kills", "v": 20000},
+	"a:nuit_etoilee": {"kind": "win", "v": 1, "map": 3},
 	"a:derniere_touche": {"kind": "win", "v": 2},
 	# --- v0.8
 	"a:accord_parfait": {"kind": "mono6"},
@@ -120,17 +124,17 @@ const CONDS := {
 	"a:de_pipe": {"kind": "roulette", "v": 3},
 	"a:performance": {"kind": "wave_kills", "v": 150},
 	"a:reflet": {"kind": "boss", "boss": "encrier"},
-	"a:salle_thematique": {"kind": "maps"},
+	"a:salle_thematique": {"kind": "maps", "v": 3},
 	"a:speed_painting": {"kind": "fast_win", "v": 25},
 	"a:vernissage": {"kind": "legend_buys", "v": 3},
 	# --- Familiers : la moitié à débloquer
 	"f:pie": {"kind": "earned", "v": 3000},
-	"f:pigeon": {"kind": "runs", "v": 5},
+	"f:pigeon": {"kind": "wave", "v": 3, "map": 1},
 	"f:perroquet": {"kind": "win_pet"},
-	"f:fantome": {"kind": "win", "v": 1},
+	"f:fantome": {"kind": "boss", "boss": "bug"},
 	"f:paon": {"kind": "pets_wave", "v": 10, "n": 3},
-	"f:pavel": {"kind": "wave", "v": 15},
-	"f:teemeo": {"kind": "win", "v": 2},
+	"f:pavel": {"kind": "win", "v": 1, "map": 2},
+	"f:teemeo": {"kind": "syn", "el": 4, "v": 12},
 	"f:chimere": {"kind": "pets", "v": 5},
 }
 
@@ -160,6 +164,16 @@ static func label(key: String) -> String:
 	return "Amulette : " + String(AmuletDB.get_def(key.substr(2)).name)
 
 
+## " sur <la carte>" si la condition est liée à une carte, sinon rien.
+static func _on(c: Dictionary) -> String:
+	return (" sur " + String(MapDB.MAPS[int(c.map)].name)) if c.has("map") else ""
+
+
+## La condition vaut-elle sur la carte de ce contexte ? (sans carte dans le contexte : non)
+static func _here(c: Dictionary, ctx: Dictionary) -> bool:
+	return not c.has("map") or int(ctx.get("map", 0)) == int(c.map)
+
+
 ## Condition en clair (affichée dans le Codex).
 static func text(c: Dictionary) -> String:
 	match String(c.kind):
@@ -174,13 +188,11 @@ static func text(c: Dictionary) -> String:
 		"solo":
 			return "Termine la vague %d avec une seule arme." % int(c.v)
 		"wave":
-			return "Termine la vague %d." % int(c.v)
-		"wave2":
-			return "Termine la vague %d sur Le Tableau noir." % int(c.v)
+			return "Termine la vague %d%s." % [int(c.v), _on(c)]
 		"win":
-			return "Gagne une partie" + (" en %s ou plus dur." % Meta.DIFFICULTIES[int(c.v)].name if int(c.v) > 0 else ".")
-		"win2":
-			return "Gagne une partie sur Le Tableau noir."
+			return "Gagne une partie" + _on(c) + (" en %s ou plus dur." % Meta.DIFFICULTIES[int(c.v)].name if int(c.v) > 0 else ".")
+		"only":
+			return "Termine la vague %d avec uniquement des armes %s." % [int(c.v), "de mêlée" if c.wkind == "melee" else "à distance"]
 		"kills":
 			return "Tue %d ennemis (toutes parties)." % int(c.v)
 		"elites":
@@ -196,10 +208,10 @@ static func text(c: Dictionary) -> String:
 			return ("Active la synergie %s (3 armes %s)." % [el, el]) if int(c.v) <= 1 else ("Aie la synergie %s active à la vague %d." % [el, int(c.v)])
 		"syn2":
 			return "Aie %d synergies d'éléments actives en même temps." % int(c.v)
-		"legend":
-			return "Possède une arme légendaire."
+		"legends":
+			return "Possède %d armes légendaires en même temps." % int(c.v)
 		"clean":
-			return "Termine une vague %d ou plus sans perdre de PV." % int(c.v)
+			return "Termine une vague %d ou plus%s sans perdre de PV." % [int(c.v), _on(c)]
 		"gallery":
 			return "Aie %d dessins dans ta galerie." % int(c.v)
 		"mono6":
@@ -221,7 +233,7 @@ static func text(c: Dictionary) -> String:
 		"wave_kills":
 			return "Tue %d ennemis en une seule vague." % int(c.v)
 		"maps":
-			return "Termine une vague sur chacune des deux cartes."
+			return "Termine une vague sur %d cartes différentes." % int(c.v)
 		"fast_win":
 			return "Gagne une partie en moins de %d minutes." % int(c.v)
 		"legend_buys":
@@ -251,13 +263,12 @@ static func met(c: Dictionary, ctx: Dictionary) -> bool:
 		"solo":
 			return int(ctx.get("cleared", 0)) >= int(c.v) and int(ctx.get("weapons", 99)) <= 1
 		"wave":
-			return int(ctx.get("cleared", 0)) >= int(c.v)
-		"wave2":
-			return int(ctx.get("map", 1)) == 2 and int(ctx.get("cleared", 0)) >= int(c.v)
+			return _here(c, ctx) and int(ctx.get("cleared", 0)) >= int(c.v)
 		"win":
-			return bool(ctx.get("win", false)) and int(ctx.get("diff", 0)) >= int(c.v)
-		"win2":
-			return bool(ctx.get("win", false)) and int(ctx.get("map", 1)) == 2
+			return _here(c, ctx) and bool(ctx.get("win", false)) and int(ctx.get("diff", 0)) >= int(c.v)
+		"only":
+			return int(ctx.get("cleared", 0)) >= int(c.v) and int(ctx.get("weapons", 0)) >= 1 \
+				and int(ctx.get("melee" if c.wkind == "melee" else "ranged", 0)) == int(ctx.get("weapons", 0))
 		"kills":
 			return int(ctx.get("total_kills", 0)) >= int(c.v)
 		"elites":
@@ -272,10 +283,10 @@ static func met(c: Dictionary, ctx: Dictionary) -> bool:
 			return (ctx.get("syn", {}) as Dictionary).has(int(c.el)) and int(ctx.get("cleared", 0)) >= int(c.v) - 1
 		"syn2":
 			return (ctx.get("syn", {}) as Dictionary).size() >= int(c.v)
-		"legend":
-			return bool(ctx.get("legend", false))
+		"legends":
+			return int(ctx.get("legends", 0)) >= int(c.v)
 		"clean":
-			return bool(ctx.get("clean", false)) and int(ctx.get("cleared", 0)) >= int(c.v)
+			return _here(c, ctx) and bool(ctx.get("clean", false)) and int(ctx.get("cleared", 0)) >= int(c.v)
 		"gallery":
 			return int(ctx.get("gallery", 0)) >= int(c.v)
 		"mono6":
@@ -297,7 +308,7 @@ static func met(c: Dictionary, ctx: Dictionary) -> bool:
 		"wave_kills":
 			return int(ctx.get("wave_kills", 0)) >= int(c.v)
 		"maps":
-			return int(ctx.get("maps", 0)) >= 2
+			return int(ctx.get("maps", 0)) >= int(c.v)
 		"fast_win":
 			return bool(ctx.get("win", false)) and float(ctx.get("play_time", 1e9)) < float(c.v) * 60.0
 		"legend_buys":

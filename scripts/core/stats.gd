@@ -423,6 +423,32 @@ static func _small_crit(fill: float, amount: float) -> float:
 	return (1.0 - minf(fill, 1.0)) * amount
 
 
+## Ce que fait une encre à effet (Pulse, Scintille, Arc-en-ciel) selon ce qu'on dessine.
+## kind = cfg.kind de la toile. Les mêmes chiffres que character_part, _apply_effect et enemy_art :
+## à tenir à jour ensemble.
+const EFFECT_WHAT := {
+	"character": {"pulse": "+10% vit. d'attaque", "shimmer": "+5% critique, +5% esquive", "rainbow": "+30% puissance élém., +5% résistances"},
+	"weapon": {"pulse": "recharge 10% plus vite", "shimmer": "+8% critique sur l'arme", "rainbow": "+10% à chaque effet élémentaire"},
+	"enemy": {"pulse": "aucun bonus pour lui", "shimmer": "ATTENTION : +2,5% d'esquive pour lui", "rainbow": "ATTENTION : +2,5% de résistances pour lui"},
+}
+
+
+## Version courte, pour la ligne d'aide sous la toile (une seule ligne).
+static func effect_short(effect: String, kind: String) -> String:
+	if effect == "":
+		return ""
+	var group := "character" if kind == "character" else ("weapon" if kind in ["melee", "ranged", "bullet"] else ("enemy" if kind in ["enemy", "boss"] else ""))
+	var what: String = EFFECT_WHAT[group][effect] if group != "" else "seulement l'animation, aucun bonus"
+	return "%s : %s" % [EFFECT_NAMES[effect], what]
+
+
+## Version complète, pour l'infobulle du bouton.
+static func effect_text(effect: String, kind: String) -> String:
+	if effect == "":
+		return "Aucun effet : toute ton encre sert au dessin."
+	return effect_short(effect, kind) + ". Coûte 15% de l'encre du dessin."
+
+
 static func _apply_effect(st: Dictionary, effect: String) -> void:
 	match effect:
 		"pulse":
@@ -522,11 +548,13 @@ static func preview(cfg: Dictionary, img: Image, effect: String) -> String:
 			if a.pixels > 0:
 				var def := WeaponDB.get_def(cfg.wtype)
 				var st := melee({"type": cfg.wtype, "a": a, "rar": 0, "effect": effect}, def)
-				L.append("Dégâts : %.1f  /  %.2fs" % [st.damage, st.cooldown])
+				# (dégâts et critique en icônes sur la 1re ligne ; la recharge à part, sinon elle déborde)
+				L.append("Dégâts : %.1f" % st.damage)
+				L.append("Critique : %d%%" % roundi(st.crit))
+				L.append("Recharge : %.2fs" % st.cooldown)
 				L.append("Dégâts/s : %.1f" % (st.damage / st.cooldown))
 				L.append("Allonge : %d" % roundi(st.reach))
-				L.append("Critique : %d%%" % roundi(st.crit))
-				_el_lines(L, st.frac)
+				_el_lines(L, st.frac, a.frac)
 		"ranged":
 			if a.pixels > 0:
 				var def := WeaponDB.get_def(cfg.wtype)
@@ -553,7 +581,10 @@ static func preview(cfg: Dictionary, img: Image, effect: String) -> String:
 				L.append("Vitesse : %d" % roundi(bl[0].speed))
 				L.append("Perforation : %d" % bl[0].pierce)
 				L.append("Recharge : %.2fs" % st.cooldown)
-				_el_lines(L, st.frac)
+				var drawn: Array = (a.frac as Array).duplicate()
+				for e in drawn.size():
+					drawn[e] = maxf(drawn[e], cfg.weapon_a.frac[e])
+				_el_lines(L, st.frac, drawn)
 		"enemy", "boss":
 			var e := enemy_art(a, cfg.ink, effect)
 			L.append("PV : x%.2f" % e.hp)
@@ -608,10 +639,19 @@ static func _res_lines(L: Array, res: Array) -> void:
 		L.append("Rés. " + " · ".join(parts.slice(i, i + 2)))
 
 
-static func _el_lines(L: Array, frac: Array) -> void:
+## Les effets élémentaires d'une arme. drawn = les parts de couleur réellement DESSINÉES : les
+## éléments qui ne viennent que de l'encre Arc-en-ciel tiennent en une seule ligne (sinon 6 lignes).
+static func _el_lines(L: Array, frac: Array, drawn: Array = []) -> void:
+	var others := 0.0
 	for e in range(1, Pal.COUNT):
-		if frac[e] >= 0.01:
-			L.append("%s : %d%%" % [Pal.WEAPON_EFFECT[e], roundi(minf(frac[e], 1.0) * 100.0)])
+		if frac[e] < 0.01:
+			continue
+		if not drawn.is_empty() and drawn[e] < 0.01:
+			others = maxf(others, frac[e])
+			continue
+		L.append("%s : %d%%" % [Pal.WEAPON_EFFECT[e], roundi(minf(frac[e], 1.0) * 100.0)])
+	if others > 0.0:
+		L.append("Les autres : %d%%" % roundi(minf(others, 1.0) * 100.0))
 
 
 static func describe_player(s: Dictionary) -> String:

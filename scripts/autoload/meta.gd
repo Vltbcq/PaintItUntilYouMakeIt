@@ -790,7 +790,7 @@ func map_unlocked(id: int) -> bool:
 	return id == 1 or level("map%d" % id) > 0
 
 
-## Retourne true si cette partie vient de débloquer une nouvelle carte.
+## Retourne le numéro de la carte que cette partie vient de débloquer (0 : aucune).
 ## Fin d'une partie en mode infini (la victoire a déjà été comptée) : record de vague infinie.
 func record_endless(wave_reached: int, earned: int, kills: int, elites: int) -> void:
 	data.total_elites = int(data.get("total_elites", 0)) + maxi(0, elites)
@@ -815,15 +815,16 @@ func record_endless(wave_reached: int, earned: int, kills: int, elites: int) -> 
 const HISTORY_MAX := 300   # parties gardées pour les statistiques
 
 
-func record_run(wave_reached: int, win: bool, difficulty: int, earned: int, kills := 0, map_id := 1) -> bool:
-	var new_map := false
+func record_run(wave_reached: int, win: bool, difficulty: int, earned: int, kills := 0, map_id := 1) -> int:
+	var new_map := 0   # numéro de la carte que cette partie vient de débloquer (0 : aucune)
 	data.total_elites = int(data.get("total_elites", 0)) + Run.elite_kills
 	var bb: Dictionary = data.get("bosses_beaten", {})
 	bb.merge(Run.boss_ids)
 	data.bosses_beaten = bb
-	if win and map_id == 1 and not map_unlocked(2):
-		data.unlocks["map2"] = 1
-		new_map = true
+	# Gagner sur une carte ouvre la suivante (La Feuille → Le Tableau noir → L'Écran)
+	if win and MapDB.MAPS.has(map_id + 1) and not map_unlocked(map_id + 1):
+		data.unlocks["map%d" % (map_id + 1)] = 1
+		new_map = map_id + 1
 	data.total_kills = int(data.get("total_kills", 0)) + kills
 	data.runs = int(data.runs) + 1
 	data.pigments = int(data.pigments) + earned

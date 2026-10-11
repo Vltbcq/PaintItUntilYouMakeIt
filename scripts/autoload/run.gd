@@ -544,9 +544,12 @@ func set_eproj_art(id: String, img: Image, effect: String, outline := false) -> 
 
 ## Contexte pour les succès (vagues finies, niveau, arme légendaire...).
 func achievement_ctx(cleared := -1, clean := false, win := false) -> Dictionary:
-	var legend := false
+	var legends := 0
+	var melee := 0
 	for w in weapons:
-		legend = legend or w.rar == 3
+		legends += 1 if w.rar == 3 else 0
+		melee += 1 if String(WeaponDB.get_def(w.type).kind) == "melee" else 0
+	var legend := legends > 0
 	var els := {}
 	for w in weapons:
 		els[weapon_element(w)] = true
@@ -554,7 +557,7 @@ func achievement_ctx(cleared := -1, clean := false, win := false) -> Dictionary:
 	return {"mono6": mono6 and cleared >= 0, "boss_clean": boss_clean, "boss_crit": boss_crit,
 		"wave_kills": wave_kills_best, "legend_buys": legend_buys, "play_time": play_time,
 		"cleared": wave - 1 if cleared < 0 else cleared, "kills": kills, "level": level,
-		"legend": legend, "clean": clean, "win": win, "diff": difficulty, "map": map,
+		"legend": legend, "legends": legends, "melee": melee, "ranged": weapons.size() - melee, "clean": clean, "win": win, "diff": difficulty, "map": map,
 		"stats": stats, "gold": gold, "colors": int(char_a.get("elements", 0)), "pixels": int(char_a.get("pixels", 0)),
 		"weapons": weapons.size(), "pets": familiars.size(), "elites": elite_kills, "bosses": boss_ids, "syn": active_synergies()}
 
@@ -1148,7 +1151,7 @@ static func parse_seed(code: String) -> Dictionary:
 		v = v * 32 + k
 	var m := int(parts[0][0])
 	var d := int(parts[0][1])
-	if m < 1 or m > 2 or d < 0 or d >= Meta.DIFFICULTIES.size():
+	if not MapDB.MAPS.has(m) or d < 0 or d >= Meta.DIFFICULTIES.size():
 		return {}
 	return {"map": m, "diff": d, "seed": v}
 

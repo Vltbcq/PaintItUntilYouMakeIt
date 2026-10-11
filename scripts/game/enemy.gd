@@ -72,6 +72,19 @@ var orbit_a := 0.0
 var mirror_mode := 0
 var partner: Enemy           # Trombones : l'autre bout du fil
 var crumple := 0             # Brouillon : nombre de fois froissé
+var belly_v := 0             # Corbeille : or avalé
+var belly_xp := 0            # Corbeille : expérience avalée
+var charge := 0.0            # Barre de chargement : 0 à 1
+var held_by: Enemy           # attrapé par Le Curseur : il le soulève avant de le lancer
+var thrown_t := 0.0          # lancé par Le Curseur : il vole comme un projectile
+var thrown_v := Vector2.ZERO
+var thrown_dmg := 0.0
+var grab_e: Enemy            # Le Curseur : l'ennemi qu'il tient
+var grabbed := false         # Le Curseur : il tient le joueur
+var struggle := 0            # ... nombre de secousses du joueur
+var shake_dir := Vector2.ZERO
+var cast_hp := 0.0           # Le Curseur : ses PV au début de l'Alt+F4
+var fake_done := false       # Le Curseur : la fausse victoire a déjà eu lieu
 var hit_ids := {}
 # Effets des armes épiques / légendaires
 var pin_t := 0.0             # Agrafeuse : épinglé au sol
@@ -286,6 +299,18 @@ func _draw() -> void:
 	if ally:
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		draw_arc(Vector2.ZERO, radius + 4.0, 0.0, TAU, 24, Color(Pal.GOOD, 0.8), 2.0)
+	if def.get("beh", "") == "hourglass":
+		# Zone où tout ralentit
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		draw_circle(Vector2.ZERO, SAND_R, Color(0.95, 0.85, 0.5, 0.07))
+		draw_arc(Vector2.ZERO, SAND_R, 0.0, TAU, 32, Color(0.9, 0.75, 0.3, 0.35), 1.0)
+	if def.get("beh", "") == "loadbar":
+		# Sa barre : elle se remplit quand il s'arrête, se vide quand on le frappe
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		var bw := radius * 2.2
+		draw_rect(Rect2(-bw / 2.0 - 1.0, -radius - 9.0, bw + 2.0, 6.0), Pal.INK)
+		draw_rect(Rect2(-bw / 2.0, -radius - 8.0, bw, 4.0), Color("3a3f55"))
+		draw_rect(Rect2(-bw / 2.0, -radius - 8.0, bw * charge, 4.0), Pal.BAD if charge > 0.75 else Color("6ad36a"))
 	if def.get("beh", "") == "gum":
 		# Zone où tes projectiles sont effacés
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -299,6 +324,9 @@ func tick(delta: float) -> void:
 		return
 	if reflet_of != null:
 		_reflet_tick(delta)
+		return
+	if held_by != null or thrown_t > 0.0:
+		_thrown_tick(delta)   # dans la main du Curseur, ou lancé : plus de comportement à lui
 		return
 	weak_t -= delta
 	if ally:
@@ -404,6 +432,34 @@ func tick(delta: float) -> void:
 			v = _boss_copy(bd, dirp, dist)
 		"b_ink":
 			v = _boss_ink(bd, dirp, dist)
+		"b_geo":
+			v = _boss_geo(bd, dirp, dist)
+		"b_virus":
+			v = _boss_virus(bd, dirp, dist)
+		"b_bug":
+			v = _boss_bug(bd, dirp, dist)
+		"b_sheet":
+			v = _boss_sheet(bd, dirp, dist)
+		"b_cursor":
+			v = _boss_cursor(bd, dirp, dist)
+		"cursor":
+			v = _cursor(delta * mult, dirp, dist)
+		"corrupt":
+			v = _corrupt(delta)
+			if dead:
+				return
+		"trash":
+			v = _trash(dirp, dist)
+		"bucket":
+			v = _bucket(delta * mult, dirp, dist)
+		"paste":
+			v = _paste(delta * mult, dirp)
+		"hourglass":
+			v = _hourglass(dirp)
+		"lasso":
+			v = _lasso(delta * mult, dirp, dist)
+		"loadbar":
+			v = _loadbar(delta * mult, dirp)
 
 	# Séparation entre ennemis
 	if not is_boss and def.beh != "dvd":
@@ -545,8 +601,11 @@ func hurt(amount: float, crit := false, kb := Vector2.ZERO, el := 0) -> void:
 	if firefly:
 		arena.fam_credit("luciole", minf(hp, amount * 0.15))
 		amount *= 1.15   # Luciole
-	if state == "jam":
-		amount *= 1.5   # Photocopieuse en bourrage papier : vulnérable
+	if def.get("beh", "") == "loadbar" and state != "boom":
+		charge = maxf(0.0, charge - amount / max_hp * 1.5)   # Barre de chargement : la frapper la vide
+		queue_redraw()
+	if state == "jam" or state == "plant":
+		amount *= 1.5   # Photocopieuse en bourrage papier, Géomètre planté : vulnérables
 	if el > 0:
 		amount *= 1.0 - res_to(el) / 100.0   # résistance de son dessin à cet élément
 	if wet_t > 0.0 and (el == Pal.FOUDRE or el == Pal.GLACE):
@@ -978,6 +1037,570 @@ func _equation(delta: float, dirp: Vector2) -> Vector2:
 	return dirp * speed
 
 
+# ------------------------------------------------------------------ L'Écran (carte 3)
+
+## Pointeur (id « curseur ») : fonce en ligne droite, s'arrête net, repart. À l'arrêt, il « clique » parfois sur toi.
+func _cursor(delta: float, dirp: Vector2, dist: float) -> Vector2:
+	st_t -= delta
+	if state == "dash":
+		if st_t <= 0.0:
+			state = "walk"   # arrêt net
+			st_t = randf_range(0.5, 0.8)
+			cd2 -= 1.0
+			if cd2 <= 0.0 and dist < 170.0:
+				cd2 = 3.0
+				arena.add_square(arena.player.position, 9.0, 0.55, dmg, ink_col)   # clic !
+				arena.float_text(position + Vector2(0, -14), "CLIC", Pal.DIM)
+		return dash_dir * speed * 2.2
+	if st_t <= 0.0:
+		state = "dash"
+		st_t = 0.4
+		dash_dir = dirp
+	return Vector2.ZERO
+
+
+## Fichier corrompu : immobile et inoffensif, mais au bout de CORRUPT_T secondes il s'ouvre et
+## libère 3 à 5 ennemis de la vague (il clignote de plus en plus vite avant).
+const CORRUPT_T := 6.0
+
+
+func _corrupt(delta: float) -> Vector2:
+	contact = false
+	charge += delta / CORRUPT_T
+	flash = 0.5 * charge if int(t * (4.0 + 14.0 * charge)) % 2 == 0 else 0.0
+	if charge >= 1.0:
+		var pool := EnemyDB.pool(Run.wave).filter(func(i): return i != id and Run.enemy_art.has(i) and not EnemyDB.TYPES[i].get("heavy", false))
+		if not pool.is_empty() and arena.enemies.size() < Arena.MAX_ENEMIES - 8:
+			for k in randi_range(3, 5):
+				arena.spawn_enemy_now(pool.pick_random(), position + Vector2.from_angle(randf() * TAU) * (radius + 10.0), false)
+		arena.float_text(position + Vector2(0, -16), "FICHIER OUVERT !", Pal.BAD)
+		arena.burst(position, ink_col, 14, 110.0)
+		loot = 0.0   # (ouvert : il ne rapporte rien)
+		arena.kill_enemy(self)
+	return Vector2.ZERO
+
+
+## Corbeille : l'or ne reste jamais au sol (chaque goutte file vers le joueur), alors elle rôde tout
+## près de lui et AVALE les gouttes qui passent à sa portée. À sa mort, elle recrache tout
+## (Arena.kill_enemy).
+const TRASH_R := 40.0
+
+
+func _trash(dirp: Vector2, dist: float) -> Vector2:
+	for pk in arena.pickups.duplicate():
+		if pk.heal > 0.0 or pk.vac >= 0.0:
+			continue   # (ni les bulles de soin, ni l'aspiration de fin de vague)
+		if pk.position.distance_to(position) < TRASH_R:
+			belly_v += pk.value
+			belly_xp += pk.xp
+			arena.pickups.erase(pk)
+			pk.queue_free()
+			squash = 1.0
+			arena.burst(position, Pal.ACCENT, 3, 40.0)
+	# elle se tient sur le chemin des gouttes : collée au joueur, en tournant autour
+	var want := 1.0 if dist > 46.0 else -0.4
+	return (dirp * want + dirp.orthogonal() * 0.7).normalized() * speed
+
+
+## Pot de peinture : garde ses distances et renverse sa peinture sur toi (zone annoncée, puis
+## une flaque qui brûle et ralentit 3 s).
+func _bucket(delta: float, dirp: Vector2, dist: float) -> Vector2:
+	cd -= delta
+	if cd <= 0.0 and dist < 260.0:
+		cd = 3.6
+		arena.lob(self, arena.player.position, 0.9, 30.0)
+		arena.lobs[-1]["burn"] = dmg * 0.35
+		Sfx.play("enemy_shot")
+	var want := 1.0 if dist > 150.0 else -0.7
+	return (dirp * want + dirp.orthogonal() * 0.4).normalized() * speed
+
+
+## Copier-coller : court vers l'ennemi le plus proche et en fait une copie en le touchant.
+func _paste(delta: float, dirp: Vector2) -> Vector2:
+	cd -= delta
+	if cd > 0.0:
+		return dirp * speed * 0.6
+	var best: Enemy = null
+	var bd := 400.0
+	for o in arena.enemies:
+		if o == self or o.dead or o.is_boss or o.ally or o.def.get("heavy", false) or o.def.beh in ["paste", "corrupt"]:
+			continue
+		var d := o.position.distance_to(position)
+		if d < bd:
+			bd = d
+			best = o
+	if best == null:
+		return dirp * speed * 0.7
+	if bd < radius + best.radius + 4.0 and arena.enemies.size() < Arena.MAX_ENEMIES - 6:
+		cd = 4.5
+		arena.spawn_enemy_now(best.id, best.position + Vector2(12, 0).rotated(randf() * TAU), best.small, false)
+		arena.float_text(position + Vector2(0, -16), "COLLÉ !", Pal.TEXT)
+		flash = 0.8
+	return (best.position - position).normalized() * speed
+
+
+## Lag (tank, id « sablier_e ») : tout ralentit autour de lui, le joueur comme les autres ennemis.
+const SAND_R := 72.0
+
+
+func _hourglass(dirp: Vector2) -> Vector2:
+	if arena.player.position.distance_to(position) < SAND_R:
+		arena.player.sand_t = 0.15
+	for o in arena.near(position, SAND_R):
+		if o != self and not o.is_boss:
+			o.slow_t = maxf(o.slow_t, 0.15)
+	return dirp * speed
+
+
+## Lasso : trace un contour autour de toi ; s'il se referme sur toi, tu es coincé 2 s.
+func _lasso(delta: float, dirp: Vector2, dist: float) -> Vector2:
+	cd -= delta
+	if cd <= 0.0 and dist < 190.0 and arena.player.lasso_safe_t <= 0.0:   # (pas tant que tu es pris ou à l'abri)
+		cd = 5.5
+		arena.add_lasso(arena.player.position, 34.0, 1.2, 2.0)
+		Sfx.play("swing")
+	var want := 1.0 if dist > 130.0 else -0.6
+	return (dirp * want + dirp.orthogonal() * 0.6).normalized() * speed
+
+
+## Barre de chargement (tank) : avance par à-coups, se charge quand elle s'arrête. À 100 % : grosse
+## explosion annoncée autour d'elle. La frapper vide sa barre (voir hurt).
+func _loadbar(delta: float, dirp: Vector2) -> Vector2:
+	if state == "boom":
+		st_t -= delta
+		flash = 0.5 if int(t * 14.0) % 2 == 0 else 0.0
+		if st_t <= 0.0:
+			state = "walk"
+			charge = 0.0
+			st_t = 0.5
+			queue_redraw()
+		return Vector2.ZERO
+	st_t -= delta
+	if st_t <= 0.0:
+		pattern = 1 - pattern   # 1 : un à-coup vers toi ; 0 : à l'arrêt, elle charge
+		st_t = 0.35 if pattern == 1 else 0.7
+	if pattern == 1:
+		return dirp * speed * 2.0
+	charge = minf(1.0, charge + delta / 4.5)
+	queue_redraw()
+	if charge >= 1.0:
+		state = "boom"
+		st_t = 0.9
+		arena.lob(self, position, 0.9, 84.0, position)
+		arena.float_text(position + Vector2(0, -26), "100 %", Pal.BAD)
+	return Vector2.ZERO
+
+
+## Le Virus (L'Écran, vague 5) : il ouvre des fenêtres de pub par-dessus le jeu (voir VirusPopups).
+## Une toutes les 3,5 s (2,6 s sous 50 % de PV), 12 au plus à l'écran, dont 2 énigmes au plus. Ses tirs :
+## - Courrier indésirable : une RAFALE de 4 tirs à la suite, droit sur toi (5 sous 50 % de PV) ;
+## - Les fenêtres tirent : chaque fenêtre ouverte t'envoie un tir toutes les 2,4 s. Moins tu en
+##   fermes, plus ça pleut : c'est la raison de les fermer vite.
+func _boss_virus(delta: float, dirp: Vector2, dist: float) -> Vector2:
+	var rage := _enraged()
+	cd -= delta
+	cd2 -= delta
+	var pops := arena.hud.ensure_popups()
+	if cd <= 0.0:
+		cd = 2.6 if rage else 3.5
+		pops.spawn()   # (une seule à la fois : on a le temps de la fermer avant la suivante)
+		flash = 0.6
+	# Courrier indésirable : une rafale, un tir toutes les 0,12 s
+	if cd2 <= 0.0:
+		cd2 = 1.9 if rage else 2.4
+		repeat = 5 if rage else 4
+		cd3 = 0.0
+	if repeat > 0:
+		cd3 -= delta
+		if cd3 <= 0.0:
+			cd3 = 0.12
+			repeat -= 1
+			_shoot(dirp.rotated(randf_range(-0.07, 0.07)), 1.2)
+			Sfx.play("enemy_shot")
+	# Les fenêtres tirent (depuis l'endroit de l'arène qu'elles recouvrent)
+	spiral_a -= delta
+	if spiral_a <= 0.0:
+		spiral_a = 2.0 if rage else 2.4
+		var to_world := arena.get_viewport().get_canvas_transform().affine_inverse()
+		for w in pops.wins:
+			var from: Vector2 = to_world * ((w as Control).position + (w as Control).size / 2.0)
+			var d := arena.player.position - from
+			if d.length() > 24.0:
+				arena.spawn_enemy_bullet(self, from, d.normalized() * 120.0)
+	return dirp * speed * (1.0 if dist > 150.0 else -0.6)
+
+
+## Le Bug (L'Écran, vague 10) : il se TÉLÉPORTE (une image fantôme reste derrière, l'endroit où il
+## réapparaît est marqué) et lance les GROS bugs du jeu (ScreenBugs) : commandes inversées, écran à
+## l'envers, retour en arrière, barre de vie folle, annoncés 1 s avant. Ses tirs :
+## - Double tir : à chaque téléportation, son fantôme tire une croix « + » et lui une croix « × » ;
+## - Artefacts : 3 tirs (4 sous 50 % de PV) apparaissent figés autour de toi, puis te foncent dessus.
+func _boss_bug(delta: float, dirp: Vector2, dist: float) -> Vector2:
+	var rage := _enraged()
+	cd -= delta
+	cd2 -= delta
+	if state == "tp":
+		st_t -= delta
+		flash = 0.6 if int(t * 18.0) % 2 == 0 else 0.0
+		if st_t <= 0.0:
+			# image fantôme à l'ancienne place
+			var g := Sprite2D.new()
+			g.texture = arena.enemy_tex(id, elite)
+			g.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			g.position = position
+			g.modulate = Color(0.6, 1.0, 0.8, 0.6)
+			arena.world.add_child(g)
+			var tw := g.create_tween()
+			tw.tween_property(g, "modulate:a", 0.0, 0.8)
+			tw.tween_callback(g.queue_free)
+			# Double tir : l'image fantôme tire une croix « + » de là où il était, lui une croix « × »
+			# de là où il arrive (3 tirs à la suite par branche, 4 sous 50 % de PV)
+			_cross(position, 0.0, 4 if rage else 3)
+			position = tp_pos
+			arena.burst(position, ink_col, 14, 120.0)
+			state = "walk"
+			_cross(position, PI / 4.0, 4 if rage else 3)
+			Sfx.play("zap")
+		return Vector2.ZERO
+	if cd <= 0.0:
+		cd = 2.8 if rage else 4.0
+		state = "tp"
+		st_t = 0.55
+		var p := arena.player.position
+		tp_pos = (p + Vector2.from_angle(randf() * TAU) * randf_range(110.0, 170.0)).clamp(Vector2(30, 30), Vector2(Arena.W - 30, Arena.H - 30))
+		arena.telegraphs_fx.append({"pos": tp_pos, "t": 0.55})
+	# Artefacts : des tirs apparaissent figés tout autour de toi, puis te foncent dessus
+	cd3 -= delta
+	if cd3 <= 0.0:
+		cd3 = 2.4 if rage else 3.2
+		var n_art := 4 if rage else 3
+		var a0 := randf() * TAU
+		for k in n_art:
+			var at := (arena.player.position + Vector2.from_angle(a0 + TAU * k / n_art) * 84.0).clamp(Vector2(10, 10), Vector2(Arena.W - 10, Arena.H - 10))
+			arena.spawn_enemy_bullet(self, at, Vector2.ZERO, 0.7 + 0.12 * k)
+			arena.burst(at, ink_col, 4, 50.0)
+		Sfx.play("zap")
+	if cd2 <= 0.0:
+		cd2 = 5.0 if rage else 7.0
+		var ch := arena.ensure_bugs().heavy_choices()
+		if not ch.is_empty():
+			arena.bugs.launch(ch.pick_random(), ScreenBugs.WARN_HEAVY)
+	return dirp.orthogonal() * speed * 0.9 + dirp * speed * (0.5 if dist > 150.0 else -0.5)
+
+
+## Le Bug : une croix de tirs à 4 branches depuis `from` (n tirs par branche, de plus en plus rapides).
+func _cross(from: Vector2, angle: float, n: int) -> void:
+	for b in 4:
+		var d := Vector2.from_angle(angle + b * PI / 2.0)
+		for k in n:
+			arena.spawn_enemy_bullet(self, from, d * 140.0 * (0.65 + 0.22 * k))
+
+
+## Le Tableur (L'Écran, vague 10, parfois à la place du Bug) : l'arène est une grille de cases de 80 px.
+## Il enchaîne 3 attaques dans un ordre mélangé :
+## - Lignes et colonnes : celle où tu es (plus 1, ou 2 sous 50 % de PV) s'allume 1,1 s puis explose.
+## - Formule : une formule s'applique à tes stats 5 s (affichée dans la barre de formule du HUD).
+## - Somme : il fusionne les ennemis d'une colonne en un seul gros (ou en appelle s'il n'y en a pas).
+const SHEET_CELL := 80.0
+const SHEET_FORMULAS := [["=DÉGÂTS/2", 0.5, 1.0], ["=VITESSE/2", 1.0, 0.6], ["=VITESSE*1,5", 1.0, 1.5], ["=DÉGÂTS*1,5", 1.5, 1.0], ["=DÉGÂTS/2", 0.5, 1.0]]
+
+
+func _boss_sheet(delta: float, dirp: Vector2, dist: float) -> Vector2:
+	var rage := _enraged()
+	st_t -= delta
+	if st_t <= 0.0:
+		st_t = 2.4 if rage else 3.2
+		if atk_bag.is_empty():
+			atk_bag = ["bands", "formula", "sum", "bands"]
+			atk_bag.shuffle()
+		flash = 0.8
+		match String(atk_bag.pop_front()):
+			"bands":
+				var p := arena.player.position
+				var lines := []   # [vertical ?, indice]
+				lines.append([randf() < 0.5, 0])
+				lines[0][1] = int(p.x / SHEET_CELL) if lines[0][0] else int(p.y / SHEET_CELL)
+				for k in (2 if rage else 1):
+					var vert := randf() < 0.5
+					lines.append([vert, randi() % int((Arena.W if vert else Arena.H) / SHEET_CELL)])
+				for ln in lines:
+					var i := int(ln[1])
+					var rect := Rect2(i * SHEET_CELL, 0, SHEET_CELL, Arena.H) if ln[0] else Rect2(0, i * SHEET_CELL, Arena.W, SHEET_CELL)
+					arena.add_band(rect, 1.1, dmg * 1.1, ink_col)
+				Sfx.play("zap")
+			"formula":
+				var f: Array = SHEET_FORMULAS.pick_random()
+				arena.formula = {"text": f[0], "t": 5.0, "dmg": f[1], "speed": f[2]}
+				arena.float_text(position + Vector2(0, -34), String(f[0]), Pal.ACCENT)
+			"sum":
+				_sheet_sum()
+	return dirp * speed * (1.0 if dist > 140.0 else -0.4)
+
+
+func _sheet_sum() -> void:
+	var cols := {}
+	for o in arena.enemies:
+		if o == self or o.dead or o.is_boss or o.ally:
+			continue
+		var c := int(o.position.x / SHEET_CELL)
+		if not cols.has(c):
+			cols[c] = []
+		(cols[c] as Array).append(o)
+	var best := []
+	for c in cols:
+		if (cols[c] as Array).size() > best.size():
+			best = cols[c]
+	if best.size() < 2:
+		# rien à additionner : il remplit une colonne
+		var pool := EnemyDB.pool(Run.wave).filter(func(i): return Run.enemy_art.has(i) and not EnemyDB.TYPES[i].get("heavy", false) and EnemyDB.TYPES[i].beh != "corrupt")
+		if not pool.is_empty():
+			_summon(pool.pick_random(), 3)
+		arena.float_text(position + Vector2(0, -34), "=ALEA()", Pal.ACCENT)
+		return
+	var sum_hp := 0.0
+	var sum_loot := 0.0
+	var at := Vector2.ZERO
+	var group: Array = best.slice(0, 6)
+	var first_id: String = (group[0] as Enemy).id
+	for o in group:
+		sum_hp += o.hp
+		sum_loot += o.loot
+		at += o.position
+		o.dead = true
+		arena.enemies.erase(o)
+		o.queue_free()
+	at /= group.size()
+	var big := arena.spawn_enemy_now(first_id, at, false)
+	if big:
+		big.max_hp = sum_hp
+		big.hp = sum_hp
+		big.loot = sum_loot
+		big.base_scale *= 1.6
+		big.radius *= 1.5
+		big.body.scale = Vector2(big.base_scale, big.base_scale)
+		arena.burst(at, ink_col, 16, 120.0)
+	arena.float_text(position + Vector2(0, -34), "=SOMME(%d)" % group.size(), Pal.ACCENT)
+
+
+## Un ennemi que Le Curseur a attrapé : il est soulevé dans sa main, puis LANCÉ sur le joueur
+## comme un projectile. Il explose à l'impact (ou au bout de sa course) et ne rapporte rien.
+func _thrown_tick(delta: float) -> void:
+	t += delta
+	contact = false
+	body.rotation += 16.0 * delta
+	if held_by != null:
+		if not is_instance_valid(held_by) or held_by.dead:
+			held_by = null
+			contact = true
+			return
+		position = position.lerp(held_by.position + Vector2(0, -held_by.radius - radius), minf(1.0, 10.0 * delta))
+		return
+	thrown_t -= delta
+	position += thrown_v * delta
+	var p := arena.player
+	var hit := position.distance_to(p.position) < radius + p.radius + 2.0
+	if hit:
+		p.take_hit(thrown_dmg, element, null)
+	if hit or thrown_t <= 0.0 or position.x < 4.0 or position.y < 4.0 or position.x > Arena.W - 4.0 or position.y > Arena.H - 4.0:
+		arena.explosion(position, 30.0, Color(ink_col, 0.8))
+		arena.burst(position, ink_col, 12, 110.0)
+		loot = 0.0
+		thrown_t = 0.0
+		arena.kill_enemy(self)
+
+
+## Le Curseur, boss final de L'Écran : une main géante. Il ne tire pas, il MANIPULE.
+## 3 PHASES (60 % et 25 % de PV) ; à chaque changement le jeu PLANTE (faux écran d'erreur).
+## 1. Il attrape : il soulève un ennemi et te le LANCE dessus ; il te pourchasse (son ombre te suit,
+##    se fige, s'abat) et, s'il t'attrape, te traîne vers la CORBEILLE : secoue les touches de
+##    déplacement pour te libérer avant d'y être jeté.
+## 2. Il sélectionne : un rectangle de sélection se trace, puis SUPPR : tout ce qui est dedans est
+##    supprimé (ses ennemis aussi) ; il te REDIMENSIONNE (énorme et lent, ou minuscule et faible).
+## 3. Il s'en prend à la fenêtre : il la RÉDUIT (faux bureau, à rouvrir d'un clic), il la TRAÎNE
+##    (toute l'image glisse), il tente un ALT+F4 (frappe-le assez fort pour l'arrêter). Et quand
+##    il semble vaincu : fausse victoire... il revient.
+const ALTF4_SEC := 3.0
+const HAND_REACH := 30.0     # rayon dans lequel sa main attrape le joueur
+const STRUGGLE_NEED := 6     # secousses pour se libérer
+
+
+func _boss_cursor(delta: float, dirp: Vector2, dist: float) -> Vector2:
+	var p := arena.player
+	if boss_inv > 0.0:
+		boss_inv -= delta   # intouchable seulement le temps d'un plantage
+	var want := 1 if hp > max_hp * 0.6 else (2 if hp > max_hp * 0.25 else 3)
+	if want > toile_phase:
+		toile_phase = want
+		_cursor_release()
+		var long := want == 3
+		arena.hud.crash(2.4 if long else 1.3, long)
+		arena.hitstop(2.4 if long else 1.3)
+		boss_inv = 1.0
+		state = "walk"
+		st_t = 1.5
+		atk_bag.clear()
+		Sfx.play("boss")
+		return Vector2.ZERO
+	# Fausse victoire : presque mort, le jeu annonce la victoire... puis il revient
+	if not fake_done and hp < max_hp * 0.05:
+		fake_done = true
+		_cursor_release()
+		hp = max_hp * 0.14
+		boss_inv = 1.0
+		arena.hud.screen("win", 3.0)
+		arena.hitstop(3.0)
+		Sfx.play("win")
+		state = "walk"
+		st_t = 1.0
+		return Vector2.ZERO
+	st_t -= delta
+	match state:
+		"jam":
+			# sonné (Alt+F4 raté, ou le joueur s'est libéré) : immobile, il prend +50 %
+			flash = 0.3 if int(t * 10.0) % 2 == 0 else 0.0
+			if st_t <= 0.0:
+				state = "walk"
+				st_t = 1.0
+			return Vector2.ZERO
+		"lift":
+			# il tient un ennemi au-dessus de lui, puis le lance là où tu es
+			if st_t <= 0.0:
+				if grab_e and is_instance_valid(grab_e) and not grab_e.dead:
+					grab_e.held_by = null
+					grab_e.thrown_t = 1.6
+					grab_e.thrown_v = (p.position - grab_e.position).normalized() * 330.0
+					grab_e.thrown_dmg = dmg * 0.9
+					Sfx.play("swing")
+				grab_e = null
+				state = "walk"
+				st_t = 0.5 if toile_phase == 3 else 0.9
+			return Vector2.ZERO
+		"hunt":
+			# sa main te suit (un peu moins vite que toi), puis se fige
+			contact = false
+			if st_t <= 0.0:
+				state = "lock"
+				st_t = 0.45
+				return Vector2.ZERO
+			return (p.position - position).limit_length(1.0) * minf(position.distance_to(p.position) * 5.0, 190.0)
+		"lock":
+			flash = 0.6 if int(t * 16.0) % 2 == 0 else 0.0
+			if st_t <= 0.0:
+				arena.shake(5.0)
+				arena.burst(position, ink_col, 12, 120.0)
+				contact = true
+				if position.distance_to(p.position) < HAND_REACH:
+					state = "carry"
+					grabbed = true
+					struggle = 0
+					shake_dir = Vector2.ZERO
+					arena.float_text(p.position + Vector2(0, -30), "ATTRAPÉ ! SECOUE LES TOUCHES !", Pal.BAD)
+				else:
+					state = "walk"
+					st_t = 1.2
+			return Vector2.ZERO
+		"carry":
+			# il te traîne vers la Corbeille ; chaque changement de direction de tes touches est une secousse
+			var d := p.input_dir()
+			if d.length() > 0.3:
+				if shake_dir != Vector2.ZERO and d.dot(shake_dir) < 0.0:
+					struggle += 1
+					arena.burst(p.position, Color.WHITE, 3, 60.0)
+				shake_dir = d
+			p.root_t = 0.1
+			p.position = position + Vector2(0, radius * 0.5)
+			if struggle >= STRUGGLE_NEED:
+				_cursor_release()
+				state = "jam"
+				st_t = 1.6
+				arena.float_text(p.position + Vector2(0, -30), "LIBÉRÉ !", Pal.GOOD)
+				return Vector2.ZERO
+			if position.distance_to(Arena.TRASH_POS) < 14.0:
+				_cursor_release()
+				p.inv = 0.0   # (la Corbeille fait toujours mal, même juste après un autre coup)
+				p.take_hit(dmg * 2.0, 0, null)
+				arena.explosion(Arena.TRASH_POS, 36.0, Color(0.6, 0.65, 0.75, 0.9))
+				arena.float_text(Arena.TRASH_POS + Vector2(0, -30), "À LA CORBEILLE !", Pal.BAD)
+				state = "walk"
+				st_t = 1.6
+				return Vector2.ZERO
+			return (Arena.TRASH_POS - position).normalized() * 105.0
+		"altf4":
+			flash = 0.4 if int(t * 12.0) % 2 == 0 else 0.0
+			if cast_hp - hp >= max_hp * 0.035:
+				state = "jam"
+				st_t = 1.8
+				arena.float_text(position + Vector2(0, -40), "ALT+F4 ANNULÉ !", Pal.GOOD)
+			elif st_t <= 0.0:
+				arena.hud.screen("closed", 0.9)
+				arena.hitstop(0.9)
+				p.inv = 0.0   # (pareil : un Alt+F4 réussi ne se rate pas)
+				p.take_hit(dmg * 2.2, 0, null)
+				state = "walk"
+				st_t = 1.6
+			return Vector2.ZERO
+	if st_t <= 0.0:
+		st_t = [2.3, 2.0, 1.7][toile_phase - 1]
+		if atk_bag.is_empty():
+			atk_bag = [["throw", "throw", "hunt"], ["select", "resize", "throw", "select", "hunt"],
+				["minimize", "altf4", "dragwin", "select", "throw", "hunt", "resize"]][toile_phase - 1].duplicate()
+			atk_bag.shuffle()
+		flash = 0.8
+		match String(atk_bag.pop_front()):
+			"throw":
+				# l'ennemi le plus proche de lui ; s'il n'y en a pas, il en fait venir un
+				var best: Enemy = null
+				for o in arena.enemies:
+					if o == self or o.dead or o.is_boss or o.ally or o.held_by != null or o.thrown_t > 0.0:
+						continue
+					if best == null or o.position.distance_to(position) < best.position.distance_to(position):
+						best = o
+				if best == null:
+					var pool := EnemyDB.pool(Run.wave).filter(func(i): return Run.enemy_art.has(i) and not EnemyDB.TYPES[i].get("heavy", false))
+					if not pool.is_empty():
+						best = arena.spawn_enemy_now(pool.pick_random(), position + Vector2(0, -20), false)
+				if best:
+					best.held_by = self
+					grab_e = best
+					state = "lift"
+					st_t = 0.6
+					arena.add_ruler(position, p.position, 0.6)
+			"hunt":
+				state = "hunt"
+				st_t = 1.5 if toile_phase == 3 else 1.9
+			"select":
+				var sz := Vector2(210, 150)
+				var c := p.position + Vector2(randf_range(-40, 40), randf_range(-30, 30))
+				arena.add_band(Rect2(c - sz / 2.0, sz), 1.1, dmg * 1.3, Color("3a86ff"))
+				arena.bands[-1]["sel"] = true
+			"resize":
+				var big := randf() < 0.5
+				p.resize(1.8 if big else 0.55, 6.0)
+				arena.float_text(p.position + Vector2(0, -34), "REDIMENSIONNÉ : %s !" % ("ÉNORME" if big else "MINUSCULE"), Pal.BAD)
+				arena.burst(p.position, Color("3a86ff"), 10, 80.0)
+			"minimize":
+				arena.hud.minimize(6.0)
+				Sfx.play("zap")
+			"dragwin":
+				arena.win_drag_t = Arena.WIN_DRAG_SEC
+				arena.hud.announce("IL TRAÎNE LA FENÊTRE !", Pal.BAD)
+			"altf4":
+				state = "altf4"
+				st_t = ALTF4_SEC
+				cast_hp = hp
+	return dirp * speed * (1.0 if dist > 150.0 else -0.4) + dirp.orthogonal() * speed * 0.6
+
+
+## Le Curseur lâche ce qu'il tient (le joueur, un ennemi).
+func _cursor_release() -> void:
+	grabbed = false
+	contact = true
+	if grab_e and is_instance_valid(grab_e):
+		grab_e.held_by = null
+		grab_e.contact = true
+	grab_e = null
+
+
 ## Le Professeur : interros surprises (colonnes, une seule bonne réponse), salves de craie, punaises.
 func _boss_prof(delta: float, dirp: Vector2, dist: float) -> Vector2:
 	cd -= delta
@@ -1027,6 +1650,57 @@ func _boss_copy(delta: float, dirp: Vector2, dist: float) -> Vector2:
 		st_t = 2.2
 		arena.float_text(position + Vector2(0, -34), "BOURRAGE PAPIER !", Pal.ACCENT)
 	return dirp.orthogonal() * speed * 0.8 + dirp * speed * (0.4 if dist > 160.0 else -0.4)
+
+
+## Le Géomètre (vague 10 du Tableau noir, parfois à la place de la Photocopieuse) : un compas géant.
+## - Il s'approche, puis PLANTE sa pointe : il ne bouge plus et prend +50 % de dégâts.
+## - Planté, il trace des cercles autour de lui (2, puis 3 en dessous de 50 % de PV). Chaque cercle
+##   est annoncé 1 s (on voit la branche tourner), puis son trait brûle 3 s : il faut se placer
+##   entre les cercles, et ceux du plantage d'avant brûlent encore.
+## - Sous 50 % de PV : il se replante plus vite, et en se relevant il LANCE sa pointe (un trait
+##   droit annoncé, vers toi).
+const GEO_WARN := 1.0      # un cercle est annoncé 1 s...
+const GEO_BURN := 3.0      # ... puis brûle 3 s
+const GEO_GAP := 46.0      # écart entre deux cercles du même plantage (la place pour se glisser)
+
+
+func _boss_geo(delta: float, dirp: Vector2, dist: float) -> Vector2:
+	var rage := _enraged()
+	st_t -= delta
+	match state:
+		"plant":
+			flash = maxf(flash, 0.12)   # (il luit tant qu'il est planté : c'est le moment de frapper)
+			cd -= delta
+			if cd2 > 0.0 and cd <= 0.0:
+				# un cercle de plus : le premier passe sur toi, les suivants s'écartent d'un cran
+				var k := int(cd3) - int(cd2)
+				var r0 := clampf(position.distance_to(arena.player.position), 50.0, 190.0)
+				var r: float = r0 + GEO_GAP * float([0.0, -1.0, 1.0][clampi(k, 0, 2)])   # sur toi, puis un cran dedans, un cran dehors
+				arena.add_ring(position, clampf(r, 34.0, 230.0), GEO_WARN, GEO_BURN, dmg * 0.45, ink_col)
+				Sfx.play("swing")
+				cd2 -= 1.0
+				cd = 0.55 if rage else 0.75
+			if st_t <= 0.0:
+				state = "walk"
+				st_t = 1.6 if rage else 2.6
+				if rage:
+					# il se relève en lançant sa pointe : un trait droit annoncé, vers toi (et deux en éventail)
+					for a in [-0.35, 0.0, 0.35]:
+						var d := dirp.rotated(a)
+						arena.add_stroke(position, _wall_point(position, d), 0.8, dmg * 0.5, ink_col)
+			return Vector2.ZERO
+		_:
+			if st_t <= 0.0:
+				state = "plant"
+				cd3 = 3.0 if rage else 2.0   # nombre de cercles de ce plantage
+				cd2 = cd3
+				cd = 0.25
+				st_t = cd3 * (0.55 if rage else 0.75) + GEO_WARN + 0.6
+				arena.float_text(position + Vector2(0, -34), "PLANTÉ !", Pal.ACCENT)
+				arena.shake(2.0)
+				return Vector2.ZERO
+	# il vient se placer à mi-distance : assez près pour que ses cercles t'entourent
+	return dirp * speed * (1.5 if dist > 120.0 else (0.5 if dist > 70.0 else -0.6)) + dirp.orthogonal() * speed * 0.5
 
 
 ## L'Encrier renversé, boss final du Tableau noir, en 3 PHASES (66 % et 33 % de PV) :

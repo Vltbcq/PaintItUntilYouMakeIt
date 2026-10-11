@@ -54,6 +54,15 @@ var hazards: Array = []   # flaques et traînées d'encre {pos, r, t, life, slow
 var lobs: Array = []      # tirs en cloche {from, to, t, dur, dmg, r, el, tex}
 var rulers: Array = []    # lignes tracées à la règle {a, b, t, life}
 var erasers: Array = []   # coups de gomme de la Toile Blanche {pos, r, t, dur, dmg}
+var bands: Array = []     # Tableur / Curseur : bandes annoncées qui explosent, puis restent effacées {rect, t, dmg, col, hold, done, acc}
+var win_drag_t := 0.0     # Le Curseur : il traîne la fenêtre du jeu (toute l'image glisse)
+const WIN_DRAG_SEC := 5.0
+const TRASH_POS := Vector2(W - 44, H - 44)   # Le Curseur : la Corbeille où il jette le joueur
+var formula := {}         # Tableur : formule appliquée à tes stats {text, t, dmg, speed}
+var bugs: ScreenBugs      # L'Écran : les bugs (règle de la carte, et le boss Le Bug)
+const LASSO_SAFE := 4.0   # après une prise au lasso : 4 s sans pouvoir être repris
+var lassos: Array = []    # contours du Lasso qui se referment sur le joueur {pos, r, t, delay, hold, held}
+var rings: Array = []     # cercles du Géomètre, tracés au compas puis brûlants {pos, r, t, delay, life, dmg, col, a0}
 var strokes: Array = []   # traits du Raturé annoncés à la règle, qui deviennent de l'encre {a, b, t, dmg, col, boom}
 var clouds: Array = []    # nuages de poison (synergie) {pos, r, t, acc, dps}
 var syn := {}             # synergies de couleur actives : élément -> nombre d'armes
@@ -242,6 +251,12 @@ func _ready() -> void:
 		add_child(fx_layer)
 
 	boss_id = EnemyDB.boss_for(Run.wave)
+	# L'Écran : des bugs légers frappent pendant les vagues normales (pendant un boss, seul Le Bug en lance)
+	if MapDB.get_def(Run.map).get("bugs", false):
+		bugs = ScreenBugs.new()
+		add_child(bugs)
+		bugs.setup(self)
+		bugs.auto = boss_id == ""
 	if boss_id != "":
 		time_left = -1.0
 		hud.announce("VAGUE %d — BOSS" % Run.wave, Pal.BAD)
@@ -319,6 +334,11 @@ func _process(delta: float) -> void:
 	numbers.tick(delta)
 	shake_amt = move_toward(shake_amt, 0.0, delta * 25.0)
 	cam.offset = Vector2(randf_range(-1, 1), randf_range(-1, 1)) * shake_amt
+	if win_drag_t > 0.0:
+		# Le Curseur traîne la fenêtre : l'image se balade (entrée et sortie en douceur)
+		win_drag_t -= delta
+		var wk := sin(clampf(1.0 - win_drag_t / WIN_DRAG_SEC, 0.0, 1.0) * PI)
+		cam.offset += Vector2(sin(elapsed * 1.7) * 110.0, cos(elapsed * 1.1) * 60.0) * wk
 	if hitstop_t > 0.0:
 		hitstop_t -= delta
 		return
@@ -709,6 +729,10 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 		dmg *= 2.0   # Horloge : pendant l'arrêt du temps
 	if stream:
 		dmg *= stream.dmg_mult()   # Le Stream : HYPE TRAIN, sondage « dégâts »
+	if not formula.is_empty():
+		dmg *= float(formula.dmg)   # Le Tableur : sa formule s'applique à tes dégâts
+	if player.size_k < 1.0:
+		dmg *= 0.6   # Le Curseur t'a rendu minuscule : tes coups font moins mal
 	dmg *= _amulet_dmg_mult(e, wst)
 	# Cercle des faiblesses : couleur principale de l'arme contre celle de l'ennemi
 	var wcol := Pal.color_of(wst.get("frac", []), 0.3)
@@ -942,6 +966,13 @@ func kill_enemy(e: Enemy) -> void:
 	burst(e.position, Pal.INK, 12 if big else 3, 70.0)
 	if big:
 		hitstop(0.25 if e.is_boss else 0.07)
+	# Corbeille (L'Écran) : elle recrache tout ce qu'elle a avalé
+	while e.belly_v > 0 or e.belly_xp > 0:
+		var bv := mini(e.belly_v, 5)
+		var bx := mini(e.belly_xp, 5)
+		e.belly_v -= bv
+		e.belly_xp -= bx
+		drop_pickup(e.position, bv, bx)
 	# Butin
 	# L'XP suit le butin de l'ennemi ; l'or en est une fraction (Run.GOLD_MULT).
 	# Moins d'ennemis par vague (SPAWN_MULT) : chacun lâche plus, pour garder le même or / XP par vague
@@ -1059,6 +1090,8 @@ func kill_enemy(e: Enemy) -> void:
 	if e.is_boss:
 		Run.bosses += 1
 		boss = null
+		if hud.popups:
+			hud.popups.close_all()   # Le Virus vaincu : ses fenêtres se ferment
 		shake(10.0)
 		explosion(e.position, 80.0, Color(Pal.ACCENT, 0.9))
 		if e.id == boss_id:
@@ -1145,6 +1178,10 @@ func _end_wave() -> void:
 	hazards.clear()
 	lobs.clear()
 	rulers.clear()
+	rings.clear()
+	bands.clear()
+	formula = {}
+	lassos.clear()
 	erasers.clear()
 	clouds.clear()
 	wells.clear()
@@ -1191,7 +1228,7 @@ func _flush_pickups() -> void:
 
 
 func add_hazard(pos: Vector2, r: float, life: float, slow: float, dmg: float, col: Color) -> void:
-	if hazards.size() > 600:
+	if hazards.size() > 900:   # (les cercles du Géomètre en posent beaucoup)
 		hazards.pop_front()
 	hazards.append({"pos": pos, "r": r, "t": life, "life": life, "slow": slow, "dmg": dmg, "col": col})
 
@@ -1230,6 +1267,46 @@ func add_ruler(a: Vector2, b: Vector2, life: float) -> void:
 func add_stroke(a: Vector2, b: Vector2, delay: float, dmg: float, col: Color, boom_r := 0.0) -> void:
 	add_ruler(a, b, delay)
 	strokes.append({"a": a, "b": b, "t": delay, "dmg": dmg, "col": col, "boom": boom_r})
+
+
+## Une bande de l'arène s'allume pendant `delay`, puis explose (dégâts si le joueur est dedans).
+## hold > 0 : elle reste « effacée » ensuite et refait mal toutes les 0,5 s (la gomme du Curseur).
+func add_band(rect: Rect2, delay: float, dmg: float, col: Color, hold := 0.0) -> void:
+	bands.append({"rect": rect, "t": delay, "delay": delay, "dmg": dmg, "col": col, "hold": hold, "done": false, "acc": 0.0})
+
+
+## L'Écran : crée le système de bugs s'il n'existe pas (le boss Le Bug en a besoin même hors de sa carte).
+func ensure_bugs() -> ScreenBugs:
+	if bugs == null:
+		bugs = ScreenBugs.new()
+		add_child(bugs)
+		bugs.setup(self)
+	return bugs
+
+
+## Lasso (L'Écran) : un contour se trace autour de `pos` pendant `delay`. S'il se referme alors que
+## le joueur est encore dedans, le joueur est coincé `hold` secondes.
+func add_lasso(pos: Vector2, r: float, delay: float, hold: float) -> void:
+	lassos.append({"pos": pos, "r": r, "t": delay, "delay": delay, "hold": hold, "held": false})
+
+
+## Une goutte d'or posée au sol (la Corbeille recrache ce qu'elle a avalé).
+func drop_pickup(pos: Vector2, value: int, xp: int) -> void:
+	var pk := Pickup.new()
+	pk.value = value
+	pk.xp = xp
+	pk.color = Pal.ACCENT
+	pk.position = pos + Vector2(randf_range(-6, 6), randf_range(-6, 6))
+	pk.vel = Vector2.from_angle(randf() * TAU) * randf_range(30, 80)
+	loot_layer.add_child(pk)
+	pickups.append(pk)
+
+
+## Le Géomètre : un cercle tracé au compas autour de `pos`. Pendant `delay`, on voit la branche
+## tourner et le trait se dessiner (rien ne fait mal) ; ensuite le trait est de l'encre qui brûle
+## pendant `life` secondes.
+func add_ring(pos: Vector2, r: float, delay: float, life: float, dmg: float, col: Color) -> void:
+	rings.append({"pos": pos, "r": r, "t": delay, "delay": delay, "life": life, "dmg": dmg, "col": col, "a0": randf() * TAU})
 
 
 func add_eraser(pos: Vector2, r: float, dur: float, dmg: float) -> void:
@@ -1308,6 +1385,67 @@ func _tick_effects(delta: float) -> void:
 	for rl in rulers:
 		rl.t -= delta
 	rulers = rulers.filter(func(rl): return rl.t > 0.0)
+	var bk := []
+	for bnd in bands:
+		bnd.t -= delta
+		if bnd.t <= 0.0 and not bnd.done:
+			bnd.done = true
+			bnd.t = bnd.hold
+			shake(3.0)
+			Sfx.play("explode")
+			if (bnd.rect as Rect2).has_point(player.position):
+				player.take_hit(bnd.dmg, 0, null)
+			if bnd.get("sel", false):
+				# Sélection + Suppr du Curseur : ses propres sbires y passent aussi
+				for e in enemies.duplicate():
+					if not e.is_boss and not e.dead and (bnd.rect as Rect2).has_point(e.position):
+						burst(e.position, Color.WHITE, 8, 90.0)
+						kill_enemy(e)
+				float_text((bnd.rect as Rect2).get_center(), "SUPPR", Pal.BAD)
+		elif bnd.done:
+			bnd.acc += delta
+			if bnd.acc >= 0.5:
+				bnd.acc = 0.0
+				if (bnd.rect as Rect2).has_point(player.position):
+					player.take_hit(float(bnd.dmg) * 0.5, 0, null)
+		if bnd.t > 0.0:
+			bk.append(bnd)
+	bands = bk
+	if not formula.is_empty():
+		formula.t -= delta
+		if formula.t <= 0.0:
+			formula = {}
+	var lz := []
+	for ls in lassos:
+		ls.t -= delta
+		if ls.t > 0.0:
+			lz.append(ls)
+		elif not ls.held and player.lasso_safe_t <= 0.0 and ls.pos.distance_to(player.position) < float(ls.r) + player.radius * 0.5:
+			# refermé sur le joueur : coincé (le contour reste affiché le temps de la prise)
+			ls.held = true
+			ls.t = ls.hold
+			ls.pos = player.position
+			player.root_t = ls.hold
+			player.lasso_safe_t = float(ls.hold) + LASSO_SAFE   # libéré, puis intouchable par les lassos un moment
+			float_text(player.position + Vector2(0, -26), "ATTRAPÉ !", Pal.BAD)
+			shake(3.0)
+			Sfx.play("hurt")
+			lz.append(ls)
+	lassos = lz
+	var rg := []
+	for ring in rings:
+		ring.t -= delta
+		if ring.t > 0.0:
+			rg.append(ring)
+			continue
+		# le cercle est fini : son trait devient de l'encre (une flaque tous les ~9 px, dans la page)
+		var n_r := maxi(8, int(TAU * ring.r / 9.0))
+		for k in n_r:
+			var q: Vector2 = ring.pos + Vector2.from_angle(TAU * k / n_r) * ring.r
+			if q.x >= 0.0 and q.y >= 0.0 and q.x <= W and q.y <= H:
+				add_hazard(q, 6.0, ring.life, 1.0, ring.dmg, ring.col)
+		Sfx.play("zap")
+	rings = rg
 	var sk := []
 	for sk_i in strokes:
 		sk_i.t -= delta
@@ -1334,7 +1472,7 @@ func _tick_effects(delta: float) -> void:
 		if lb.to.distance_to(player.position) < lb.r + player.radius:
 			var lsrc = lb.get("src")
 			player.take_hit(lb.dmg, lb.el, lsrc if is_instance_valid(lsrc) else null)
-		add_hazard(lb.to, lb.r * 0.7, 3.0, 0.5, 0.0, lb.col)
+		add_hazard(lb.to, lb.r * 0.7, 3.0, 0.5, float(lb.get("burn", 0.0)), lb.col)   # (burn : Pot de peinture)
 	lobs = keep
 	keep = []
 	for er in erasers:
@@ -1374,6 +1512,8 @@ func _tick_board(delta: float) -> void:
 	rush_t -= delta
 	dark_t -= delta
 	# Événements (vagues normales du Tableau noir)
+	if bugs and not ended:
+		bugs.tick(delta)
 	if MapDB.get_def(Run.map).get("events", false) and boss_id == "" and not ended:
 		ev_cd -= delta
 		if ev_cd <= 0.0:
@@ -1960,10 +2100,10 @@ func _tick_blotters(delta: float) -> void:
 	blotters = keep
 
 
-## Amulettes visibles dans l'arène (Tête à l'envers) : au début de la vague, et aussi
-## quand l'outil de dev en donne une en pleine vague.
+## Écran à l'endroit ou à l'envers (Tête à l'envers, bug de L'Écran) : au début de la vague, quand
+## l'outil de dev donne l'amulette en pleine vague, et quand le bug commence ou finit.
 func sync_amulets() -> void:
-	cam.ignore_rotation = Run.amulet_count("envers") == 0
+	cam.ignore_rotation = Run.amulet_count("envers") == 0 and not (bugs != null and bugs.is_on("flip"))   # (ou le bug « écran à l'envers »)
 	cam.rotation = 0.0 if cam.ignore_rotation else PI   # Tête à l'envers : tout s'affiche retourné (les touches suivent l'écran)
 
 
@@ -2159,6 +2299,25 @@ func _after(sec: float, cb: Callable) -> void:
 	tm.start()
 
 
+## Sol de L'Écran : le damier gris et blanc du « fond transparent » des logiciels de dessin, dans
+## une fenêtre (bordure sombre, barre de titre avec ses trois boutons).
+func _screen_floor(img: Image) -> void:
+	var a := Color("dfe3e8")
+	var b := Color("cdd2da")
+	var frame := Color("2b3350")
+	var bar := Color("46548c")
+	for y in H:
+		for x in W:
+			var c := a if (x / 8 + y / 8) % 2 == 0 else b
+			if x < 3 or y < 3 or x >= W - 3 or y >= H - 3:
+				c = frame
+			elif y < 11:
+				c = bar
+			img.set_pixel(x, y, c)
+	for k in 3:
+		img.fill_rect(Rect2i(W - 12 - k * 9, 5, 5, 4), [Color("e84a4a"), Color("f0c43a"), Color("6ad36a")][k])
+
+
 func _build_floor() -> void:
 	var kind: String = MapDB.get_def(Run.map).floor
 	if not base_floors.has(kind):
@@ -2184,6 +2343,8 @@ func _build_floor() -> void:
 					var q := c + Vector2i(randi_range(-26, 26), randi_range(-3, 3))
 					if q.x > 3 and q.y > 3 and q.x < W - 3 and q.y < H - 3:
 						img.set_pixel(q.x, q.y, img.get_pixel(q.x, q.y).lerp(Color.WHITE, 0.08))
+		if kind == "screen":
+			_screen_floor(img)
 		base_floors[kind] = img
 	floor_img = (base_floors[kind] as Image).duplicate()
 	floor_tex = ImageTexture.create_from_image(floor_img)
@@ -2284,6 +2445,82 @@ class _Marks extends Node2D:
 			for i in n:
 				var q: Vector2 = rl.a + dir * i * 8.0
 				draw_line(q, q + dir.orthogonal() * (4.0 if i % 4 == 0 else 2.0), Color(Pal.INK, 0.6), 1.0)
+		if arena.boss_id == "tableur":
+			# Le Tableur : la grille (cases de 80 px)
+			for gx in range(1, Arena.W / 80):
+				draw_line(Vector2(gx * 80, 0), Vector2(gx * 80, Arena.H), Color(Pal.INK, 0.16), 1.0)
+			for gy in range(1, Arena.H / 80):
+				draw_line(Vector2(0, gy * 80), Vector2(Arena.W, gy * 80), Color(Pal.INK, 0.16), 1.0)
+		if arena.boss_id == "curseur_boss":
+			# La Corbeille, dans un coin
+			var tp := Arena.TRASH_POS
+			draw_rect(Rect2(tp + Vector2(-11, -10), Vector2(22, 24)), Pal.INK)
+			draw_rect(Rect2(tp + Vector2(-9, -8), Vector2(18, 20)), Color("8a93a8"))
+			for kx in 3:
+				draw_line(tp + Vector2(-5 + kx * 5, -5), tp + Vector2(-5 + kx * 5, 9), Color("5a6278"), 1.0)
+			draw_rect(Rect2(tp + Vector2(-13, -14), Vector2(26, 5)), Pal.INK)
+			draw_rect(Rect2(tp + Vector2(-11, -13), Vector2(22, 3)), Color("aab2c4"))
+			var cb = arena.boss
+			if cb and is_instance_valid(cb) and cb.state in ["hunt", "lock"]:
+				# l'ombre de la main : rouge quand elle ne bouge plus (elle va s'abattre)
+				var lock: bool = cb.state == "lock"
+				draw_circle(cb.position + Vector2(0, 10), 26.0, Color(0, 0, 0, 0.22))
+				draw_arc(cb.position + Vector2(0, 10), 28.0, 0.0, TAU, 36, Color(Pal.BAD, 0.9 if lock else 0.35), 3.0 if lock else 1.0)
+		var pl := arena.player
+		if pl.size_t > 0.0:
+			# poignées de redimensionnement autour du joueur
+			var hr := pl.radius + 5.0
+			draw_rect(Rect2(pl.position - Vector2(hr, hr), Vector2(hr, hr) * 2.0), Color("3a86ff"), false, 1.0)
+			for hx in [-1.0, 1.0]:
+				for hy in [-1.0, 1.0]:
+					draw_rect(Rect2(pl.position + Vector2(hx, hy) * hr - Vector2(2, 2), Vector2(4, 4)), Color.WHITE)
+					draw_rect(Rect2(pl.position + Vector2(hx, hy) * hr - Vector2(2, 2), Vector2(4, 4)), Color("3a86ff"), false, 1.0)
+		for bnd in arena.bands:
+			var br: Rect2 = bnd.rect
+			if bnd.get("sel", false) and not bnd.done:
+				# rectangle de sélection : il se trace depuis un coin, en pointillés qui défilent
+				var ks := clampf(1.0 - float(bnd.t) / float(bnd.delay), 0.0, 1.0)
+				var part := Rect2(br.position, br.size * minf(1.0, ks * 1.6))
+				draw_rect(part, Color(0.25, 0.5, 1.0, 0.13))
+				var pts := [part.position, Vector2(part.end.x, part.position.y), part.end, Vector2(part.position.x, part.end.y), part.position]
+				var ant := int(arena.elapsed * 12.0)
+				for si in 4:
+					var sa: Vector2 = pts[si]
+					var sb: Vector2 = pts[si + 1]
+					var sn := maxi(1, int(sa.distance_to(sb) / 5.0))
+					for sk in sn:
+						if (sk + ant) % 2 == 0:
+							draw_line(sa.lerp(sb, float(sk) / sn), sa.lerp(sb, float(sk + 1) / sn), Pal.INK if ks < 0.75 else Pal.BAD, 2.0)
+				continue
+			if bnd.done:
+				# effacée : un blanc qui s'estompe sur la fin
+				draw_rect(br, Color(1, 1, 1, 0.75 * clampf(float(bnd.t) * 2.0, 0.0, 1.0)))
+				draw_rect(br, Color(Pal.BAD, 0.5), false, 1.0)
+			else:
+				var bl2 := 0.5 + 0.5 * sin(arena.elapsed * 26.0)
+				draw_rect(br, Color(bnd.col, 0.14 + 0.16 * bl2))
+				draw_rect(br, Color(Pal.BAD, 0.5 + 0.4 * bl2), false, 2.0)
+		for ls in arena.lassos:
+			# la corde : se trace autour du joueur, puis reste serrée s'il est pris
+			var rope := Color("c9a25a")
+			if ls.held:
+				draw_arc(ls.pos, ls.r * 0.55, 0.0, TAU, 32, Pal.INK, 4.0)
+				draw_arc(ls.pos, ls.r * 0.55, 0.0, TAU, 32, rope, 2.0)
+				continue
+			var kl: float = 1.0 - float(ls.t) / float(ls.delay)
+			draw_arc(ls.pos, ls.r, 0.0, TAU, 40, Color(Pal.BAD, 0.2), 1.0)
+			draw_arc(ls.pos, ls.r, -PI / 2.0, -PI / 2.0 + kl * TAU, maxi(4, int(40 * kl)), Pal.INK, 4.0)
+			draw_arc(ls.pos, ls.r, -PI / 2.0, -PI / 2.0 + kl * TAU, maxi(4, int(40 * kl)), rope, 2.0)
+		for ring in arena.rings:
+			# le cercle se trace : la branche du compas tourne, le trait suit en clignotant
+			var kr: float = 1.0 - float(ring.t) / float(ring.delay)
+			var blink_r := 0.35 + 0.35 * sin(arena.elapsed * 30.0)
+			var end_a: float = float(ring.a0) + kr * TAU
+			draw_arc(ring.pos, ring.r, 0.0, TAU, 48, Color(Pal.BAD, 0.12), 1.0)
+			draw_arc(ring.pos, ring.r, ring.a0, end_a, maxi(4, int(48 * kr)), Color(Pal.BAD, blink_r), 3.0)
+			var tip: Vector2 = ring.pos + Vector2.from_angle(end_a) * float(ring.r)
+			draw_line(ring.pos, tip, Color(Pal.INK, 0.55), 2.0)
+			draw_circle(tip, 3.0, Color(Pal.BAD, 0.9))
 		for lb in arena.lobs:
 			var k: float = lb.t / lb.dur
 			draw_arc(lb.to, lb.r, 0.0, TAU, 24, Color(Pal.BAD, 0.4 + 0.4 * k), 1.0)
