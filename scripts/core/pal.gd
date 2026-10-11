@@ -5,13 +5,13 @@ extends RefCounted
 enum { NEUTRE, FEU, GLACE, FOUDRE, POISON, ARCANE, LUMIERE }
 const COUNT := 7
 
-const NAMES := ["Ombre", "Feu", "Glace", "Foudre", "Poison", "Arcane", "Lumière"]
-const COLOR_NAMES := ["Noir", "Rouge", "Bleu", "Jaune", "Vert", "Violet", "Blanc"]
+static var NAMES := ["Ombre", "Feu", "Glace", "Foudre", "Poison", "Arcane", "Lumière"]
+static var COLOR_NAMES := ["Noir", "Rouge", "Bleu", "Jaune", "Vert", "Violet", "Blanc"]
 const UNLOCK := ["", "pack_primaires", "pack_primaires", "pack_primaires", "pack_secondaires", "pack_secondaires", "pack_secondaires"]
 
 ## Bonus donné au perso par la couleur, et effet donné aux armes.
-const CHAR_BONUS := ["", "+Dégâts", "+Armure", "+Vit. d'attaque", "+Régénération", "+Vol de vie", "+Esquive"]
-const WEAPON_EFFECT := ["", "Brûlure", "Gel", "Chaîne d'éclairs", "Poison cumulable", "Marque arcanique", "Éclat de lumière"]
+static var CHAR_BONUS := ["", "+Dégâts", "+Armure", "+Vit. d'attaque", "+Régénération", "+Vol de vie", "+Esquive"]
+static var WEAPON_EFFECT := ["", "Brûlure", "Gel", "Chaîne d'éclairs", "Poison cumulable", "Marque arcanique", "Éclat de lumière"]
 
 ## 3 nuances par élément : sombre, normale, claire.
 ## 5 nuances par couleur : [foncé, principale, claire, TRÈS foncée, TRÈS claire]
@@ -42,8 +42,8 @@ const DISABLED := Color("6a5040")
 const GOOD := Color("7fd66a")
 const BAD := Color("f06a5d")
 const RARITY := [Color("c9c3b6"), Color("3a86ff"), Color("c071f0"), Color("f0a030")]   # commun gris, rare BLEU
-const RARITY_NAMES := ["Commun", "Rare", "Épique", "Légendaire"]
-const RARITY_NAMES_F := ["Commune", "Rare", "Épique", "Légendaire"]
+static var RARITY_NAMES := ["Commun", "Rare", "Épique", "Légendaire"]
+static var RARITY_NAMES_F := ["Commune", "Rare", "Épique", "Légendaire"]
 
 ## Cercle des faiblesses (cercle chromatique des peintres) : chaque couleur bat la suivante.
 ## Feu → Foudre → Poison → Glace → Arcane → Feu ; la Lumière et l'Ombre (le noir) se battent l'un l'autre.
@@ -90,12 +90,12 @@ static func weakness(att: int, def: int) -> float:
 ## Ligne d'infobulle : la couleur principale d'un dessin (cercle des faiblesses).
 static func color_line(frac: Array, need := 0.25) -> String:
 	var c := color_of(frac, need)
-	return "Couleur principale : " + (color_name(c) if c != 0 else "aucune")
+	return Loc.t("Couleur principale : ") + (color_name(c) if c != 0 else Loc.t("aucune"))
 
 
 ## Nom d'une couleur du cercle (« Ombre » pour NOIR).
 static func color_name(c: int) -> String:
-	return "Ombre" if c == NOIR else (NAMES[c] if c > 0 else "aucune")
+	return Loc.t("Ombre") if c == NOIR else (NAMES[c] if c > 0 else Loc.t("aucune"))
 
 
 

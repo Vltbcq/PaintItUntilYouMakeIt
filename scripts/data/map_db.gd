@@ -3,7 +3,7 @@ extends RefCounted
 ## Cartes (lieux d'une partie). Chaque carte a ses propres ennemis, ses boss et son décor.
 ## La 2e se débloque en gagnant une partie sur la 1re (Esquisse ou plus dur), la 3e en gagnant sur la 2e.
 
-const MAPS := {
+static var MAPS := {
 	1: {"name": "La Feuille", "floor": "paper",
 		"desc": "La page blanche du début : taches, gribouillis, ratures... et la Toile Blanche au bout.",
 		"bosses": {5: ["rature"], 10: ["critique", "muse"], 15: ["toile"]}},

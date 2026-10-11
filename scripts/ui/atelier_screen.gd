@@ -40,20 +40,20 @@ func _build() -> void:
 	# Enseigne + bocal de pigments
 	var sign := UI.panel(UI.WOOD, UI.GOLD, 2)
 	UI.put(self, sign, Vector2(12, 6), Vector2(150, 28))
-	UI.put(sign, UI.label("ATELIER", 20, UI.GOLD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 2), Vector2(150, 24))
+	UI.put(sign, UI.label(Loc.t("ATELIER"), 20, UI.GOLD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 2), Vector2(150, 24))
 	var jar := UI.panel(Color(0.9, 0.95, 1.0, 0.18), Color(0.85, 0.9, 1.0, 0.6), 1)
 	UI.put(self, jar, Vector2(470, 6), Vector2(158, 28))
-	UI.put(jar, UI.label("◆ %d pigments" % Meta.pigments(), 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 8), Vector2(158, 14))
+	UI.put(jar, UI.label(Loc.t("◆ %d pigments") % Meta.pigments(), 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 8), Vector2(158, 14))
 
 	_bench()
 	_board()
-	UI.put(self, UI.hotkey(UI.button("Retour", func(): done.emit(null)), [KEY_ESCAPE]), Vector2(12, 336), Vector2(80, 18))
+	UI.put(self, UI.hotkey(UI.button(Loc.t("Retour"), func(): done.emit(null)), [KEY_ESCAPE]), Vector2(12, 336), Vector2(80, 18))
 
 
 # ------------------------------------------------------------------ Établi (pigments)
 
 func _bench() -> void:
-	UI.put(self, UI.label("L'ÉTABLI", 10, UI.GOLD), Vector2(14, 42))
+	UI.put(self, UI.label(Loc.t("L'ÉTABLI"), 10, UI.GOLD), Vector2(14, 42))
 	# L'établi défile quand il y a trop d'améliorations pour la hauteur de l'écran
 	var sc := ScrollContainer.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -81,10 +81,10 @@ func _bench() -> void:
 		var id: String = d.id
 		var b: Button
 		if cost < 0:
-			b = UI.button("Acquis", func(): pass)
+			b = UI.button(Loc.t("Acquis"), func(): pass)
 			b.disabled = true
 		elif not Meta.buy_open(id):
-			b = UI.button("Verrouillé", func(): pass)
+			b = UI.button(Loc.t("Verrouillé"), func(): pass)
 			b.disabled = true
 			b.tooltip_text = _lock_reason(d)
 		else:
@@ -115,11 +115,11 @@ func _pot_color(id: String) -> Color:
 func _lock_reason(d: Dictionary) -> String:
 	var why := []
 	if int(Meta.data.get("best_wave", 0)) < int(d.get("best_wave", 0)):
-		why.append("Termine la vague %d (une fois suffit)." % int(d.best_wave))
+		why.append(Loc.t("Termine la vague %d (une fois suffit).") % int(d.best_wave))
 	if int(Meta.data.get("wins", 0)) < int(d.get("wins", 0)):
-		why.append("Gagne une partie.")
+		why.append(Loc.t("Gagne une partie."))
 	if d.has("req") and not Meta.has(String(d.req)):
-		why.append("Achète d'abord : " + UnlockDB.get_def(String(d.req)).name + ".")
+		why.append(Loc.t("Achète d'abord : ") + UnlockDB.get_def(String(d.req)).name + ".")
 	return "\n".join(why)
 
 
@@ -150,7 +150,7 @@ func _board() -> void:
 	for a in AchievementDB.LIST:
 		if Meta.achieved(a.id):
 			done_n += 1
-	UI.put(frame, UI.label("DÉFIS  %d / %d" % [done_n, AchievementDB.LIST.size()], 10, UI.WOOD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(310, 12))
+	UI.put(frame, UI.label(Loc.t("DÉFIS  %d / %d") % [done_n, AchievementDB.LIST.size()], 10, UI.WOOD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(310, 12))
 	var sc := ScrollContainer.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	UI.put(frame, sc, Vector2(6, 22), Vector2(298, 262))
@@ -172,7 +172,7 @@ func _note(a: Dictionary, i: int) -> Control:
 	var ok := Meta.achieved(a.id)
 	var reward: String = UnlockDB.get_def(a.unlock).name
 	var wait := ok and Meta.pending(a.id)   # obtenu pendant la partie en cours : arrive à la fin
-	var line := ("⌛ " + reward + " (fin de partie)") if wait else (("✓ " if ok else "→ ") + reward)
+	var line := ("⌛ " + reward + Loc.t(" (fin de partie)")) if wait else (("✓ " if ok else "→ ") + reward)
 	# La note prend la hauteur de son texte (rien ne dépasse ; le tableau défile)
 	var mh := func(t: String) -> float: return UI.font.get_multiline_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, 126, UI.fs(10)).y
 	var nh: float = mh.call(a.name)
@@ -201,7 +201,7 @@ func _note(a: Dictionary, i: int) -> Control:
 	pin.col = Color("f0a030") if wait else (PIN_ON if ok else PIN_OFF)
 	pin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UI.put(holder, pin, Vector2(64, 0), Vector2(12, 12))
-	holder.tooltip_text = "%s\n%s\nDébloque : %s\n%s" % [a.name, a.desc, reward, UnlockDB.get_def(a.unlock).desc]   # (lignes courtes : l'infobulle tient dans l'écran)
+	holder.tooltip_text = Loc.t("%s\n%s\nDébloque : %s\n%s") % [a.name, a.desc, reward, UnlockDB.get_def(a.unlock).desc]   # (lignes courtes : l'infobulle tient dans l'écran)
 	holder.mouse_filter = Control.MOUSE_FILTER_STOP
 	return holder
 

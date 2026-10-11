@@ -3,7 +3,7 @@ extends RefCounted
 ## Conseils : chacun n'apparaît qu'une fois. Il n'en reste que deux (fin de partie, Atelier) ;
 ## le réglage « tips » n'est plus dans les options (les tests s'en servent pour les couper).
 
-const TEXT := {
+static var TEXT := {
 	"end": ["Fin de partie",
 		"Tu gagnes des PIGMENTS ◆ à chaque partie, même en perdant.\n\nDépense-les dans l'ATELIER (menu principal) : nouvelles couleurs, plus d'encre, outils de dessin, effets animés..."],
 	"atelier": ["L'Atelier",
@@ -31,10 +31,10 @@ static func mark(id: String) -> void:
 static func show(parent: Control, id: String, pause_game := false) -> void:
 	if not enabled() or seen(id) or not TEXT.has(id):
 		return
-	var q: _TipOverlay = parent.get_node_or_null("TipOverlay")
+	var q: _TipOverlay = parent.get_node_or_null(Loc.t("TipOverlay"))
 	if q == null:
 		q = _TipOverlay.new()
-		q.name = "TipOverlay"
+		q.name = Loc.t("TipOverlay")
 		q.pause_game = pause_game
 		q.queue_tip(id)          # AVANT add_child : _ready affiche le premier conseil
 		parent.add_child(q)
@@ -103,15 +103,15 @@ class _TipOverlay extends Control:
 		var h := minf(340.0, 90.0 + text_h)
 		var p := UI.panel(Pal.BG, Pal.ACCENT, 2)
 		UI.put(box, p, Vector2((640 - w) / 2.0, (360 - h) / 2.0), Vector2(w, h))
-		UI.put(p, UI.label("CONSEIL", 10, Pal.DIM), Vector2(14, 8))
+		UI.put(p, UI.label(Loc.t("CONSEIL"), 10, Pal.DIM), Vector2(14, 8))
 		UI.put(p, UI.label(t[0], 20, Pal.ACCENT), Vector2(14, 20), Vector2(w - 28, 24))
 		UI.put(p, body, Vector2(14, 50), Vector2(w - 28, h - 96))
-		var ok := UI.hotkey(UI.button("Compris !", _next), [KEY_ENTER, KEY_KP_ENTER, KEY_SPACE, KEY_ESCAPE])
+		var ok := UI.hotkey(UI.button(Loc.t("Compris !"), _next), [KEY_ENTER, KEY_KP_ENTER, KEY_SPACE, KEY_ESCAPE])
 		UI.put(p, ok, Vector2(w - 124, h - 30), Vector2(110, 20))
-		var off := UI.button("Plus de conseils", func():
+		var off := UI.button(Loc.t("Plus de conseils"), func():
 			Meta.set_setting("tips", false)
 			queue.clear()
 			_next())
-		off.tooltip_text = "Réactivables dans les options"
+		off.tooltip_text = Loc.t("Réactivables dans les options")
 		UI.put(p, off, Vector2(14, h - 28), Vector2(120, 16))
 		Sfx.play("click")

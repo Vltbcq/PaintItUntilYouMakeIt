@@ -6,6 +6,7 @@
 # Godot : variable GODOT, sinon « godot » dans le PATH.
 cd "$(dirname "$0")/.." || exit 1
 GODOT="${GODOT:-godot}"
+export PAINTIT_LANG="${PAINTIT_LANG:-fr}"   # les tests lisent des textes français
 BASE="checkall selftest flowtest savetest"
 # Captures d'écran, bancs d'essai et simulations de réglage : jamais lancés automatiquement
 skip() { case $1 in *shot*|hotkeys|*capture*|weaponbench|latesim|goldsim|familiardps) return 0;; esac; return 1; }

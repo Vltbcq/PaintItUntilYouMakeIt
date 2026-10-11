@@ -56,9 +56,9 @@ func _ready() -> void:
 		held = entries.size() - 1
 		sel = held
 
-	var title: String = "Pose ton arme : %s" % WeaponDB.get_def(new_type).name if new_type != "" else "Range tes armes et amulettes"
+	var title: String = Loc.t("Pose ton arme : %s") % WeaponDB.get_def(new_type).name if new_type != "" else Loc.t("Range tes armes et amulettes")
 	UI.put(self, UI.label(title, 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(640, 24))
-	UI.put(self, UI.label("Clique une arme ou une amulette pour la prendre, reclique pour la poser.  R : tourner · M : miroir (pose au repos)",
+	UI.put(self, UI.label(Loc.t("Clique une arme ou une amulette pour la prendre, reclique pour la poser.  R : tourner · M : miroir (pose au repos)"),
 		10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 30), Vector2(640, 14))
 
 	var s := base.get_size()
@@ -76,9 +76,9 @@ func _ready() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 4)
 	UI.put(self, row, Vector2(370, 190), Vector2(260, 18))
-	row.add_child(UI.button("Tourner (R)", _rotate))
-	row.add_child(UI.button("Miroir (M)", _mirror))
-	ok_btn = UI.hotkey(UI.button("VALIDER →", _validate), [KEY_ENTER, KEY_KP_ENTER])
+	row.add_child(UI.button(Loc.t("Tourner (R)"), _rotate))
+	row.add_child(UI.button(Loc.t("Miroir (M)"), _mirror))
+	ok_btn = UI.hotkey(UI.button(Loc.t("VALIDER →"), _validate), [KEY_ENTER, KEY_KP_ENTER])
 	UI.put(self, ok_btn, Vector2(496, 330), Vector2(136, 18))
 	_update()
 
@@ -182,11 +182,11 @@ func _update() -> void:
 		var e: Dictionary = entries[sel]
 		if e.get("kind", "weapon") == "amulet":
 			var ad := AmuletDB.get_def(e.id)
-			txt = "%s (amulette)\n%s\n\n" % [ad.name, AmuletDB.describe(ad)]
+			txt = Loc.t("%s (amulette)\n%s\n\n") % [ad.name, AmuletDB.describe(ad)]
 		else:
 			var def := WeaponDB.get_def(e.type)
-			txt = "%s%s\n%s\n\n" % [def.name, " (nouvelle)" if e.idx < 0 else "", def.desc]
-	txt += "Chaque arme attaque l'ennemi le plus proche depuis l'endroit où elle est posée. C'est le côté droit du dessin qui vise."
+			txt = "%s%s\n%s\n\n" % [def.name, Loc.t(" (nouvelle)") if e.idx < 0 else "", def.desc]
+	txt += Loc.t("Chaque arme attaque l'ennemi le plus proche depuis l'endroit où elle est posée. C'est le côté droit du dessin qui vise.")
 	info.text = txt
 	view.queue_redraw()
 

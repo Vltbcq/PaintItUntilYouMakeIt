@@ -17,7 +17,7 @@ func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	UI.fill_bg(self)
-	var title := "REPRENDRE LA PARTIE ?" if mode == "resume" else "JOURNAL DE LA PARTIE"
+	var title := Loc.t("REPRENDRE LA PARTIE ?") if mode == "resume" else Loc.t("JOURNAL DE LA PARTIE")
 	UI.put(self, UI.label(title, 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(640, 24))
 
 	# --- Gauche : le perso, ses armes et amulettes
@@ -25,7 +25,7 @@ func _ready() -> void:
 	UI.put(self, pf, Vector2(12, 36), Vector2(120, 132))
 	if Run.character:
 		UI.put(pf, UI.thumb(Run.build_player_image(), Vector2(108, 120)), Vector2(6, 6), Vector2(108, 120))
-	var wl := UI.label("ARMES", 10, Pal.DIM)
+	var wl := UI.label(Loc.t("ARMES"), 10, Pal.DIM)
 	UI.put(self, wl, Vector2(12, 172))
 	var wx := 12.0
 	var wy := 186.0
@@ -39,7 +39,7 @@ func _ready() -> void:
 			wx = 12
 			wy += 33
 	var ay := wy + 38.0
-	UI.put(self, UI.label("AMULETTES", 10, Pal.DIM), Vector2(12, ay))
+	UI.put(self, UI.label(Loc.t("AMULETTES"), 10, Pal.DIM), Vector2(12, ay))
 	var ax := 12.0
 	ay += 14
 	for am in Run.amulets:
@@ -54,13 +54,13 @@ func _ready() -> void:
 			ay += 20
 
 	# --- Milieu : la partie + stats au début de la dernière vague
-	var info := "%s · %s\nVague %d / %d · Niveau %d\nOr : ● %d · PV %d / %d\nEnnemis tués : %d" % [
+	var info := Loc.t("%s · %s\nVague %d / %d · Niveau %d\nOr : ● %d · PV %d / %d\nEnnemis tués : %d") % [
 		MapDB.get_def(Run.map).name, Meta.DIFFICULTIES[Run.difficulty].name, Run.wave, Run.WAVES, Run.level,
 		Run.gold, ceili(Run.hp), int(Run.stats.get("max_hp", 0)), Run.kills]
 	var il := UI.label(info, 10, Pal.TEXT)
 	UI.put(self, il, Vector2(142, 36), Vector2(200, 56))
 	var sw := int(Run.wave_stats.get("wave", 0))
-	UI.put(self, UI.label("STATS AU DÉBUT DE LA VAGUE %d" % sw if sw > 0 else "STATS", 10, Pal.ACCENT), Vector2(142, 96))
+	UI.put(self, UI.label(Loc.t("STATS AU DÉBUT DE LA VAGUE %d") % sw if sw > 0 else Loc.t("STATS"), 10, Pal.ACCENT), Vector2(142, 96))
 	var sp := UI.panel()
 	UI.put(self, sp, Vector2(142, 110), Vector2(200, 214))
 	var st_txt := String(Run.wave_stats.get("text", Stats.describe_player(Run.stats)))
@@ -69,7 +69,7 @@ func _ready() -> void:
 	sl.set_text(st_txt)
 
 	# --- Droite : le journal (le plus récent en haut)
-	UI.put(self, UI.label("JOURNAL", 10, Pal.ACCENT), Vector2(352, 36))
+	UI.put(self, UI.label(Loc.t("JOURNAL"), 10, Pal.ACCENT), Vector2(352, 36))
 	var sc := ScrollContainer.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	UI.put(self, sc, Vector2(352, 50), Vector2(276, 274))
@@ -85,14 +85,14 @@ func _ready() -> void:
 		l.custom_minimum_size = Vector2(262, 0)
 		vb.add_child(l)
 	if entries.is_empty():
-		vb.add_child(UI.label("Rien pour l'instant.", 10, Pal.DIM))
+		vb.add_child(UI.label(Loc.t("Rien pour l'instant."), 10, Pal.DIM))
 
 	# --- Boutons
 	if mode == "resume":
-		UI.put(self, UI.hotkey(UI.button("Retour", func(): done.emit(false)), [KEY_ESCAPE]), Vector2(12, 334), Vector2(100, 18))
-		UI.put(self, UI.hotkey(UI.button("REPRENDRE →", func(): done.emit(true), 20), [KEY_ENTER, KEY_KP_ENTER]), Vector2(488, 330), Vector2(140, 24))
+		UI.put(self, UI.hotkey(UI.button(Loc.t("Retour"), func(): done.emit(false)), [KEY_ESCAPE]), Vector2(12, 334), Vector2(100, 18))
+		UI.put(self, UI.hotkey(UI.button(Loc.t("REPRENDRE →"), func(): done.emit(true), 20), [KEY_ENTER, KEY_KP_ENTER]), Vector2(488, 330), Vector2(140, 24))
 	else:
-		UI.put(self, UI.hotkey(UI.button("Fermer", func(): done.emit(false)), [KEY_ESCAPE, KEY_ENTER]), Vector2(270, 334), Vector2(100, 18))
+		UI.put(self, UI.hotkey(UI.button(Loc.t("Fermer"), func(): done.emit(false)), [KEY_ESCAPE, KEY_ENTER]), Vector2(270, 334), Vector2(100, 18))
 
 
 static func _col(kind: String) -> Color:

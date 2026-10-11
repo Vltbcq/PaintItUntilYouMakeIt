@@ -5,7 +5,7 @@ extends Control
 
 signal done(result)
 
-const KINDS := [
+static var KINDS := [
 	["all", "Tout"], ["character", "Persos"], ["melee", "Mêlée"], ["ranged", "Distance"], ["bullet", "Balles"],
 	["amulet", "Amulettes"], ["familiar", "Familiers"], ["enemy", "Ennemis"], ["boss", "Boss"],
 ]
@@ -28,18 +28,18 @@ func _build() -> void:
 	confirm = null
 	viewer = null
 	UI.fill_bg(self)
-	UI.put(self, UI.label("GALERIE", 20, Pal.ACCENT), Vector2(12, 8))
+	UI.put(self, UI.label(Loc.t("GALERIE"), 20, Pal.ACCENT), Vector2(12, 8))
 	# Partage avec d'autres joueurs : un .zip de dessins
-	var ib := UI.button("Importer…", func():
+	var ib := UI.button(Loc.t("Importer…"), func():
 		GalleryShare.pick_import(self, func(path: String):
 			var s := GalleryShare.open_import(self, path)
 			s.done.connect(func(ch): if ch: _build())))
-	ib.tooltip_text = "Ajouter des dessins reçus d'un ami (fichier .zip)"
+	ib.tooltip_text = Loc.t("Ajouter des dessins reçus d'un ami (fichier .zip)")
 	UI.put(self, ib, Vector2(456, 10), Vector2(84, 18))
-	var eb := UI.button("Exporter…", func():
+	var eb := UI.button(Loc.t("Exporter…"), func():
 		var s := GalleryShare.open_export(self)
 		s.done.connect(func(_ch): pass))
-	eb.tooltip_text = "Partager tes dessins : crée un fichier .zip à envoyer"
+	eb.tooltip_text = Loc.t("Partager tes dessins : crée un fichier .zip à envoyer")
 	eb.disabled = Meta.gallery("all").is_empty()
 	UI.put(self, eb, Vector2(544, 10), Vector2(84, 18))
 	var tabs := HBoxContainer.new()
@@ -51,7 +51,7 @@ func _build() -> void:
 			kind = kid
 			selected = {}
 			_build())
-		b.tooltip_text = "%d dessin(s)" % Meta.gallery(kid).size()
+		b.tooltip_text = Loc.t("%d dessin(s)") % Meta.gallery(kid).size()
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if kid == kind:
 			b.add_theme_stylebox_override("normal", UI.sb(UI.SELECTED, Pal.ACCENT, 1))
@@ -72,8 +72,7 @@ func _build() -> void:
 		var b := Button.new()
 		b.focus_mode = Control.FOCUS_NONE
 		b.custom_minimum_size = Vector2(52, 52)
-		b.tooltip_text = "Encre : %d
-Clique pour voir en grand" % Analyzer.ink_cost(img)
+		b.tooltip_text = Loc.t("Encre : %d\nClique pour voir en grand") % Analyzer.ink_cost(img)
 		b.add_theme_stylebox_override("normal", UI.sb(Pal.PAPER, Pal.BORDER, 1))
 		b.add_theme_stylebox_override("hover", UI.sb(Pal.PAPER, Pal.ACCENT, 2))
 		b.add_theme_stylebox_override("pressed", UI.sb(Pal.PAPER, Pal.ACCENT, 3))
@@ -86,10 +85,10 @@ Clique pour voir en grand" % Analyzer.ink_cost(img)
 			_view(entry))
 		grid.add_child(b)
 	if entries.is_empty():
-		UI.put(self, UI.label("Aucun dessin ici pour l'instant.", 10, Pal.DIM), Vector2(12, 64))
+		UI.put(self, UI.label(Loc.t("Aucun dessin ici pour l'instant."), 10, Pal.DIM), Vector2(12, 64))
 	else:
-		UI.put(self, UI.label("%d dessin%s · clique pour voir en grand" % [entries.size(), "s" if entries.size() > 1 else ""], 10, Pal.DIM, HORIZONTAL_ALIGNMENT_RIGHT), Vector2(228, 337), Vector2(400, 14))
-	UI.put(self, UI.hotkey(UI.button("Retour", func(): done.emit(null)), [KEY_ESCAPE]), Vector2(12, 334), Vector2(80, 18))
+		UI.put(self, UI.label(Loc.t("%d dessin%s · clique pour voir en grand") % [entries.size(), "s" if entries.size() > 1 else ""], 10, Pal.DIM, HORIZONTAL_ALIGNMENT_RIGHT), Vector2(228, 337), Vector2(400, 14))
+	UI.put(self, UI.hotkey(UI.button(Loc.t("Retour"), func(): done.emit(null)), [KEY_ESCAPE]), Vector2(12, 334), Vector2(80, 18))
 
 
 ## Un dessin en grand, avec ses infos et « Supprimer ».
@@ -115,29 +114,29 @@ func _view(e: Dictionary) -> void:
 	var t := Analyzer.trim(img)
 	var big := UI.thumb(Gfx.baked_outline(t) if e.get("outline", false) else t, Vector2(264, 224))
 	UI.put(fr, big, Vector2(8, 8), Vector2(264, 224))
-	var ob := UI.button("Bord : %s" % ("oui" if e.get("outline", false) else "non"), func(): pass)
-	ob.tooltip_text = "Contour noir quand tu réutilises ce dessin (touche C)"
+	var ob := UI.button(Loc.t("Bord : %s") % ("oui" if e.get("outline", false) else "non"), func(): pass)
+	ob.tooltip_text = Loc.t("Contour noir quand tu réutilises ce dessin (touche C)")
 	ob.pressed.connect(func():
 		Meta.gallery_set_outline(e, not e.get("outline", false))
-		ob.text = "Bord : %s" % ("oui" if e.outline else "non")
+		ob.text = Loc.t("Bord : %s") % (Loc.t("oui") if e.outline else Loc.t("non"))
 		big.texture = ImageTexture.create_from_image(Gfx.baked_outline(t) if e.outline else t)
 		Sfx.play("click"))
 	UI.hotkey(ob, [KEY_C])
 	UI.put(p, ob, Vector2(330, 8), Vector2(80, 14))
-	UI.put(p, UI.label("%d × %d px · encre %d" % [img.get_width(), img.get_height(), Analyzer.ink_cost(img)], 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 270), Vector2(420, 12))
+	UI.put(p, UI.label(Loc.t("%d × %d px · encre %d") % [img.get_width(), img.get_height(), Analyzer.ink_cost(img)], 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 270), Vector2(420, 12))
 	# À quoi ce dessin sert dans le Codex (dessin de base de...)
 	var uses := Meta.gallery_uses(img)
-	var ut := ("Dessin de base de : " + ", ".join(uses)) if not uses.is_empty() else "Pas utilisé comme dessin de base"
+	var ut := (Loc.t("Dessin de base de : ") + ", ".join(uses)) if not uses.is_empty() else Loc.t("Pas utilisé comme dessin de base")
 	var ul := UI.label(ut, 10, Pal.GOOD if not uses.is_empty() else Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER)
 	ul.clip_text = true
 	ul.tooltip_text = "\n".join(uses) if not uses.is_empty() else ""
 	ul.mouse_filter = Control.MOUSE_FILTER_STOP
 	UI.put(p, ul, Vector2(8, 285), Vector2(404, 12))
-	UI.put(p, UI.hotkey(UI.button("Fermer", func():
+	UI.put(p, UI.hotkey(UI.button(Loc.t("Fermer"), func():
 		viewer.queue_free()
 		viewer = null
 		selected = {}), [KEY_ESCAPE]), Vector2(90, 304), Vector2(110, 18))
-	UI.put(p, UI.hotkey(UI.button("Supprimer", _ask_delete), [KEY_DELETE]), Vector2(220, 304), Vector2(110, 18))
+	UI.put(p, UI.hotkey(UI.button(Loc.t("Supprimer"), _ask_delete), [KEY_DELETE]), Vector2(220, 304), Vector2(110, 18))
 
 
 func _ask_delete() -> void:
@@ -150,17 +149,17 @@ func _ask_delete() -> void:
 	UI.fill_bg(confirm, Color(0, 0, 0, 0.6))
 	var p := UI.panel(Pal.BG, Pal.BAD, 2)
 	UI.put(confirm, p, Vector2(170, 110), Vector2(300, 140))
-	UI.put(p, UI.label("Supprimer ce dessin ?", 20, Pal.BAD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 10), Vector2(300, 24))
+	UI.put(p, UI.label(Loc.t("Supprimer ce dessin ?"), 20, Pal.BAD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 10), Vector2(300, 24))
 	var img := Meta.gallery_image(selected)
 	if img:
 		var bg := UI.panel(Pal.PAPER, Pal.BORDER, 1)
 		UI.put(p, bg, Vector2(126, 40), Vector2(48, 48))
 		UI.put(bg, UI.thumb(img, Vector2(44, 44)), Vector2(2, 2), Vector2(44, 44))
-	UI.put(p, UI.label("Il disparaîtra définitivement de ta galerie.", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 94), Vector2(300, 12))
-	UI.put(p, UI.hotkey(UI.button("Garder", func():
+	UI.put(p, UI.label(Loc.t("Il disparaîtra définitivement de ta galerie."), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 94), Vector2(300, 12))
+	UI.put(p, UI.hotkey(UI.button(Loc.t("Garder"), func():
 		confirm.queue_free()
 		confirm = null), [KEY_ESCAPE]), Vector2(40, 112), Vector2(100, 18))
-	UI.put(p, UI.button("Supprimer", func():
+	UI.put(p, UI.button(Loc.t("Supprimer"), func():
 		Meta.remove_from_gallery(selected)
 		Sfx.play("explode")
 		selected = {}

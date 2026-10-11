@@ -6,7 +6,7 @@ extends Control
 
 signal done(result)
 
-const TABS := [["resume", "Résumé"], ["parties", "Parties"], ["objets", "Objets"], ["dessins", "Dessins"]]
+static var TABS := [["resume", "Résumé"], ["parties", "Parties"], ["objets", "Objets"], ["dessins", "Dessins"]]
 const LAST := 30   # parties montrées sur les courbes
 
 var tab := "resume"
@@ -23,7 +23,7 @@ func _build() -> void:
 	for c in get_children():
 		c.queue_free()
 	UI.fill_bg(self)
-	UI.put(self, UI.label("STATISTIQUES", 20, Pal.ACCENT), Vector2(12, 8))
+	UI.put(self, UI.label(Loc.t("STATISTIQUES"), 20, Pal.ACCENT), Vector2(12, 8))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 3)
 	UI.put(self, row, Vector2(200, 12), Vector2(420, 16))
@@ -44,7 +44,7 @@ func _build() -> void:
 			_objets()
 		"dessins":
 			_dessins()
-	UI.put(self, UI.hotkey(UI.button("Retour", func(): done.emit(null)), [KEY_ESCAPE]), Vector2(12, 336), Vector2(80, 18))
+	UI.put(self, UI.hotkey(UI.button(Loc.t("Retour"), func(): done.emit(null)), [KEY_ESCAPE]), Vector2(12, 336), Vector2(80, 18))
 
 
 # ------------------------------------------------------------------ Résumé
@@ -55,28 +55,28 @@ func _resume() -> void:
 	var runs := int(d.get("runs", 0))
 	var wins := int(d.get("wins", 0))
 	var lines := [
-		["Parties jouées", str(runs)],
-		["Victoires", "%d  (%d %%)" % [wins, roundi(100.0 * wins / maxf(1.0, runs))]],
-		["Temps de jeu", _duration(float(d.get("play_time", 0.0)))],
-		["Ennemis tués", _big(int(d.get("total_kills", 0)))],
-		["Élites tuées", _big(int(d.get("total_elites", 0)))],
-		["Boss vaincus", _big(int(c.get("bosses", 0)))],
-		["Dégâts infligés", _big(int(c.get("damage", 0)))],
-		["Or ramassé", _big(int(c.get("gold_earned", 0)))],
-		["Or dépensé", _big(int(c.get("gold_spent", 0)))],
-		["Record de vague", str(mini(int(d.get("best_wave", 0)), Run.WAVES))],
-		["Record en mode infini", ("vague %d" % int(d.best_endless)) if int(d.get("best_endless", 0)) > 0 else "—"],
+		[Loc.t("Parties jouées"), str(runs)],
+		[Loc.t("Victoires"), "%d  (%d %%)" % [wins, roundi(100.0 * wins / maxf(1.0, runs))]],
+		[Loc.t("Temps de jeu"), _duration(float(d.get("play_time", 0.0)))],
+		[Loc.t("Ennemis tués"), _big(int(d.get("total_kills", 0)))],
+		[Loc.t("Élites tuées"), _big(int(d.get("total_elites", 0)))],
+		[Loc.t("Boss vaincus"), _big(int(c.get("bosses", 0)))],
+		[Loc.t("Dégâts infligés"), _big(int(c.get("damage", 0)))],
+		[Loc.t("Or ramassé"), _big(int(c.get("gold_earned", 0)))],
+		[Loc.t("Or dépensé"), _big(int(c.get("gold_spent", 0)))],
+		[Loc.t("Record de vague"), str(mini(int(d.get("best_wave", 0)), Run.WAVES))],
+		[Loc.t("Record en mode infini"), (Loc.t("vague %d") % int(d.best_endless)) if int(d.get("best_endless", 0)) > 0 else "—"],
 	]
 	var p := UI.panel()
 	UI.put(self, p, Vector2(12, 40), Vector2(290, 290))
-	UI.put(p, UI.label("TOUTES PARTIES", 10, Pal.ACCENT), Vector2(10, 8))
+	UI.put(p, UI.label(Loc.t("TOUTES PARTIES"), 10, Pal.ACCENT), Vector2(10, 8))
 	for i in lines.size():
 		UI.put(p, UI.label(lines[i][0], 10, Pal.DIM), Vector2(10, 28 + i * 22), Vector2(150, 12))
 		UI.put(p, UI.label(lines[i][1], 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_RIGHT), Vector2(150, 28 + i * 22), Vector2(130, 12))
 	# Par difficulté : parties, victoires, et une barre du % de victoire
 	var q := UI.panel()
 	UI.put(self, q, Vector2(310, 40), Vector2(318, 290))
-	UI.put(q, UI.label("PAR DIFFICULTÉ", 10, Pal.ACCENT), Vector2(10, 8))
+	UI.put(q, UI.label(Loc.t("PAR DIFFICULTÉ"), 10, Pal.ACCENT), Vector2(10, 8))
 	if history.is_empty():
 		_empty(q, Vector2(318, 290))
 		return
@@ -85,7 +85,7 @@ func _resume() -> void:
 		var won := played.filter(func(h): return bool(h.win))
 		var y := 34 + i * 50
 		UI.put(q, UI.label(Meta.DIFFICULTIES[i].name, 10, Pal.TEXT), Vector2(10, y), Vector2(120, 12))
-		UI.put(q, UI.label("%d parties · %d victoires" % [played.size(), won.size()], 10, Pal.DIM, HORIZONTAL_ALIGNMENT_RIGHT), Vector2(120, y), Vector2(188, 12))
+		UI.put(q, UI.label(Loc.t("%d parties · %d victoires") % [played.size(), won.size()], 10, Pal.DIM, HORIZONTAL_ALIGNMENT_RIGHT), Vector2(120, y), Vector2(188, 12))
 		var rate := float(won.size()) / maxf(1.0, played.size())
 		var bar := _Bars.new()
 		bar.values = [rate]
@@ -94,7 +94,7 @@ func _resume() -> void:
 		bar.horizontal = true
 		bar.labels = ["%d %%" % roundi(rate * 100.0) if not played.is_empty() else "—"]
 		UI.put(q, bar, Vector2(10, y + 16), Vector2(298, 14))
-	UI.put(q, UI.label("(fiches de parties depuis la v0.9)", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 270), Vector2(318, 12))
+	UI.put(q, UI.label(Loc.t("(fiches de parties depuis la v0.9)"), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 270), Vector2(318, 12))
 
 
 # ------------------------------------------------------------------ Parties
@@ -102,9 +102,9 @@ func _resume() -> void:
 func _parties() -> void:
 	var last := history.slice(maxi(0, history.size() - LAST))
 	var specs := [
-		["VAGUE ATTEINTE (%d dernières parties)" % LAST, "wave", "line"],
-		["ENNEMIS TUÉS PAR PARTIE", "kills", "bars"],
-		["DÉGÂTS INFLIGÉS PAR PARTIE", "damage", "bars"],
+		[Loc.t("VAGUE ATTEINTE (%d dernières parties)") % LAST, "wave", "line"],
+		[Loc.t("ENNEMIS TUÉS PAR PARTIE"), "kills", "bars"],
+		[Loc.t("DÉGÂTS INFLIGÉS PAR PARTIE"), "damage", "bars"],
 	]
 	for i in specs.size():
 		var p := UI.panel()
@@ -125,13 +125,13 @@ func _parties() -> void:
 		ch.cols = last.map(func(h): return Pal.GOOD if bool(h.win) else Pal.BAD)
 		ch.goal = float(Run.WAVES) if ch.line else -1.0
 		UI.put(p, ch, Vector2(10, 22), Vector2(596, 62))
-	UI.put(self, UI.label("vert = victoire · rouge = défaite", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_RIGHT), Vector2(300, 338), Vector2(328, 12))
+	UI.put(self, UI.label(Loc.t("vert = victoire · rouge = défaite"), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_RIGHT), Vector2(300, 338), Vector2(328, 12))
 
 
 # ------------------------------------------------------------------ Objets favoris
 
 func _objets() -> void:
-	var cols := [["ARMES", "weapons"], ["AMULETTES", "amulets"], ["FAMILIERS", "familiars"]]
+	var cols := [[Loc.t("ARMES"), "weapons"], [Loc.t("AMULETTES"), "amulets"], [Loc.t("FAMILIERS"), "familiars"]]
 	for i in cols.size():
 		var p := UI.panel()
 		UI.put(self, p, Vector2(12 + i * 206, 40), Vector2(200, 290))
@@ -151,7 +151,7 @@ func _objets() -> void:
 		ids.sort_custom(func(a, b): return int(n[a]) > int(n[b]))
 		ids = ids.slice(0, 9)
 		if ids.is_empty():
-			UI.put(p, UI.label("Aucun pour l'instant.", 10, Pal.DIM), Vector2(10, 30))
+			UI.put(p, UI.label(Loc.t("Aucun pour l'instant."), 10, Pal.DIM), Vector2(10, 30))
 			continue
 		var top := float(n[ids[0]])
 		for k in ids.size():
@@ -165,7 +165,7 @@ func _objets() -> void:
 			bar.horizontal = true
 			bar.labels = ["%d · %d %% V" % [int(n[id]), roundi(100.0 * int(w.get(id, 0)) / float(n[id]))]]
 			UI.put(p, bar, Vector2(10, y + 13), Vector2(180, 11))
-	UI.put(self, UI.label("parties avec l'objet · % de victoires", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_RIGHT), Vector2(300, 338), Vector2(328, 12))
+	UI.put(self, UI.label(Loc.t("parties avec l'objet · % de victoires"), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_RIGHT), Vector2(300, 338), Vector2(328, 12))
 
 
 func _item_name(kind: String, id: String) -> String:
@@ -195,7 +195,7 @@ func _dessins() -> void:
 			px[k] += float(fr[k]) * float(a.get("pixels", 0))
 	var p := UI.panel()
 	UI.put(self, p, Vector2(12, 40), Vector2(330, 290))
-	UI.put(p, UI.label("COULEURS DE TES DESSINS", 10, Pal.ACCENT), Vector2(10, 8))
+	UI.put(p, UI.label(Loc.t("COULEURS DE TES DESSINS"), 10, Pal.ACCENT), Vector2(10, 8))
 	var total: float = 0.0
 	for v in px:
 		total += v
@@ -215,22 +215,22 @@ func _dessins() -> void:
 	# Chiffres et l'ennemi qui t'a le plus effacé
 	var q := UI.panel()
 	UI.put(self, q, Vector2(350, 40), Vector2(278, 290))
-	UI.put(q, UI.label("TES DESSINS", 10, Pal.ACCENT), Vector2(10, 8))
+	UI.put(q, UI.label(Loc.t("TES DESSINS"), 10, Pal.ACCENT), Vector2(10, 8))
 	var facts := [
-		["Pixels peints", _big(int(Meta.data.get("pixels_painted", 0)))],
-		["Dessins en galerie", str(entries.size())],
+		[Loc.t("Pixels peints"), _big(int(Meta.data.get("pixels_painted", 0)))],
+		[Loc.t("Dessins en galerie"), str(entries.size())],
 	]
 	for i in facts.size():
 		UI.put(q, UI.label(facts[i][0], 10, Pal.DIM), Vector2(10, 28 + i * 22), Vector2(150, 12))
 		UI.put(q, UI.label(facts[i][1], 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_RIGHT), Vector2(150, 28 + i * 22), Vector2(118, 12))
-	UI.put(q, UI.label("TON PIRE ENNEMI", 10, Pal.ACCENT), Vector2(10, 90))
+	UI.put(q, UI.label(Loc.t("TON PIRE ENNEMI"), 10, Pal.ACCENT), Vector2(10, 90))
 	var k_n := {}
 	for h in history:
 		var kid := String(h.get("killer", ""))
 		if kid != "":
 			k_n[kid] = int(k_n.get(kid, 0)) + 1
 	if k_n.is_empty():
-		UI.put(q, UI.label("Personne ne t'a encore effacé.", 10, Pal.DIM), Vector2(10, 110), Vector2(258, 12))
+		UI.put(q, UI.label(Loc.t("Personne ne t'a encore effacé."), 10, Pal.DIM), Vector2(10, 110), Vector2(258, 12))
 		return
 	var worst: String = k_n.keys()[0]
 	for kid in k_n:
@@ -242,13 +242,13 @@ func _dessins() -> void:
 	var img: Image = Analyzer.trim(art.image) if art != null else Gfx.icon(Gfx.ICON_UNKNOWN)
 	UI.put(fr, UI.thumb(img, Vector2(76, 76)), Vector2(4, 4), Vector2(76, 76))
 	UI.put(q, UI.label(String(EnemyDB.get_def(worst).get("name", worst)), 20, Pal.BAD), Vector2(104, 120), Vector2(164, 24))
-	UI.put(q, UI.label("t'a effacé %d fois" % int(k_n[worst]), 10, Pal.TEXT), Vector2(104, 150), Vector2(164, 12))
+	UI.put(q, UI.label(Loc.t("t'a effacé %d fois") % int(k_n[worst]), 10, Pal.TEXT), Vector2(104, 150), Vector2(164, 12))
 
 
 # ------------------------------------------------------------------ Outils
 
 func _empty(parent: Control, size: Vector2) -> void:
-	UI.put(parent, UI.label("Joue une partie pour voir tes statistiques ici.", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, size.y / 2.0 - 6), Vector2(size.x, 12))
+	UI.put(parent, UI.label(Loc.t("Joue une partie pour voir tes statistiques ici."), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, size.y / 2.0 - 6), Vector2(size.x, 12))
 
 
 static func _big(n: int) -> String:
@@ -262,7 +262,7 @@ static func _big(n: int) -> String:
 
 static func _duration(sec: float) -> String:
 	var m := int(sec / 60.0)
-	return "%d h %02d" % [m / 60, m % 60] if m >= 60 else "%d min" % m
+	return "%d h %02d" % [m / 60, m % 60] if m >= 60 else Loc.t("%d min") % m
 
 
 ## Barres (verticales ou horizontales) ou courbe à points.

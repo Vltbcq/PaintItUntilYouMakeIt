@@ -6,7 +6,7 @@ extends Control
 
 signal done(result)
 
-const TOOLS := [
+static var TOOLS := [
 	["brush", "Pinceau", "", KEY_B],
 	["eraser", "Gomme", "", KEY_E],
 	["line", "Ligne", "tool_line", KEY_L],
@@ -136,47 +136,47 @@ func _build_ui() -> void:
 		var id: String = t[0]
 		var tip := "%s (%s)" % [t[1], OS.get_keycode_string(t[3])]
 		if id == "select":
-			tip = "Sélection (S) : trace un rectangle, glisse-le pour le déplacer,\nSuppr pour l'effacer, clic à côté (ou clic droit) pour le poser"
+			tip = Loc.t("Sélection (S) : trace un rectangle, glisse-le pour le déplacer,\nSuppr pour l'effacer, clic à côté (ou clic droit) pour le poser")
 		var b := _icon_button(icon_of[id], tip, func(): _set_tool(id))
 		tool_btns[id] = b
 		tools[id] = b
-	_tool_row(left, "DESSINER", ["brush", "eraser", "fill", "select"].filter(func(k): return tools.has(k)).map(func(k): return tools[k]))
-	_tool_row(left, "FORMES", ["line", "rect", "ellipse", "triangle"].filter(func(k): return tools.has(k)).map(func(k): return tools[k]))
+	_tool_row(left, Loc.t("DESSINER"), ["brush", "eraser", "fill", "select"].filter(func(k): return tools.has(k)).map(func(k): return tools[k]))
+	_tool_row(left, Loc.t("FORMES"), ["line", "rect", "ellipse", "triangle"].filter(func(k): return tools.has(k)).map(func(k): return tools[k]))
 	var sizes := []
 	if Meta.has("tool_big"):
 		for n in [1, 2, 3]:
 			var sz: int = n
-			var b := _icon_button("taille%d" % n, "Taille du pinceau : %d pixel%s" % [n, "s" if n > 1 else ""], func(): _set_brush(sz))
+			var b := _icon_button("taille%d" % n, Loc.t("Taille du pinceau : %d pixel%s") % [n, "s" if n > 1 else ""], func(): _set_brush(sz))
 			size_btns[n] = b
 			sizes.append(b)
-	_tool_row(left, "TAILLE", sizes)
+	_tool_row(left, Loc.t("TAILLE"), sizes)
 	var opts := []
 	if Meta.has("tool_mirror"):
-		toggle_btns.mirror = _icon_button("symetrie", "Symétrie : ce que tu dessines d'un côté se dessine aussi de l'autre", func(): _toggle("mirror"))
+		toggle_btns.mirror = _icon_button("symetrie", Loc.t("Symétrie : ce que tu dessines d'un côté se dessine aussi de l'autre"), func(): _toggle("mirror"))
 		opts.append(toggle_btns.mirror)
 	if Meta.has("tool_mirror_h"):
-		toggle_btns.mirror_h = _icon_button("symetrie_h", "Symétrie haut / bas (H) : ce que tu dessines en haut se dessine aussi en bas", func(): _toggle("mirror_h"))
+		toggle_btns.mirror_h = _icon_button("symetrie_h", Loc.t("Symétrie haut / bas (H) : ce que tu dessines en haut se dessine aussi en bas"), func(): _toggle("mirror_h"))
 		opts.append(toggle_btns.mirror_h)
 	if Meta.has("gradient"):
-		toggle_btns.gradient = _icon_button("degrade", "Dégradé (G) : chaque trait passe de la couleur de début à celle de fin,\nsur toute sa longueur (choisis-les avec les pastilles Début / Fin)", func(): _toggle("gradient"))
+		toggle_btns.gradient = _icon_button("degrade", Loc.t("Dégradé (G) : chaque trait passe de la couleur de début à celle de fin,\nsur toute sa longueur (choisis-les avec les pastilles Début / Fin)"), func(): _toggle("gradient"))
 		opts.append(toggle_btns.gradient)
-	_tool_row(left, "OPTIONS", opts)
+	_tool_row(left, Loc.t("OPTIONS"), opts)
 	# Défaire / refaire à gauche, tout effacer à part, à droite
 	var hist := HBoxContainer.new()
 	hist.add_theme_constant_override("separation", 2)
-	hist.add_child(_icon_button("defaire", "Défaire (Ctrl+Z)", _undo))
-	hist.add_child(_icon_button("refaire", "Refaire (Ctrl+Y)", _redo))
+	hist.add_child(_icon_button("defaire", Loc.t("Défaire (Ctrl+Z)"), _undo))
+	hist.add_child(_icon_button("refaire", Loc.t("Refaire (Ctrl+Y)"), _redo))
 	var gap := Control.new()
 	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hist.add_child(gap)
-	hist.add_child(_icon_button("effacer", "Tout effacer (se défait avec Ctrl+Z)", _clear))
+	hist.add_child(_icon_button("effacer", Loc.t("Tout effacer (se défait avec Ctrl+Z)"), _clear))
 	var sep := Control.new()
 	sep.custom_minimum_size.y = 3
 	left.add_child(sep)
 	left.add_child(hist)
 	var fxs := Meta.effects()
 	if fxs.size() > 1:
-		left.add_child(UI.label("EFFET (-15% encre)", 10, Pal.DIM))
+		left.add_child(UI.label(Loc.t("EFFET (-15% encre)"), 10, Pal.DIM))
 		for f in fxs:
 			var fid: String = f
 			var b := UI.button(Stats.EFFECT_NAMES[f], func(): _set_effect(fid))
@@ -202,10 +202,10 @@ func _build_ui() -> void:
 	# Sélection levée : « Tourner » (R) et « Miroir » (F), posés sur la toile tant qu'elle est levée
 	sel_bar = HBoxContainer.new()
 	sel_bar.add_theme_constant_override("separation", 2)
-	var rot_b := UI.button("Tourner (R)", func(): _sel_transform("rot"))
-	rot_b.tooltip_text = "Tourner la sélection d'un quart de tour"
-	var flip_b := UI.button("Miroir (F)", func(): _sel_transform("flip"))
-	flip_b.tooltip_text = "Retourner la sélection en miroir"
+	var rot_b := UI.button(Loc.t("Tourner (R)"), func(): _sel_transform("rot"))
+	rot_b.tooltip_text = Loc.t("Tourner la sélection d'un quart de tour")
+	var flip_b := UI.button(Loc.t("Miroir (F)"), func(): _sel_transform("flip"))
+	flip_b.tooltip_text = Loc.t("Retourner la sélection en miroir")
 	sel_bar.add_child(rot_b)
 	sel_bar.add_child(flip_b)
 	UI.put(self, sel_bar, vpos + Vector2(2, vs.y - 18), Vector2(150, 16))
@@ -217,7 +217,7 @@ func _build_ui() -> void:
 	UI.put(self, warn_label, Vector2(134, 346), Vector2(284, 12))
 
 	# --- Couleurs + aperçu (droite)
-	UI.put(self, UI.label("COULEURS", 10, Pal.DIM), Vector2(426, 62))
+	UI.put(self, UI.label(Loc.t("COULEURS"), 10, Pal.DIM), Vector2(426, 62))
 	var els := Meta.elements()
 	for i in els.size():
 		var e: int = els[i]
@@ -230,7 +230,7 @@ func _build_ui() -> void:
 	# Dégradé : 2 pastilles. On clique l'une, puis une couleur de la palette pour la changer.
 	for k in 2:
 		var chip := _GradChip.new(self, k)
-		chip.tooltip_text = ["Début du dégradé : clique-moi, puis une couleur", "Fin du dégradé : clique-moi, puis une couleur"][k]
+		chip.tooltip_text = [Loc.t("Début du dégradé : clique-moi, puis une couleur"), Loc.t("Fin du dégradé : clique-moi, puis une couleur")][k]
 		UI.put(self, chip, Vector2(426 + k * 64, 125), Vector2(60, 14))
 		grad_chips.append(chip)
 
@@ -248,10 +248,10 @@ func _build_ui() -> void:
 	preview_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UI.put(pv, preview_rect, Vector2(2, 2), Vector2(70, 58))
 	outline_btn = UI.button("", _toggle_outline)
-	outline_btn.tooltip_text = "Contour noir autour du dessin en jeu (touche C)"
+	outline_btn.tooltip_text = Loc.t("Contour noir autour du dessin en jeu (touche C)")
 	# (plus large que l'aperçu vers la GAUCHE : à 74 px le texte l'élargissait et il dépassait à droite)
 	UI.put(self, outline_btn, Vector2(550, 126), Vector2(82, 14))
-	UI.put(self, UI.label("APERÇU", 10, Pal.DIM), Vector2(426, 144))
+	UI.put(self, UI.label(Loc.t("APERÇU"), 10, Pal.DIM), Vector2(426, 144))
 	stats_label = StatText.new(2)   # icônes des stats (le nom au survol)
 	var with_color: bool = cfg.kind in ["character", "melee", "ranged", "bullet", "amulet", "familiar", "enemy", "boss"]
 	UI.put(self, stats_label, Vector2(426, 161), Vector2(124 if with_color else 206, 147))
@@ -271,15 +271,15 @@ func _build_ui() -> void:
 		_build_body_preview()
 
 	var bx := 426.0
-	if cfg.get("gallery", "") != "" and cfg.get("cancel_label", "") != "< Choix":
+	if cfg.get("gallery", "") != "" and cfg.get("cancel_label", "") != Loc.t("< Choix"):
 		# (avec « < Choix », l'écran de choix montre déjà la galerie : pas de doublon ici)
-		UI.put(self, UI.button("Galerie", _open_gallery), Vector2(bx, 318), Vector2(66, 16))
+		UI.put(self, UI.button(Loc.t("Galerie"), _open_gallery), Vector2(bx, 318), Vector2(66, 16))
 		bx += 70
 	if cfg.get("random", false):
-		UI.put(self, UI.button("Au hasard", _random_monster), Vector2(bx, 318), Vector2(66, 16))
+		UI.put(self, UI.button(Loc.t("Au hasard"), _random_monster), Vector2(bx, 318), Vector2(66, 16))
 	if cfg.get("cancel", false):
-		UI.put(self, UI.hotkey(UI.button(cfg.get("cancel_label", "Retour"), func(): done.emit(null)), [KEY_ESCAPE]), Vector2(426, 338), Vector2(66, 16))
-	UI.put(self, UI.hotkey(UI.button("VALIDER →", _validate), [KEY_ENTER, KEY_KP_ENTER]), Vector2(496, 338), Vector2(136, 16))
+		UI.put(self, UI.hotkey(UI.button(cfg.get("cancel_label", Loc.t("Retour")), func(): done.emit(null)), [KEY_ESCAPE]), Vector2(426, 338), Vector2(66, 16))
+	UI.put(self, UI.hotkey(UI.button(Loc.t("VALIDER →"), _validate), [KEY_ENTER, KEY_KP_ENTER]), Vector2(496, 338), Vector2(136, 16))
 	_refresh_buttons()
 
 
@@ -311,7 +311,7 @@ class _GradChip extends Control:
 		var c: Color = ds.col_a if k == 0 else ds.col_b
 		draw_rect(Rect2(Vector2.ZERO, size), Pal.INK)
 		draw_rect(Rect2(1, 1, 12, size.y - 2), c)
-		draw_string(UI.font, Vector2(16, size.y - 3), "Début" if k == 0 else "Fin", HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Pal.ACCENT if on else Pal.DIM)
+		draw_string(UI.font, Vector2(16, size.y - 3), Loc.t("Début") if k == 0 else Loc.t("Fin"), HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Pal.ACCENT if on else Pal.DIM)
 		if on:
 			draw_rect(Rect2(Vector2.ZERO, size), Pal.ACCENT, false, 1.0)
 
@@ -323,7 +323,7 @@ class _Swatch extends Control:
 	func _init(c: Color, s: DrawScreen) -> void:
 		color = c
 		ds = s
-		tooltip_text = "Clic : choisir cette couleur (en dégradé : pour la pastille active)"
+		tooltip_text = Loc.t("Clic : choisir cette couleur (en dégradé : pour la pastille active)")
 
 	func _gui_input(ev: InputEvent) -> void:
 		if ev is InputEventMouseButton and ev.pressed:
@@ -361,9 +361,9 @@ func _draw_ink_bar() -> void:
 	if mi > 0:
 		var mx := 1 + (w - 2) * float(mi) / budget
 		ink_bar.draw_rect(Rect2(mx, 0, 2, 12), Pal.GOOD if used >= mi else Pal.BAD)
-	var txt := "ENCRE  %d / %d  · contours seulement" % [used, eb]
+	var txt := Loc.t("ENCRE  %d / %d  · contours seulement") % [used, eb]
 	if mi > 0:
-		txt = "ENCRE  %d / %d   (minimum %d)" % [used, eb, mi]
+		txt = Loc.t("ENCRE  %d / %d   (minimum %d)") % [used, eb, mi]
 	ink_bar.draw_string(UI.font, Vector2(0, 10), txt, HORIZONTAL_ALIGNMENT_CENTER, w, UI.fs(10), Pal.TEXT)
 
 
@@ -382,7 +382,7 @@ func _refresh_buttons() -> void:
 		_mark(fx_btns[f], f == effect)
 	_hint()
 	if outline_btn:
-		outline_btn.text = "Bord : %s" % ("oui" if outline else "non")
+		outline_btn.text = Loc.t("Bord : %s") % (Loc.t("oui") if outline else Loc.t("non"))
 		_mark(outline_btn, outline)
 	for sw in swatches:
 		sw.queue_redraw()
@@ -448,7 +448,7 @@ func _build_body_preview() -> void:
 	body_view.clip_contents = true
 	UI.put(self, body_view, Vector2(426, 158), Vector2(206, 154))
 	view_btn = UI.button("", _toggle_body_view)
-	view_btn.tooltip_text = "Touche V"
+	view_btn.tooltip_text = Loc.t("Touche V")
 	UI.put(self, view_btn, Vector2(502, 142), Vector2(130, 14))
 
 	var comp := Run.build_player_image()
@@ -502,7 +502,7 @@ func _set_body_view(on: bool) -> void:
 	stats_label.visible = not on
 	if color_box:
 		color_box.visible = not on
-	view_btn.text = "Voir : les stats" if on else "Voir : sur le perso"
+	view_btn.text = Loc.t("Voir : les stats") if on else Loc.t("Voir : sur le perso")
 
 
 func _toggle_outline() -> void:
@@ -526,12 +526,12 @@ func _set_effect(f: String) -> void:
 	effect = f
 	if used > eff_budget():
 		effect = old
-		_warn("Trop d'encre utilisée pour cet effet !")
+		_warn(Loc.t("Trop d'encre utilisée pour cet effet !"))
 	_refresh_buttons()
 	_changed()
 
 
-const INK_HINT := "Seuls les contours comptent dans l'encre utilisée"
+static var INK_HINT := "Seuls les contours comptent dans l'encre utilisée"
 
 
 ## La ligne d'aide sous la toile : ce que fait l'effet choisi sur CE dessin (en doré), sinon le
@@ -843,11 +843,11 @@ func _flood(start: Vector2i) -> void:
 	var cost := Analyzer.ink_cost(img)
 	if cost > eff_budget():
 		img.copy_from(backup)
-		_warn("Pas assez d'encre : la zone n'est pas fermée ?")
+		_warn(Loc.t("Pas assez d'encre : la zone n'est pas fermée ?"))
 	else:
 		if cost < used:
 			# remplir un trou fait disparaître son contour intérieur : on le dit, sinon ça surprend
-			_warn("Contour intérieur rempli : −%d encre" % (used - cost))
+			_warn(Loc.t("Contour intérieur rempli : −%d encre") % (used - cost))
 		used = cost
 
 
@@ -865,7 +865,7 @@ func _push_undo() -> void:
 func _undo() -> void:
 	_sel_commit()
 	if undo_stack.is_empty():
-		_warn("Rien à défaire")
+		_warn(Loc.t("Rien à défaire"))
 		return
 	redo_stack.append(img.duplicate())
 	img.copy_from(undo_stack.pop_back())
@@ -917,7 +917,7 @@ func _changed() -> void:
 		elif cfg.kind == "ranged" and cfg.has("bullet_a"):
 			frac = Stats.mix_frac(Analyzer.analyze(img), cfg.bullet_a)
 		main_color = Pal.color_of(frac, need)
-		main_color_label.text = "Couleur\n" + (Pal.color_name(main_color) if main_color != 0 else "aucune")
+		main_color_label.text = Loc.t("Couleur\n") + (Pal.color_name(main_color) if main_color != 0 else Loc.t("aucune"))
 		main_color_label.add_theme_color_override("font_color", Pal.DIM if main_color == 0 else (Pal.SHADES[0][2] if main_color == Pal.NOIR else Pal.SHADES[main_color][2]))
 		color_ring.queue_redraw()
 
@@ -1003,13 +1003,13 @@ func _sel_release() -> void:
 			sel_pos = r.position
 			sel_state = "floating"
 			sel_bar.visible = true
-			_warn("R : tourner · F : miroir · Suppr : effacer")
+			_warn(Loc.t("R : tourner · F : miroir · Suppr : effacer"))
 		"drag":
 			sel_state = "floating"
 			if used > eff_budget():
 				sel_pos = drag_pos0   # pas assez d'encre à cet endroit : on revient
 				_sel_compose()
-				_warn("Pas assez d'encre pour la poser là")
+				_warn(Loc.t("Pas assez d'encre pour la poser là"))
 			else:
 				Sfx.play("paint")
 	view.queue_redraw()
@@ -1018,7 +1018,7 @@ func _sel_release() -> void:
 ## Sélection levée : quart de tour (sur son centre) ou miroir. Si l'encre ne suffit plus, on annule.
 func _sel_transform(what: String) -> void:
 	if sel_state != "floating" or sel_img == null:
-		_warn("Fais d'abord une sélection (outil S)")
+		_warn(Loc.t("Fais d'abord une sélection (outil S)"))
 		return
 	var old_img := sel_img.duplicate()
 	var old_pos := sel_pos
@@ -1033,7 +1033,7 @@ func _sel_transform(what: String) -> void:
 		sel_img = old_img
 		sel_pos = old_pos
 		_sel_compose()
-		_warn("Pas assez d'encre pour la tourner là")
+		_warn(Loc.t("Pas assez d'encre pour la tourner là"))
 		return
 	Sfx.play("click")
 	view.queue_redraw()
@@ -1065,22 +1065,22 @@ func _sel_delete() -> void:
 func _validate() -> void:
 	_sel_commit()
 	if Analyzer.count_pixels(img) < int(cfg.get("min", 1)):
-		_warn("Dessine un peu plus !")
+		_warn(Loc.t("Dessine un peu plus !"))
 		return
 	if cfg.has("fit"):
 		var u := img.get_used_rect().size
 		if u.x > cfg.fit.x or u.y > cfg.fit.y:
-			_warn("Trop grand : ton dessin doit tenir dans le cadre rouge (%d×%d) !" % [cfg.fit.x, cfg.fit.y])
+			_warn(Loc.t("Trop grand : ton dessin doit tenir dans le cadre rouge (%d×%d) !") % [cfg.fit.x, cfg.fit.y])
 			return
 	if used > eff_budget():
-		_warn("Trop d'encre !")
+		_warn(Loc.t("Trop d'encre !"))
 		return
 	if used < int(cfg.get("min_ink", 0)):
-		_warn("Encore %d d'encre à utiliser (95%% minimum) !" % (int(cfg.min_ink) - used))
+		_warn(Loc.t("Encore %d d'encre à utiliser (95%% minimum) !") % (int(cfg.min_ink) - used))
 		return
 	var lc := Meta.locked_colors(img)
 	if not lc.is_empty():
-		_warn("Couleurs pas encore débloquées : " + ", ".join(lc) + " !")
+		_warn(Loc.t("Couleurs pas encore débloquées : ") + ", ".join(lc) + " !")
 		return
 	var ci := DrawCfg.color_issue(cfg, img)
 	if ci != "":
@@ -1104,8 +1104,8 @@ func _open_gallery() -> void:
 	var entries := Meta.gallery(cfg.gallery)
 	overlay = UI.panel(Color(Pal.BG, 0.97), Pal.ACCENT)
 	UI.put(self, overlay, Vector2(20, 20), Vector2(600, 320))
-	UI.put(overlay, UI.label("GALERIE — réutilise un ancien dessin", 10, Pal.ACCENT), Vector2(10, 8))
-	UI.put(overlay, UI.hotkey(UI.button("Fermer", _close_gallery), [KEY_ESCAPE]), Vector2(530, 6), Vector2(60, 16))
+	UI.put(overlay, UI.label(Loc.t("GALERIE — réutilise un ancien dessin"), 10, Pal.ACCENT), Vector2(10, 8))
+	UI.put(overlay, UI.hotkey(UI.button(Loc.t("Fermer"), _close_gallery), [KEY_ESCAPE]), Vector2(530, 6), Vector2(60, 16))
 	var sc := ScrollContainer.new()
 	UI.put(overlay, sc, Vector2(10, 30), Vector2(580, 280))
 	var grid := GridContainer.new()
@@ -1132,18 +1132,18 @@ func _open_gallery() -> void:
 		# (la validation refuse tant que ce n'est pas réglé)
 		var issue := DrawCfg.gallery_block(cfg, gi)
 		if issue == "" and not (ok and fits):
-			issue = "Trop d'encre (%d)" % cost
+			issue = Loc.t("Trop d'encre (%d)") % cost
 		if issue == "":
 			issue = DrawCfg.color_issue(cfg, gi)
-		b.tooltip_text = "Encre : %d" % cost
+		b.tooltip_text = Loc.t("Encre : %d") % cost
 		var too_big := gi.get_used_rect().size.x > s.x or gi.get_used_rect().size.y > s.y
 		if too_big:
 			# (ici il serait coupé : on le prend depuis l'écran de choix, qui ouvre une toile agrandie)
 			th.modulate = Color(1, 1, 1, 0.3)
-			b.tooltip_text = "Trop grand pour cette toile\n(choisis-le avant de dessiner, puis « Modifier »)"
+			b.tooltip_text = Loc.t("Trop grand pour cette toile\n(choisis-le avant de dessiner, puis « Modifier »)")
 		elif issue != "":
 			th.modulate = Color(1, 1, 1, 0.3)
-			b.tooltip_text = "%s\n(tu peux le charger et le retoucher)" % issue
+			b.tooltip_text = Loc.t("%s\n(tu peux le charger et le retoucher)") % issue
 		if not too_big:
 			var entry: Dictionary = e
 			b.pressed.connect(func(): _load_gallery(entry, gi))
@@ -1154,7 +1154,7 @@ func _open_gallery() -> void:
 		grid.add_child(b)
 		shown += 1
 	if shown == 0:
-		UI.put(overlay, UI.label("Rien pour l'instant : tes dessins validés arriveront ici.", 10, Pal.DIM), Vector2(10, 40))
+		UI.put(overlay, UI.label(Loc.t("Rien pour l'instant : tes dessins validés arriveront ici."), 10, Pal.DIM), Vector2(10, 40))
 
 
 func _load_gallery(entry: Dictionary, gi: Image) -> void:

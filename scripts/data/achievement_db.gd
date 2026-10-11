@@ -8,7 +8,7 @@ extends RefCounted
 ## "wave" et "win" acceptent "map" : le défi ne vaut que sur cette carte (deux défis sur dix sont
 ## liés au Tableau noir et à L'Écran). Aucun défi n'a la même condition qu'un objet (ItemUnlockDB).
 
-const LIST := [
+static var LIST := [
 	{"id": "rature", "name": "Sans rature", "desc": "Vaincs le boss de la vague 5.", "kind": "wave", "v": 5, "unlock": "tool_triangle"},
 	{"id": "kills", "name": "Gomme à tout", "desc": "Tue 500 ennemis (toutes parties).", "kind": "kills", "v": 500, "unlock": "tool_big"},
 	{"id": "galerie", "name": "Carnet bien rempli", "desc": "Aie 15 dessins dans ta galerie.", "kind": "gallery", "v": 15, "unlock": "tool_line"},

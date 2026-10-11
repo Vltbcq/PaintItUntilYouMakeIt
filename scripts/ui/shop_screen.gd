@@ -54,10 +54,10 @@ func _build() -> void:
 	add_child(wall)
 
 	# --- En-tête : plaques en laiton
-	_plaque(Vector2(210, 4), Vector2(220, 26), ("GALERIE · SALLE %d · INFINI" % (Run.wave + 1)) if Run.endless else ("GALERIE · SALLE %d / %d" % [Run.wave + 1, Run.WAVES]), 10)
+	_plaque(Vector2(210, 4), Vector2(220, 26), (Loc.t("GALERIE · SALLE %d · INFINI") % (Run.wave + 1)) if Run.endless else (Loc.t("GALERIE · SALLE %d / %d") % [Run.wave + 1, Run.WAVES]), 10)
 	var hp_col := Color("f06a5d") if Run.hp < Run.stats.max_hp * 0.35 else CARTEL
-	_plaque(Vector2(10, 4), Vector2(150, 26), "♥ %d / %d  ·  NIV %d" % [ceili(Run.hp), int(Run.stats.max_hp), Run.level], 10, hp_col)
-	_plaque(Vector2(480, 4), Vector2(150, 26), "BOURSE  ● %d" % Run.gold, 10, Pal.ACCENT)
+	_plaque(Vector2(10, 4), Vector2(150, 26), Loc.t("♥ %d / %d  ·  NIV %d") % [ceili(Run.hp), int(Run.stats.max_hp), Run.level], 10, hp_col)
+	_plaque(Vector2(480, 4), Vector2(150, 26), Loc.t("BOURSE  ● %d") % Run.gold, 10, Pal.ACCENT)
 
 	# --- Les tableaux accrochés
 	var n := Run.shop_offers.size()
@@ -69,7 +69,7 @@ func _build() -> void:
 		_artwork(i, Vector2(x0 + i * (fw + gap), 44), fw)
 
 	# --- Ta collection (sur le lambris)
-	UI.put(self, UI.label("COLLECTION %d/%d" % [Run.weapons.size(), Run.max_weapons()], 10, GOLD), Vector2(12, 216))
+	UI.put(self, UI.label(Loc.t("COLLECTION %d/%d") % [Run.weapons.size(), Run.max_weapons()], 10, GOLD), Vector2(12, 216))
 	# Synergies : pastille de l'élément + nombre d'armes (survol : ce que fait CETTE synergie)
 	var counts := Run.synergy_counts()
 	var sx := 130.0
@@ -79,8 +79,8 @@ func _build() -> void:
 		var tw := _text_w(txt)
 		var it := Control.new()
 		it.mouse_filter = Control.MOUSE_FILTER_STOP
-		it.tooltip_text = "Synergie %s (%d armes %s)%s\n%s" % [Pal.NAMES[e], Run.synergy_need(), Pal.NAMES[e],
-			" : ACTIVE" if on else "", Run.SYNERGY_DESC[e]]
+		it.tooltip_text = Loc.t("Synergie %s (%d armes %s)%s\n%s") % [Pal.NAMES[e], Run.synergy_need(), Pal.NAMES[e],
+			Loc.t(" : ACTIVE") if on else "", Run.SYNERGY_DESC[e]]
 		UI.put(self, it, Vector2(sx, 215), Vector2(16 + tw, 14))
 		var ic := TextureRect.new()
 		ic.texture = UI.element_icon(e)
@@ -109,7 +109,7 @@ func _build() -> void:
 			var sb := UI.button("+%d" % refund, func(): _sell(idx))
 			_style_tag(sb)
 			sb.icon = _sell_icon()   # étiquette « à vendre »
-			sb.tooltip_text = "Revendre cette œuvre (+● %d)" % refund
+			sb.tooltip_text = Loc.t("Revendre cette œuvre (+● %d)") % refund
 			var sw := minf(44.0, mini(50, 300 / maxi(1, Run.weapons.size())) - 2.0)
 			UI.put(self, sb, Vector2(x + 23 - sw / 2.0, 272), Vector2(sw, 13))
 	# Fusions : un bouton par paire possible (tu choisis laquelle)
@@ -122,7 +122,7 @@ func _build() -> void:
 			var fdef := WeaponDB.get_def(pr[0])
 			var ftype: String = pr[0]
 			var frar: int = pr[1]
-			var txt := "Fusion : 2× %s → %s" % [fdef.name, Pal.RARITY_NAMES_F[frar + 1].to_lower()]
+			var txt := Loc.t("Fusion : 2× %s → %s") % [fdef.name, Pal.RARITY_NAMES_F[frar + 1].to_lower()]
 			var fb := UI.button(txt if pairs.size() == 1 else "2× %s → %s" % [fdef.name, Pal.RARITY_NAMES_F[frar + 1].to_lower()],
 				func(): done.emit({"a": "fuse", "type": ftype, "rar": frar}))
 			fb.tooltip_text = txt
@@ -134,7 +134,7 @@ func _build() -> void:
 	var vit := UI.panel(Color(0.75, 0.85, 1.0, 0.12), Color(0.8, 0.9, 1.0, 0.5), 1)
 	UI.put(self, vit, Vector2(12, 307), Vector2(300, 26))
 	if Run.amulets.is_empty() and Run.familiars.is_empty():
-		UI.put(vit, UI.label("vitrine des amulettes et familiers (vide)", 10, CARTEL_DIM), Vector2(6, 5))
+		UI.put(vit, UI.label(Loc.t("vitrine des amulettes et familiers (vide)"), 10, CARTEL_DIM), Vector2(6, 5))
 	var vsc := ScrollContainer.new()
 	vsc.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	UI.put(vit, vsc, Vector2(1, 1), Vector2(298, 24))
@@ -174,7 +174,7 @@ func _build() -> void:
 		var fdef := FamiliarDB.get_def(fid)
 		var fr := UI.panel(Color(0.55, 0.35, 0.17, 0.25), Pal.RARITY[int(fdef.rar)], 1)
 		fr.mouse_filter = Control.MOUSE_FILTER_STOP
-		fr.tooltip_text = "Familier : %s (%s)\n%s" % [fdef.name, Pal.RARITY_NAMES[int(fdef.rar)].to_lower(), fdef.desc]
+		fr.tooltip_text = Loc.t("Familier : %s (%s)\n%s") % [fdef.name, Pal.RARITY_NAMES[int(fdef.rar)].to_lower(), fdef.desc]
 		UI.put(shelf, fr, Vector2(ax - 1, 1), Vector2(18, 18))
 		var fth := UI.thumb(Run.familiar_art[fid].image if Run.familiar_art.has(fid) else _kind_icon("familiar"), Vector2(16, 16))
 		fth.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -186,13 +186,13 @@ func _build() -> void:
 	var pf := _frame_panel(FRAME[3], 5)
 	UI.put(self, pf, Vector2(322, 218), Vector2(64, 76))
 	UI.put(pf, UI.thumb(Run.build_player_image(bool(Meta.setting("show_amulets"))), Vector2(52, 64)), Vector2(6, 6), Vector2(52, 64))
-	pf.tooltip_text = "Ton perso\n" + Pal.color_line(Run.char_a.get("frac", []))
+	pf.tooltip_text = Loc.t("Ton perso\n") + Pal.color_line(Run.char_a.get("frac", []))
 	# Sous l'autoportrait : taille du perso (pixels dessinés) et couleurs, utiles pour Silhouette / Nuancier
 	var npx := int(Run.char_a.get("pixels", 0))
 	var ncol := int(Run.char_a.get("elements", 0))
-	var px := UI.label("%d px\n%d couleur%s" % [npx, ncol, "s" if ncol > 1 else ""], 10, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	var px := UI.label(Loc.t("%d px\n%d couleur%s") % [npx, ncol, "s" if ncol > 1 else ""], 10, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	px.mouse_filter = Control.MOUSE_FILTER_STOP
-	px.tooltip_text = "Autoportrait\nTaille de ton perso : %d pixels dessinés\nCouleurs (éléments) sur ton perso : %d\n%s" % [npx, ncol, Pal.color_line(Run.char_a.get("frac", []))]
+	px.tooltip_text = Loc.t("Autoportrait\nTaille de ton perso : %d pixels dessinés\nCouleurs (éléments) sur ton perso : %d\n%s") % [npx, ncol, Pal.color_line(Run.char_a.get("frac", []))]
 	UI.put(self, px, Vector2(312, 296), Vector2(84, 26))
 	var ct := UI.panel(CARTEL, Color("b9a883"), 1)
 	UI.put(self, ct, Vector2(392, 216), Vector2(238, 112))
@@ -203,22 +203,21 @@ func _build() -> void:
 
 	# --- Actions (plaques de musée)
 	var rp := Run.reroll_price()
-	var rb := UI.hotkey(UI.button("Actualiser la galerie (%s)" % ("gratuit" if rp == 0 else "● %d" % rp), _reroll), [KEY_R])
+	var rb := UI.hotkey(UI.button(Loc.t("Actualiser la galerie (%s)") % (Loc.t("gratuit") if rp == 0 else "● %d" % rp), _reroll), [KEY_R])
 	_style_museum(rb)
 	rb.disabled = Run.gold < rp
 	var odds := Run.rarity_odds()
-	rb.tooltip_text = "Relancer : de nouvelles œuvres (de plus en plus cher)
-Chances par œuvre : rare %d%% · épique %d%% · légendaire %d%%" % [roundi(odds[0]), roundi(odds[1]), roundi(odds[2])]
+	rb.tooltip_text = Loc.t("Relancer : de nouvelles œuvres (de plus en plus cher)\nChances par œuvre : rare %d%% · épique %d%% · légendaire %d%%") % [roundi(odds[0]), roundi(odds[1]), roundi(odds[2])]
 	UI.put(self, rb, Vector2(12, 336), Vector2(192, 18))
-	var ab := UI.hotkey(UI.button("Ranger mes armes", func(): done.emit({"a": "arrange"})), [KEY_A])
+	var ab := UI.hotkey(UI.button(Loc.t("Ranger mes armes"), func(): done.emit({"a": "arrange"})), [KEY_A])
 	_style_museum(ab)
-	ab.tooltip_text = "Déplace, tourne ou retourne tes armes sur ton perso"
+	ab.tooltip_text = Loc.t("Déplace, tourne ou retourne tes armes sur ton perso")
 	UI.put(self, ab, Vector2(208, 336), Vector2(112, 18))
-	var sq := UI.button("Sauvegarder et quitter", func(): done.emit({"a": "suspend"}))
+	var sq := UI.button(Loc.t("Sauvegarder et quitter"), func(): done.emit({"a": "suspend"}))
 	_style_museum(sq)
-	sq.tooltip_text = "Retour au menu : tu reprendras ici, dans cette boutique."
+	sq.tooltip_text = Loc.t("Retour au menu : tu reprendras ici, dans cette boutique.")
 	UI.put(self, sq, Vector2(324, 336), Vector2(158, 18))
-	var nb := UI.hotkey(UI.button("Salle suivante →", func(): done.emit({"a": "next"})), [KEY_ENTER, KEY_KP_ENTER])
+	var nb := UI.hotkey(UI.button(Loc.t("Salle suivante →"), func(): done.emit({"a": "next"})), [KEY_ENTER, KEY_KP_ENTER])
 	_style_museum(nb)
 	UI.put(self, nb, Vector2(488, 334), Vector2(142, 22))
 
@@ -252,29 +251,28 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 				else:
 					bullet_icon = _default_img("balle_" + o.wtype)
 			oname = def.name
-			kind = "%s · %s" % ["Mêlée" if def.kind == "melee" else "Distance", Pal.RARITY_NAMES_F[o.rar].to_lower()]
+			kind = "%s · %s" % [Loc.t("Mêlée") if def.kind == "melee" else Loc.t("Distance"), Pal.RARITY_NAMES_F[o.rar].to_lower()]
 			desc = def.desc
 			wcolor = _offer_color(o.wtype, o.rar, near)
 			if wcolor != 0:
-				desc += "
-Couleur : " + Pal.color_name(wcolor)
+				desc += Loc.t("\nCouleur : ") + Pal.color_name(wcolor)
 			if Run.has_art(o.wtype, o.rar):
-				desc += "\n✓ Dessinée"
+				desc += Loc.t("\n✓ Dessinée")
 			elif dflt:
-				desc += "\nDessin du Codex"
+				desc += Loc.t("\nDessin du Codex")
 			elif Run.has_any_art(o.wtype):
-				desc += "\nÀ redessiner"
+				desc += Loc.t("\nÀ redessiner")
 			else:
 				var mult: float = WeaponDB.RAR_INK[o.rar]
-				desc += "\nEncre %d" % roundi(def.ink * mult) + ("+%d" % roundi(def.bink * mult) if def.kind == "ranged" else "")
+				desc += Loc.t("\nEncre %d") % roundi(def.ink * mult) + ("+%d" % roundi(def.bink * mult) if def.kind == "ranged" else "")
 			if o.rar > 0:
 				desc += " · ×%s" % ["", "1,8", "3,2", "6"][o.rar]
 			if def.has("scale"):
 				# Arme à ratio : la valeur ACTUELLE d'abord (le cartel est petit)
-				desc += "\nActuellement : " + Stats.scale_text(def.scale, o.rar).replace("Ratio : ", "")
+				desc += Loc.t("\nActuellement : ") + Stats.scale_text(def.scale, o.rar).replace(Loc.t("Ratio : "), "")
 			full = Run.weapons.size() >= Run.max_weapons() and Run.fusion_match(o.wtype, o.rar) < 0
 			if Run.weapons.size() >= Run.max_weapons() and not full:
-				desc += "\n→ fusionne !"
+				desc += Loc.t("\n→ fusionne !")
 		"amulet":
 			var def := AmuletDB.get_def(o.id)
 			oname = def.name
@@ -287,7 +285,7 @@ Couleur : " + Pal.color_name(wcolor)
 		"heal":
 			var h: Dictionary = Run.HEALS[o.id]
 			oname = h.name
-			kind = "Consommable"
+			kind = Loc.t("Consommable")
 			desc = h.desc
 			frame_cols = FRAME_HEAL
 			full = Run.hp >= Run.stats.max_hp and h.heal > 0.0
@@ -298,9 +296,9 @@ Couleur : " + Pal.color_name(wcolor)
 			var liquid: Color = {"grande_potion": Pal.SHADES[1][1], "seve": Pal.main_color(Pal.POISON), "encre": Pal.INK}.get(o.id, Pal.SHADES[4][1])
 			icon = Gfx.icon(Gfx.ICON_POTION, liquid)
 		"roulette":
-			oname = "Roulette"
-			kind = "Jeu de hasard"
-			desc = "Mise ton or : Rouge ou Noir ×2, Vert ×36."
+			oname = Loc.t("Roulette")
+			kind = Loc.t("Jeu de hasard")
+			desc = Loc.t("Mise ton or : Rouge ou Noir ×2, Vert ×36.")
 			frame_cols = FRAME_ROULETTE
 			icon = _wheel_icon()
 		"familiar":
@@ -313,42 +311,42 @@ Couleur : " + Pal.color_name(wcolor)
 			elif _default_img("familier_" + o.id):
 				icon = _default_img("familier_" + o.id)
 		"case":
-			var kname := "Armes" if o.kind == "weapon" else "Amulettes"
+			var kname := Loc.t("Armes") if o.kind == "weapon" else Loc.t("Amulettes")
 			oname = "%s" % Run.CASE_NAMES[o.tier]
-			kind = "Caisse · %s" % kname
+			kind = Loc.t("Caisse · %s") % kname
 			var od: Array = Run.CASE_ODDS[o.tier]
 			var parts := []
 			for r in 4:
 				if od[r] > 0.0:
-					parts.append("%s %d%%" % [["Com.", "Rare", "Épi.", "Lég."][r], roundi(od[r])])
+					parts.append("%s %d%%" % [[Loc.t("Com."), Loc.t("Rare"), Loc.t("Épi."), Loc.t("Lég.")][r], roundi(od[r])])
 			desc = " · ".join(parts)
 			frame_cols = CASE_FRAME[o.tier]
 			icon = _case_icon(o.tier, o.kind)
 			if o.kind == "weapon" and Run.weapons.size() >= Run.max_weapons():
 				full = true
 		"scratch":
-			oname = "Ticket à gratter"
-			kind = "Jeu de hasard"
-			desc = "Permet de gagner des prix."
+			oname = Loc.t("Ticket à gratter")
+			kind = Loc.t("Jeu de hasard")
+			desc = Loc.t("Permet de gagner des prix.")
 			frame_cols = FRAME_EVENT
 			icon = _event_icon("scratch")
 		"auction":
 			var it: Dictionary = o.item
-			oname = "Vente aux enchères"
+			oname = Loc.t("Vente aux enchères")
 			kind = "%s · %s" % [_item_name(it), Pal.RARITY_NAMES_F[it.rar].to_lower()]
-			desc = "Enchéris contre un collectionneur. Départ : ● %d" % int(o.bid)
+			desc = Loc.t("Enchéris contre un collectionneur. Départ : ● %d") % int(o.bid)
 			frame_cols = FRAME[it.rar]
 			icon = _event_icon("auction")
 		"restorer":
-			oname = "Le Restaurateur"
-			kind = "Visiteur"
-			desc = "Améliore une de tes amulettes : rareté au-dessus, au hasard."
+			oname = Loc.t("Le Restaurateur")
+			kind = Loc.t("Visiteur")
+			desc = Loc.t("Améliore une de tes amulettes : rareté au-dessus, au hasard.")
 			frame_cols = FRAME_EVENT
 			icon = _event_icon("restorer")
 		"patron":
-			oname = "Le Mécène"
-			kind = "Visiteur"
-			desc = "De l'or tout de suite... contre une vague plus dure."
+			oname = Loc.t("Le Mécène")
+			kind = Loc.t("Visiteur")
+			desc = Loc.t("De l'or tout de suite... contre une vague plus dure.")
 			frame_cols = FRAME_EVENT
 			icon = _event_icon("patron")
 
@@ -373,7 +371,7 @@ Couleur : " + Pal.color_name(wcolor)
 		ik = o.item.type
 	if ik != "":
 		var badge := UI.panel(CARTEL, GOLD_DARK, 1)
-		badge.tooltip_text = {"weapon": "Arme", "amulet": "Amulette", "familiar": "Familier"}[ik]
+		badge.tooltip_text = {"weapon": Loc.t("Arme"), "amulet": Loc.t("Amulette"), "familiar": Loc.t("Familier")}[ik]
 		UI.put(self, badge, pos + Vector2(2, 2), Vector2(16, 16))
 		UI.put(badge, UI.thumb(_kind_icon(ik), Vector2(12, 12)), Vector2(2, 2), Vector2(12, 12))
 	if o.get("new", false) and not o.sold:
@@ -383,19 +381,18 @@ Couleur : " + Pal.color_name(wcolor)
 		else:
 			# Jamais vue : petite pastille « ! » dans le coin du cadre
 			var nb := UI.panel(Pal.ACCENT, GOLD_DARK, 1)
-			nb.tooltip_text = "Nouveau : jamais vu en boutique"
+			nb.tooltip_text = Loc.t("Nouveau : jamais vu en boutique")
 			UI.put(self, nb, pos + Vector2(fw - 10, -4), Vector2(14, 14))
 			UI.put(nb, UI.label("!", 10, Pal.INK, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 1), Vector2(14, 12))
 	if o.type == "weapon" and o.rar > 0:
-		frame.tooltip_text += "\nDégâts ×%s · vitesse d'attaque +%d%% · critique +%d%%\nAllonge +%d%% (mêlée) · perforation +%d (distance) · effets élémentaires +%d%%" % [
+		frame.tooltip_text += Loc.t("\nDégâts ×%s · vitesse d'attaque +%d%% · critique +%d%%\nAllonge +%d%% (mêlée) · perforation +%d (distance) · effets élémentaires +%d%%") % [
 			str(Stats.RAR_DMG[o.rar]), Stats.RAR_ATK[o.rar], Stats.RAR_CRIT[o.rar],
 			roundi((Stats.RAR_REACH[o.rar] - 1.0) * 100.0), Stats.RAR_PIERCE[o.rar], roundi(Stats.RAR_PROC[o.rar] * 100.0)]
 
 	# Le cartel
 	var ct := UI.panel(CARTEL, Color("b9a883"), 1)
 	UI.put(self, ct, pos + Vector2(-2, 70), Vector2(fw + 4, 100))
-	ct.tooltip_text = "%s — %s
-%s" % [oname, kind, desc]   # texte complet au survol
+	ct.tooltip_text = "%s — %s\n%s" % [oname, kind, desc]   # texte complet au survol
 	if o.type == "weapon":
 		_weapon_card(ct, o, fw)   # fiche détaillée : stats et ratio
 	else:
@@ -410,11 +407,11 @@ Couleur : " + Pal.color_name(wcolor)
 		# Pastille rouge des galeries : œuvre vendue
 		var dot := _Dot.new()
 		UI.put(ct, dot, Vector2(fw - 14, 83), Vector2(14, 14))
-		var sold_txt: String = {"case": "OUVERTE", "roulette": "JOUÉ", "scratch": "JOUÉ", "auction": "ADJUGÉ", "restorer": "PARTI", "patron": "PARTI"}.get(o.type, "VENDU")
+		var sold_txt: String = {"case": Loc.t("OUVERTE"), "roulette": Loc.t("JOUÉ"), "scratch": Loc.t("JOUÉ"), "auction": Loc.t("ADJUGÉ"), "restorer": Loc.t("PARTI"), "patron": Loc.t("PARTI")}.get(o.type, Loc.t("VENDU"))
 		UI.put(ct, UI.label(sold_txt, 10, STICKER), Vector2(4, 85), Vector2(fw - 20, 12))
 		frame.modulate = Color(1, 1, 1, 0.55)
 		return
-	var btxt: String = {"roulette": "Miser", "auction": "Enchérir", "restorer": "Choisir", "patron": "Écouter"}.get(o.type, "● %d" % o.price)
+	var btxt: String = {"roulette": Loc.t("Miser"), "auction": Loc.t("Enchérir"), "restorer": Loc.t("Choisir"), "patron": Loc.t("Écouter")}.get(o.type, "● %d" % o.price)
 	var b := UI.button(btxt, func(): _buy(i))
 	_style_price(b)
 	b.disabled = Run.gold < o.price or full or (o.type == "roulette" and Run.gold < 1)
@@ -423,15 +420,15 @@ Couleur : " + Pal.color_name(wcolor)
 	elif o.type == "restorer":
 		b.disabled = Run.restorable().is_empty()
 	if full and o.type == "heal" and o.id != "encre" and Run.amulet_count("pacte_sang") > 0:
-		b.tooltip_text = "Pacte de sang : les potions ne marchent plus."
+		b.tooltip_text = Loc.t("Pacte de sang : les potions ne marchent plus.")
 	elif full and o.type == "case":
-		b.tooltip_text = "Plus de place pour une arme : revends-en une d'abord."
+		b.tooltip_text = Loc.t("Plus de place pour une arme : revends-en une d'abord.")
 	elif full and o.get("id", "") == "seve":
-		b.tooltip_text = "Tu as déjà un Élixir de sève pour la vague suivante."
+		b.tooltip_text = Loc.t("Tu as déjà un Élixir de sève pour la vague suivante.")
 	elif full and o.type == "weapon":
-		b.tooltip_text = "Tu as déjà %d armes : revends-en une." % Run.max_weapons()
+		b.tooltip_text = Loc.t("Tu as déjà %d armes : revends-en une.") % Run.max_weapons()
 	elif full:
-		b.tooltip_text = "Tes PV sont déjà au max."
+		b.tooltip_text = Loc.t("Tes PV sont déjà au max.")
 	UI.put(ct, b, Vector2(fw - 50, 83), Vector2(52, 15))
 
 
@@ -445,9 +442,9 @@ func _unlock_badge(frame: Control, pos: Vector2, fw: float) -> void:
 	var ribbon := UI.panel(Color("e8356b"), Color("ffe066"), 1)
 	ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UI.put(self, ribbon, pos + Vector2(6, 52), Vector2(fw - 12, 14))
-	UI.put(ribbon, UI.label("DÉBLOQUÉ", 10, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 1), Vector2(fw - 12, 12))
+	UI.put(ribbon, UI.label(Loc.t("DÉBLOQUÉ"), 10, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 1), Vector2(fw - 12, 12))
 	var nb := UI.panel(Color("e8356b"), Color("ffe066"), 2)
-	nb.tooltip_text = "Nouveau ! Débloqué grâce à un succès, jamais vu en boutique"
+	nb.tooltip_text = Loc.t("Nouveau ! Débloqué grâce à un succès, jamais vu en boutique")
 	UI.put(self, nb, pos + Vector2(fw - 16, -9), Vector2(24, 24))
 	UI.put(nb, UI.label("!", 20, Color("ffe066"), HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 0), Vector2(24, 24))
 	nb.pivot_offset = Vector2(12, 12)
@@ -512,7 +509,7 @@ func _offer_color(wtype: String, rar: int, near: Dictionary) -> int:
 
 
 ## Ratio d'une arme, en court (entre parenthèses sur la ligne de ses dégâts).
-const SCALE_SHORT := {
+static var SCALE_SHORT := {
 	"free_slots": "+60 % / place libre", "max_hp": "+15 % PV max", "armor": "+1,5 × armure",
 	"speed": "+1 % / % vitesse", "luck": "+0,25 × chance", "gold": "+1 / 12 or",
 	"range": "+1,5 % / % portée", "colors": "+35 % / couleur", "pixels": "selon ta taille",
@@ -535,7 +532,7 @@ func _weapon_card(ct: Control, o: Dictionary, fw: float) -> void:
 	var nl := UI.label(def.name, 10, Pal.INK)
 	nl.clip_text = true
 	UI.put(ct, nl, Vector2(4, 2), Vector2(fw - 4, 12))
-	var tag := "%s · %s" % ["Mêlée" if def.kind == "melee" else "Distance", Pal.RARITY_NAMES_F[o.rar].to_lower()]
+	var tag := "%s · %s" % [Loc.t("Mêlée") if def.kind == "melee" else Loc.t("Distance"), Pal.RARITY_NAMES_F[o.rar].to_lower()]
 	var kl := UI.label(tag, 10, CARTEL_DIM)
 	kl.clip_text = true
 	UI.put(ct, kl, Vector2(4, 14), Vector2(fw - 4, 12))
@@ -554,27 +551,27 @@ func _weapon_card(ct: Control, o: Dictionary, fw: float) -> void:
 	var ratio := ""
 	if SCALE_SHORT.has(scale):
 		ratio = "(%s)" % SCALE_SHORT[scale]
-	var lines := [["Dégâts", "%s%s%s" % [approx, _num(dmg), shots], ratio]]
-	var crit_ratio := "(×2 + crit ÷ 35)" if scale == "crit" else ""
-	lines.append(["Critique", "%s%d %%" % [approx, roundi(st.crit)], crit_ratio])
-	lines.append(["Recharge", "%s%ss" % [approx, _num(st.cooldown, 2)], ""])
+	var lines := [[Loc.t("Dégâts"), "%s%s%s" % [approx, _num(dmg), shots], ratio]]
+	var crit_ratio := Loc.t("(×2 + crit ÷ 35)") if scale == "crit" else ""
+	lines.append([Loc.t("Critique"), "%s%d %%" % [approx, roundi(st.crit)], crit_ratio])
+	lines.append([Loc.t("Recharge"), "%s%ss" % [approx, _num(st.cooldown, 2)], ""])
 	if st.kind == "melee":
-		lines.append(["Allonge", "%s%d" % [approx, roundi(st.reach)], ""])
+		lines.append([Loc.t("Allonge"), "%s%d" % [approx, roundi(st.reach)], ""])
 	else:
-		lines.append(["Portée", "%s%d" % [approx, roundi(st.range)], ""])
+		lines.append([Loc.t("Portée"), "%s%d" % [approx, roundi(st.range)], ""])
 	# Stats + description dans une zone qui défile (barre de défilement si ça déborde du cadre)
 	var desc := String(def.get("card", def.desc))   # le ratio est déjà sur la ligne des dégâts
-	for pre in ["Épique+. ", "Légendaire. "]:
+	for pre in [Loc.t("Épique+. "), Loc.t("Légendaire. ")]:
 		desc = desc.trim_prefix(pre)
 	var foot := ""
 	var foot_col := CARTEL_DIM
 	if Run.weapons.size() >= Run.max_weapons() and Run.fusion_match(o.wtype, o.rar) >= 0:
-		foot = "→ fusionne !"
+		foot = Loc.t("→ fusionne !")
 		foot_col = CARD_RATIO
 	elif Run.has_art(o.wtype, o.rar):
-		foot = "✓ dessinée"
+		foot = Loc.t("✓ dessinée")
 	elif not known:
-		foot = "à dessiner"
+		foot = Loc.t("à dessiner")
 	_scroll_box(ct, fw, lines, desc, foot, foot_col)
 
 
@@ -679,7 +676,7 @@ func _style_card_scroll(sc: ScrollContainer, horizontal := false) -> void:
 func _card_line(ct: Control, pos: Vector2, w: float, lab: String, val: String, ratio: String) -> float:
 	var x := pos.x
 	var y := pos.y
-	var sep := " : "
+	var sep := " : " if Loc.lang == "fr" else ": "
 	if _text_w(lab + sep + val) > w:
 		sep = ": "   # ligne trop longue : on serre un peu
 	x = _card_text(ct, Vector2(x, y), lab + sep, CARD_LABEL)
@@ -705,7 +702,7 @@ func _card_rich(ct: Control, pos: Vector2, t: String, w: float) -> float:
 	rl.custom_minimum_size.x = w
 	# hauteur : le texte avec chaque icône comptée comme une lettre large (pas le mot qu'elle remplace)
 	var est := UI.stat_bbcode(t)
-	var re := RegEx.create_from_string("\\[img[^\\]]*\\][^\\[]*\\[/img\\]")
+	var re := RegEx.create_from_string(Loc.t("\\[img[^\\]]*\\][^\\[]*\\[/img\\]"))
 	est = re.sub(est, "M", true)
 	var h := UI.font.get_multiline_string_size(est, HORIZONTAL_ALIGNMENT_LEFT, w, UI.fs(10)).y
 	UI.put(ct, rl, pos + Vector2(0, -1), Vector2(w, h))
@@ -732,7 +729,7 @@ func _num(v: float, dec := 1) -> String:
 ## Médaillon des balles d'une arme à distance, posé dans le coin du cadre.
 func _bullet_badge(at: Vector2, n: int, img: Image) -> void:
 	var badge := UI.panel(CARTEL, GOLD_DARK, 1)
-	badge.tooltip_text = "Ses balles"
+	badge.tooltip_text = Loc.t("Ses balles")
 	UI.put(self, badge, at, Vector2(n, n))
 	UI.put(badge, UI.thumb(img, Vector2(n - 4, n - 4)), Vector2(2, 2), Vector2(n - 4, n - 4))
 
@@ -901,7 +898,7 @@ func _buy(i: int) -> void:
 	if Run.gold < o.price:
 		return
 	Run.spend(o.price)
-	Run.log_event("buy", "Achat : %s (● %d)" % [Run.HEALS[o.id].name, o.price])
+	Run.log_event("buy", Loc.t("Achat : %s (● %d)") % [Run.HEALS[o.id].name, o.price])
 	if Run.HEALS[o.id].has("regen"):
 		Run.regen_boost = float(Run.HEALS[o.id].regen)   # Élixir de sève : vague suivante
 	else:
@@ -917,11 +914,11 @@ func _weapon_tip(w: Dictionary) -> String:
 	var ratio := ("\n" + Stats.scale_text(st.scale, w.rar)) if String(st.get("scale", "")) != "" else ""
 	ratio += "\n" + Pal.color_line(st.get("frac", []), 0.3)
 	if st.kind == "melee":
-		return "%s %s\nDégâts %.1f · Recharge %.2fs\nAllonge %d%s" % [nm, Pal.RARITY_NAMES_F[w.rar].to_lower(), st.damage, st.cooldown, roundi(st.reach), ratio]
+		return Loc.t("%s %s\nDégâts %.1f · Recharge %.2fs\nAllonge %d%s") % [nm, Pal.RARITY_NAMES_F[w.rar].to_lower(), st.damage, st.cooldown, roundi(st.reach), ratio]
 	var tot := 0.0
 	for b in st.bullets:
 		tot += b.damage
-	return "%s %s\n%d projectile(s) · %.1f dégâts/tir\nRecharge %.2fs · Portée %d%s" % [nm, Pal.RARITY_NAMES_F[w.rar].to_lower(), st.bullets.size() * st.pellets, tot * st.pellets, st.cooldown, roundi(st.range), ratio]
+	return Loc.t("%s %s\n%d projectile(s) · %.1f dégâts/tir\nRecharge %.2fs · Portée %d%s") % [nm, Pal.RARITY_NAMES_F[w.rar].to_lower(), st.bullets.size() * st.pellets, tot * st.pellets, st.cooldown, roundi(st.range), ratio]
 
 
 func _refund(w: Dictionary) -> int:
@@ -929,7 +926,7 @@ func _refund(w: Dictionary) -> int:
 
 
 func _sell(i: int) -> void:
-	Run.log_event("sell", "Revendu : %s (+● %d)" % [Run.item_label("weapon", Run.weapons[i].type, int(Run.weapons[i].rar)), _refund(Run.weapons[i])])
+	Run.log_event("sell", Loc.t("Revendu : %s (+● %d)") % [Run.item_label("weapon", Run.weapons[i].type, int(Run.weapons[i].rar)), _refund(Run.weapons[i])])
 	Run.gold += _refund(Run.weapons[i])
 	Run.weapons.remove_at(i)
 	Sfx.play("buy")
@@ -994,10 +991,10 @@ func _open_roulette(i: int) -> void:
 	UI.put(roul, p, Vector2(120, 24), Vector2(400, 312))
 	var inner := UI.panel(WOOD_PANEL, GOLD_DARK, 1)
 	UI.put(p, inner, Vector2(6, 6), Vector2(388, 300))
-	UI.put(inner, UI.label("ROULETTE", 20, GOLD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(388, 24))
+	UI.put(inner, UI.label(Loc.t("ROULETTE"), 20, GOLD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(388, 24))
 	var wheel := _Wheel.new()
 	UI.put(inner, wheel, Vector2(114, 34), Vector2(160, 160))
-	var info := UI.label("Choisis ta mise, puis une couleur.", 10, CARTEL, HORIZONTAL_ALIGNMENT_CENTER)
+	var info := UI.label(Loc.t("Choisis ta mise, puis une couleur."), 10, CARTEL, HORIZONTAL_ALIGNMENT_CENTER)
 	UI.put(inner, info, Vector2(0, 198), Vector2(388, 12))
 	# Mise
 	var bet_l := UI.label("", 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER)
@@ -1011,13 +1008,13 @@ func _open_roulette(i: int) -> void:
 	UI.put(inner, sl, Vector2(60, 232), Vector2(268, 14))
 	var upd := func():
 		roul_bet = int(sl.value)
-		bet_l.text = "MISE : ● %d   (bourse ● %d)" % [roul_bet, Run.gold]
+		bet_l.text = Loc.t("MISE : ● %d   (bourse ● %d)") % [roul_bet, Run.gold]
 	sl.value_changed.connect(func(_v): upd.call())
 	upd.call()
 	var quick := HBoxContainer.new()
 	quick.add_theme_constant_override("separation", 4)
 	UI.put(inner, quick, Vector2(94, 250), Vector2(200, 14))
-	for q in [["10%", 0.1], ["25%", 0.25], ["50%", 0.5], ["Tout", 1.0]]:
+	for q in [["10%", 0.1], ["25%", 0.25], ["50%", 0.5], [Loc.t("Tout"), 1.0]]:
 		var f: float = q[1]
 		var qb := UI.button(q[0], func(): sl.value = maxi(1, roundi(Run.gold * f)))
 		_style_tag(qb)
@@ -1028,7 +1025,7 @@ func _open_roulette(i: int) -> void:
 	row.add_theme_constant_override("separation", 6)
 	UI.put(inner, row, Vector2(24, 272), Vector2(340, 20))
 	var btns := []
-	for c in [["rouge", "ROUGE ×2", WHEEL_RED], ["noir", "NOIR ×2", WHEEL_BLACK], ["vert", "VERT ×36", WHEEL_GREEN]]:
+	for c in [["rouge", Loc.t("ROUGE ×2"), WHEEL_RED], ["noir", Loc.t("NOIR ×2"), WHEEL_BLACK], ["vert", Loc.t("VERT ×36"), WHEEL_GREEN]]:
 		var cid: String = c[0]
 		var cb := UI.button(c[1], func(): _spin(cid, wheel, info, btns, sl))
 		cb.add_theme_stylebox_override("normal", UI.sb(c[2], GOLD, 1))
@@ -1054,7 +1051,7 @@ func _spin(color: String, wheel: _Wheel, info: Label, btns: Array, sl: HSlider) 
 	Run.shop_offers[roul_offer].sold = true
 	var slot := randi() % 37
 	var res := wheel_color(slot)
-	info.text = "Ça tourne..."
+	info.text = Loc.t("Ça tourne...")
 	Sfx.play("click")
 	await wheel.spin_to(slot)
 	var win := res == color
@@ -1062,9 +1059,9 @@ func _spin(color: String, wheel: _Wheel, info: Label, btns: Array, sl: HSlider) 
 	Run.gold += gain
 	if win:
 		Meta.count("roulette_wins")   # succès Dé pipé
-	Run.log_event("event", "Roulette : ● %d sur %s → %s, %s" % [bet, color, res, ("gagné ● %d" % gain) if win else "perdu"])
+	Run.log_event("event", Loc.t("Roulette : ● %d sur %s → %s, %s") % [bet, Loc.t(color), Loc.t(res), (Loc.t("gagné ● %d") % gain) if win else Loc.t("perdu")])
 	info.add_theme_color_override("font_color", Pal.GOOD if win else Color("f06a5d"))
-	info.text = ("%s ! Gagné : ● %d" % [res.to_upper(), gain]) if win else ("%s... Perdu ● %d" % [res.to_upper(), bet])
+	info.text = (Loc.t("%s ! Gagné : ● %d") % [Loc.t(res).to_upper(), gain]) if win else (Loc.t("%s... Perdu ● %d") % [Loc.t(res).to_upper(), bet])
 	Sfx.play("level" if win else "hurt")
 	btns[btns.size() - 1].disabled = false   # fermer
 	await get_tree().create_timer(1.6).timeout
@@ -1174,16 +1171,11 @@ func _item_desc(it: Dictionary) -> String:
 	var r: String = String(Pal.RARITY_NAMES_F[int(it.rar)]).to_lower()
 	if it.type == "weapon":
 		var wd := WeaponDB.get_def(it.wtype)
-		var ratio := ("
-" + Stats.scale_text(wd.scale, int(it.rar))) if wd.has("scale") else ""
-		return "%s — arme %s (%s)
-%s%s" % [wd.name, r, "mêlée" if wd.kind == "melee" else "distance", wd.desc, ratio]
+		var ratio := ("\n" + Stats.scale_text(wd.scale, int(it.rar))) if wd.has("scale") else ""
+		return Loc.t("%s — arme %s (%s)\n%s%s") % [wd.name, r, Loc.t("mêlée") if wd.kind == "melee" else Loc.t("distance"), wd.desc, ratio]
 	var ad := AmuletDB.get_def(it.id)
-	var lines := Array(AmuletDB.describe(ad).split("
-")).filter(func(l): return l != "" and not l.begins_with("Actuellement"))
-	return "%s — amulette %s
-%s" % [ad.name, r, "
-".join(lines)]
+	var lines := Array(AmuletDB.describe(ad).split("\n")).filter(func(l): return l != "" and not l.begins_with(Loc.t("Actuellement")))
+	return Loc.t("%s — amulette %s\n%s") % [ad.name, r, "\n".join(lines)]
 
 
 func _item_name(it: Dictionary) -> String:
@@ -1275,14 +1267,14 @@ func _open_scratch(i: int) -> void:
 	else:
 		while syms.is_empty() or (syms[0] == syms[1] and syms[1] == syms[2]):
 			syms = [SCRATCH_SYMS.pick_random(), SCRATCH_SYMS.pick_random(), SCRATCH_SYMS.pick_random()]
-	var inner := _ev_window("TICKET À GRATTER", FRAME_EVENT, 250.0)
-	var info := UI.label("Gratte les 3 cases avec la souris !", 10, CARTEL, HORIZONTAL_ALIGNMENT_CENTER)
+	var inner := _ev_window(Loc.t("TICKET À GRATTER"), FRAME_EVENT, 250.0)
+	var info := UI.label(Loc.t("Gratte les 3 cases avec la souris !"), 10, CARTEL, HORIZONTAL_ALIGNMENT_CENTER)
 	UI.put(inner, info, Vector2(0, 34), Vector2(388, 12))
 	var card := _ScratchCard.new()
 	card.syms = syms
 	UI.put(inner, card, Vector2(44, 56), Vector2(300, 120))
-	var all_b := _ev_button(inner, "Tout gratter", Vector2(84, 190), Vector2(100, 18), func(): card.reveal_all())
-	var close := _ev_button(inner, "Fermer", Vector2(204, 190), Vector2(100, 18), func(): _ev_close())
+	var all_b := _ev_button(inner, Loc.t("Tout gratter"), Vector2(84, 190), Vector2(100, 18), func(): card.reveal_all())
+	var close := _ev_button(inner, Loc.t("Fermer"), Vector2(204, 190), Vector2(100, 18), func(): _ev_close())
 	close.disabled = true
 	card.revealed.connect(_scratch_done.bind(syms, info, close, all_b))
 
@@ -1291,9 +1283,9 @@ func _scratch_done(syms: Array, info: Label, close: Button, all_b: Button) -> vo
 	all_b.disabled = true
 	close.disabled = false
 	var win: bool = syms[0] == syms[1] and syms[1] == syms[2]
-	Run.log_event("event", "Ticket à gratter : %s" % (("3 × " + String(syms[0])) if win else "perdu"))
+	Run.log_event("event", Loc.t("Ticket à gratter : %s") % (("3 × " + String(syms[0])) if win else "perdu"))
 	if not win:
-		info.text = "Perdu... Pas de chance !"
+		info.text = Loc.t("Perdu... Pas de chance !")
 		info.add_theme_color_override("font_color", Color("f06a5d"))
 		Sfx.play("hurt")
 		return
@@ -1302,18 +1294,18 @@ func _scratch_done(syms: Array, info: Label, close: Button, all_b: Button) -> vo
 	var sym := String(syms[0])
 	if sym == "or":
 		Run.gold += 25
-		info.text = "3 PIÈCES ! +25 or"
+		info.text = Loc.t("3 PIÈCES ! +25 or")
 	elif sym == "etoile":
 		Run.star_buff += 15.0
-		info.text = "3 ÉTOILES ! +15% dégâts à la vague suivante"
+		info.text = Loc.t("3 ÉTOILES ! +15% dégâts à la vague suivante")
 	else:
 		var pool := Run.amulet_candidates(1)
 		if pool.is_empty():
 			Run.gold += 40
-			info.text = "3 DIAMANTS ! +40 or"
+			info.text = Loc.t("3 DIAMANTS ! +40 or")
 			return
-		info.text = "3 DIAMANTS ! Une amulette rare gratuite"
-		close.text = "Prendre"
+		info.text = Loc.t("3 DIAMANTS ! Une amulette rare gratuite")
+		close.text = Loc.t("Prendre")
 		var am: Dictionary = pool.pick_random()
 		for c in close.pressed.get_connections():
 			close.pressed.disconnect(c.callable)
@@ -1427,29 +1419,28 @@ func _open_auction(i: int) -> void:
 	if ev_layer:
 		return
 	var it: Dictionary = o.item
-	var inner := _ev_window("VENTE AUX ENCHÈRES", FRAME[it.rar], 300.0)
+	var inner := _ev_window(Loc.t("VENTE AUX ENCHÈRES"), FRAME[it.rar], 300.0)
 	var fr := _frame_panel(FRAME[it.rar], 4)
 	UI.put(inner, fr, Vector2(24, 40), Vector2(96, 80))
 	UI.put(fr, UI.thumb(_item_icon(it), Vector2(80, 64)), Vector2(8, 8), Vector2(80, 64))
 	UI.put(inner, UI.label(_item_name(it), 20, Pal.RARITY[it.rar]), Vector2(132, 40), Vector2(240, 24))
-	var desc: String = WeaponDB.get_def(it.wtype).desc if it.type == "weapon" else " ".join(Array(AmuletDB.describe(AmuletDB.get_def(it.id)).split("
-")).filter(func(l): return l != "" and not l.begins_with("Actuellement")))
-	var dl := UI.label("%s · %s\n%s" % ["Arme" if it.type == "weapon" else "Amulette", Pal.RARITY_NAMES_F[it.rar].to_lower(), desc], 10, CARTEL)
+	var desc: String = WeaponDB.get_def(it.wtype).desc if it.type == "weapon" else " ".join(Array(AmuletDB.describe(AmuletDB.get_def(it.id)).split("\n")).filter(func(l): return l != "" and not l.begins_with(Loc.t("Actuellement"))))
+	var dl := UI.label("%s · %s\n%s" % [Loc.t("Arme") if it.type == "weapon" else Loc.t("Amulette"), Pal.RARITY_NAMES_F[it.rar].to_lower(), desc], 10, CARTEL)
 	dl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	dl.clip_text = true
 	UI.put(inner, dl, Vector2(132, 66), Vector2(240, 50))
-	UI.put(inner, UI.label("Prix habituel en galerie : ● %d" % int(o.value), 10, CARTEL_DIM), Vector2(132, 120), Vector2(240, 12))
+	UI.put(inner, UI.label(Loc.t("Prix habituel en galerie : ● %d") % int(o.value), 10, CARTEL_DIM), Vector2(132, 120), Vector2(240, 12))
 	var bid_l := UI.label("", 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER)
 	UI.put(inner, bid_l, Vector2(0, 146), Vector2(388, 24))
 	var log_l := UI.label("", 10, CARTEL, HORIZONTAL_ALIGNMENT_CENTER)
 	UI.put(inner, log_l, Vector2(0, 174), Vector2(388, 12))
 	var blocked := ""
 	if it.type == "weapon" and Run.weapons.size() >= Run.max_weapons() and Run.fusion_match(it.wtype, it.rar) < 0:
-		blocked = "Plus de place pour une arme : revends-en une d'abord."
+		blocked = Loc.t("Plus de place pour une arme : revends-en une d'abord.")
 	var btns := []
 	var st := {"bid": int(o.bid), "mine": false, "busy": false, "n": 0}
 	var refresh := func():
-		bid_l.text = "ENCHÈRE : ● %d  (%s)" % [st.bid, "toi" if st.mine else "le collectionneur"]
+		bid_l.text = Loc.t("ENCHÈRE : ● %d  (%s)") % [st.bid, "toi" if st.mine else Loc.t("le collectionneur")]
 		for b in btns:
 			var add: int = b.get_meta("add", 0)
 			if add > 0:
@@ -1461,7 +1452,7 @@ func _open_auction(i: int) -> void:
 			st.mine = true
 			st.busy = true
 			st.n += 1
-			log_l.text = "Tu proposes ● %d... (mise %d/%d)" % [st.bid, st.n, AUCTION_BIDS]
+			log_l.text = Loc.t("Tu proposes ● %d... (mise %d/%d)") % [st.bid, st.n, AUCTION_BIDS]
 			Sfx.play("click")
 			refresh.call()
 			await get_tree().create_timer(0.7).timeout
@@ -1475,18 +1466,18 @@ func _open_auction(i: int) -> void:
 				Sfx.play("enemy_shot")
 				if st.n >= AUCTION_BIDS:
 					# Plus de mise possible : l'œuvre part chez le collectionneur, tu ne paies rien
-					log_l.text = "Le collectionneur surenchérit (● %d) et l'emporte..." % st.bid
+					log_l.text = Loc.t("Le collectionneur surenchérit (● %d) et l'emporte...") % st.bid
 					log_l.add_theme_color_override("font_color", Color("f06a5d"))
-					Run.log_event("event", "Enchère : perdue (%s à ● %d)" % [_item_name(it), st.bid])
+					Run.log_event("event", Loc.t("Enchère : perdue (%s à ● %d)") % [_item_name(it), st.bid])
 					o.sold = true
 					refresh.call()
 					await get_tree().create_timer(1.2).timeout
 					if is_instance_valid(bid_l):
 						_ev_close()
 					return
-				log_l.text = "Le collectionneur surenchérit : ● %d (encore %d mise%s)" % [st.bid, AUCTION_BIDS - st.n, "s" if AUCTION_BIDS - st.n > 1 else ""]
+				log_l.text = Loc.t("Le collectionneur surenchérit : ● %d (encore %d mise%s)") % [st.bid, AUCTION_BIDS - st.n, "s" if AUCTION_BIDS - st.n > 1 else ""]
 			else:
-				log_l.text = "Le collectionneur abandonne... ADJUGÉ !"
+				log_l.text = Loc.t("Le collectionneur abandonne... ADJUGÉ !")
 				log_l.add_theme_color_override("font_color", Pal.GOOD)
 				Sfx.play("level")
 				o.sold = true
@@ -1497,19 +1488,19 @@ func _open_auction(i: int) -> void:
 			refresh.call())
 		b.set_meta("add", add)
 		btns.append(b)
-	var quit := _ev_button(inner, "Se retirer", Vector2(284, 200), Vector2(84, 20), func():
-		Run.log_event("event", "Enchère : retiré (%s à ● %d)" % [_item_name(it), st.bid])
+	var quit := _ev_button(inner, Loc.t("Se retirer"), Vector2(284, 200), Vector2(84, 20), func():
+		Run.log_event("event", Loc.t("Enchère : retiré (%s à ● %d)") % [_item_name(it), st.bid])
 		o.sold = true
 		_ev_close())
-	quit.tooltip_text = "Tu ne paies rien, mais l'œuvre part chez le collectionneur."
+	quit.tooltip_text = Loc.t("Tu ne paies rien, mais l'œuvre part chez le collectionneur.")
 	btns.append(quit)
 	if blocked != "":
 		log_l.text = blocked
 		log_l.add_theme_color_override("font_color", Color("f06a5d"))
 	else:
-		log_l.text = "3 mises maximum. Il a un plafond secret..."
-	var back := _ev_button(inner, "Plus tard", Vector2(144, 240), Vector2(100, 18), func(): _ev_close())
-	back.tooltip_text = "Fermer sans enchérir (la vente reste ouverte)"
+		log_l.text = Loc.t("3 mises maximum. Il a un plafond secret...")
+	var back := _ev_button(inner, Loc.t("Plus tard"), Vector2(144, 240), Vector2(100, 18), func(): _ev_close())
+	back.tooltip_text = Loc.t("Fermer sans enchérir (la vente reste ouverte)")
 	UI.hotkey(back, [KEY_ESCAPE])
 	refresh.call()
 
@@ -1520,8 +1511,8 @@ func _open_restorer(i: int) -> void:
 	var o: Dictionary = Run.shop_offers[i]
 	if ev_layer:
 		return
-	var inner := _ev_window("LE RESTAURATEUR", FRAME_EVENT, 250.0)
-	var tl := UI.label("« Confiez-moi une amulette : je la rends plus précieuse...\nmais je ne promets pas laquelle. »", 10, CARTEL, HORIZONTAL_ALIGNMENT_CENTER)
+	var inner := _ev_window(Loc.t("LE RESTAURATEUR"), FRAME_EVENT, 250.0)
+	var tl := UI.label(Loc.t("« Confiez-moi une amulette : je la rends plus précieuse...\nmais je ne promets pas laquelle. »"), 10, CARTEL, HORIZONTAL_ALIGNMENT_CENTER)
 	UI.put(inner, tl, Vector2(0, 34), Vector2(388, 26))
 	var grid := GridContainer.new()
 	grid.columns = 6
@@ -1539,7 +1530,7 @@ func _open_restorer(i: int) -> void:
 		b.add_theme_stylebox_override("hover", UI.sb(Color.WHITE, Pal.ACCENT, 2))
 		b.add_theme_stylebox_override("disabled", UI.sb(Color("8a8070"), Color("5a5040"), 1))
 		b.disabled = Run.gold < cost
-		b.tooltip_text = "%s (%s) → une amulette %s au hasard\nPrix : ● %d" % [d.name, Pal.RARITY_NAMES_F[int(d.rar)].to_lower(), Pal.RARITY_NAMES_F[int(d.rar) + 1].to_lower(), cost]
+		b.tooltip_text = Loc.t("%s (%s) → une amulette %s au hasard\nPrix : ● %d") % [d.name, Pal.RARITY_NAMES_F[int(d.rar)].to_lower(), Pal.RARITY_NAMES_F[int(d.rar) + 1].to_lower(), cost]
 		var th := UI.thumb(am.image, Vector2(36, 36))
 		th.position = Vector2(8, 4)
 		b.add_child(th)
@@ -1558,8 +1549,8 @@ func _open_restorer(i: int) -> void:
 			Sfx.play("level")
 			_grant({"type": "amulet", "id": nd.id, "rar": rar + 1}, cost, {"replace": {"id": entry.id, "pos": entry.pos}}))
 		grid.add_child(b)
-	UI.put(inner, UI.label("Clique l'amulette à lui confier : elle sera remplacée.", 10, CARTEL_DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 208), Vector2(388, 12))
-	UI.hotkey(_ev_button(inner, "Non merci", Vector2(144, 226), Vector2(100, 18), func(): _ev_close()), [KEY_ESCAPE])
+	UI.put(inner, UI.label(Loc.t("Clique l'amulette à lui confier : elle sera remplacée."), 10, CARTEL_DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 208), Vector2(388, 12))
+	UI.hotkey(_ev_button(inner, Loc.t("Non merci"), Vector2(144, 226), Vector2(100, 18), func(): _ev_close()), [KEY_ESCAPE])
 
 
 # --- Le Mécène
@@ -1568,29 +1559,29 @@ func _open_patron(i: int) -> void:
 	var o: Dictionary = Run.shop_offers[i]
 	if ev_layer:
 		return
-	var inner := _ev_window("LE MÉCÈNE", FRAME_EVENT, 220.0)
-	var tl := UI.label("« J'aime l'art qui souffre. Je finance...\nsi vous me donnez du spectacle. »", 10, CARTEL, HORIZONTAL_ALIGNMENT_CENTER)
+	var inner := _ev_window(Loc.t("LE MÉCÈNE"), FRAME_EVENT, 220.0)
+	var tl := UI.label(Loc.t("« J'aime l'art qui souffre. Je finance...\nsi vous me donnez du spectacle. »"), 10, CARTEL, HORIZONTAL_ALIGNMENT_CENTER)
 	UI.put(inner, tl, Vector2(0, 34), Vector2(388, 26))
 	for k in Run.PATRON_DEALS.size():
 		var deal: Array = Run.PATRON_DEALS[k]
 		var y := 72.0 + k * 58.0
 		var box := UI.panel(CARTEL, Color("b9a883"), 1)
 		UI.put(inner, box, Vector2(24, y), Vector2(340, 50))
-		UI.put(box, UI.label("CONTRAT %s" % ["I", "II"][k], 10, CARTEL_DIM), Vector2(8, 4), Vector2(200, 12))
-		UI.put(box, UI.label("+● %d tout de suite" % Run.patron_gold(k), 10, Color("1e7a3a")), Vector2(8, 18), Vector2(220, 12))
+		UI.put(box, UI.label(Loc.t("CONTRAT %s") % ["I", "II"][k], 10, CARTEL_DIM), Vector2(8, 4), Vector2(200, 12))
+		UI.put(box, UI.label(Loc.t("+● %d tout de suite") % Run.patron_gold(k), 10, Color("1e7a3a")), Vector2(8, 18), Vector2(220, 12))
 		UI.put(box, UI.label(String(deal[2]), 10, Color("a02a22")), Vector2(8, 32), Vector2(240, 12))
 		var did: String = deal[0]
 		var amount := Run.patron_gold(k)
-		var sb := UI.button("Signer", func():
+		var sb := UI.button(Loc.t("Signer"), func():
 			Run.gold += amount
-			Run.log_event("event", "Mécène : +● %d contre « %s »" % [amount, String(deal[2])])
+			Run.log_event("event", Loc.t("Mécène : +● %d contre « %s »") % [amount, String(deal[2])])
 			Run.patron = did
 			o.sold = true
 			Sfx.play("buy")
 			_ev_close())
 		_style_price(sb)
 		UI.put(box, sb, Vector2(262, 16), Vector2(70, 18))
-	UI.hotkey(_ev_button(inner, "Refuser", Vector2(144, 196), Vector2(100, 18), func():
+	UI.hotkey(_ev_button(inner, Loc.t("Refuser"), Vector2(144, 196), Vector2(100, 18), func():
 		o.sold = true
 		_ev_close()), [KEY_ESCAPE])
 
@@ -1612,8 +1603,8 @@ func _open_case(i: int) -> void:
 		return
 	Run.spend(o.price)
 	o.sold = true
-	Run.log_event("event", "%s (%s) ouverte (● %d) : %s" % [Run.CASE_NAMES[o.tier], "armes" if o.kind == "weapon" else "amulettes", o.price, Run.item_label(won.type, won.get("wtype", won.get("id", "")), int(won.rar))])
-	var inner := _ev_window("%s · %s" % [Run.CASE_NAMES[o.tier].to_upper(), "ARMES" if o.kind == "weapon" else "AMULETTES"], CASE_FRAME[o.tier], 220.0)
+	Run.log_event("event", Loc.t("%s (%s) ouverte (● %d) : %s") % [Run.CASE_NAMES[o.tier], "armes" if o.kind == "weapon" else "amulettes", o.price, Run.item_label(won.type, won.get("wtype", won.get("id", "")), int(won.rar))])
+	var inner := _ev_window("%s · %s" % [Run.CASE_NAMES[o.tier].to_upper(), Loc.t("ARMES") if o.kind == "weapon" else Loc.t("AMULETTES")], CASE_FRAME[o.tier], 220.0)
 	# La bande : objets au hasard de la caisse, le gagnant à la case WIN
 	var items := []
 	for k in 44:
@@ -1630,10 +1621,10 @@ func _open_case(i: int) -> void:
 	UI.put(inner, res, Vector2(0, 130), Vector2(388, 24))
 	var sub := UI.label("", 10, CARTEL_DIM, HORIZONTAL_ALIGNMENT_CENTER)
 	UI.put(inner, sub, Vector2(0, 156), Vector2(388, 12))
-	var take := _ev_button(inner, "Prendre", Vector2(84, 186), Vector2(100, 20), func(): _grant(won, 0))
+	var take := _ev_button(inner, Loc.t("Prendre"), Vector2(84, 186), Vector2(100, 20), func(): _grant(won, 0))
 	take.disabled = true
-	var leave := _ev_button(inner, "Laisser", Vector2(204, 186), Vector2(100, 20), func(): _ev_close())
-	leave.tooltip_text = "Ne pas prendre cet objet (la caisse est quand même payée)"
+	var leave := _ev_button(inner, Loc.t("Laisser"), Vector2(204, 186), Vector2(100, 20), func(): _ev_close())
+	leave.tooltip_text = Loc.t("Ne pas prendre cet objet (la caisse est quand même payée)")
 	leave.disabled = true
 	await strip.spin_to(WIN)
 	if not is_instance_valid(res):
@@ -1641,7 +1632,7 @@ func _open_case(i: int) -> void:
 	res.text = _item_name(won).to_upper()
 	res.tooltip_text = _item_desc(won)   # survole pour savoir ce que fait l'objet
 	res.add_theme_color_override("font_color", Pal.RARITY[int(won.rar)])
-	sub.text = "%s · %s · survole le nom pour voir ce qu'elle fait" % ["Arme" if won.type == "weapon" else "Amulette", Pal.RARITY_NAMES_F[int(won.rar)].to_lower()]
+	sub.text = Loc.t("%s · %s · survole le nom pour voir ce qu'elle fait") % [Loc.t("Arme") if won.type == "weapon" else Loc.t("Amulette"), Pal.RARITY_NAMES_F[int(won.rar)].to_lower()]
 	Sfx.play("level" if int(won.rar) >= 2 else "buy")
 	if int(won.rar) >= 2:
 		shake_flash(inner, Pal.RARITY[int(won.rar)])
@@ -1649,7 +1640,7 @@ func _open_case(i: int) -> void:
 	leave.disabled = false
 	if won.type == "weapon" and Run.weapons.size() >= Run.max_weapons() and Run.fusion_match(won.wtype, int(won.rar)) < 0:
 		take.disabled = true
-		sub.text += " · plus de place pour une arme"
+		sub.text += Loc.t(" · plus de place pour une arme")
 
 
 ## Petit éclat de couleur sur la fenêtre (épique / légendaire sorti).

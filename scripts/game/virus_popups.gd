@@ -15,7 +15,7 @@ const QTE_NAMES := ["A", "B", "X", "Y"]
 const QTE_COLS := [Color("6ad36a"), Color("e84a4a"), Color("3a86ff"), Color("f0c43a")]
 
 ## Pubs à fermer par la croix : [titre, texte]
-const ADS := [
+static var ADS := [
 	["Rencontres", "STOP ! Arrête de te dessiner : elle est FRAÎCHE et près de chez toi. Nouveau pot de peinture."],
 	["Astuce", "Tu veux AGRANDIR la taille de ton pinceau ?"],
 	["Près de chez toi", "Des toiles VIERGES dans ta région n'attendent que toi."],
@@ -89,7 +89,7 @@ func close_all() -> void:
 # ------------------------------------------------------------------ Construction des fenêtres
 
 func _build(kind: String) -> Control:
-	var title := "Publicité"
+	var title := Loc.t("Publicité")
 	var body := ""
 	var extra := 0.0   # place sous le texte (boutons, captcha)
 	match kind:
@@ -99,23 +99,23 @@ func _build(kind: String) -> Control:
 			body = ad[1]
 			extra = 20.0 if kind == "trap" else 0.0
 		"memory":
-			title = "Système"
-			body = "Mémoire pleine : supprimer 3 de tes amulettes ?"
+			title = Loc.t("Système")
+			body = Loc.t("Mémoire pleine : supprimer 3 de tes amulettes ?")
 			extra = 20.0
 		"honest":
-			title = "Offre honnête"
-			body = "Vraie récompense, sans piège : clique ICI."
+			title = Loc.t("Offre honnête")
+			body = Loc.t("Vraie récompense, sans piège : clique ICI.")
 			extra = 20.0
 		"door":
-			title = "Information"
-			body = "Quelqu'un frappe à ta porte ? Ce n'est pas nous."
+			title = Loc.t("Information")
+			body = Loc.t("Quelqu'un frappe à ta porte ? Ce n'est pas nous.")
 		"c_spots":
-			title = "Vérification"
-			body = "Clique sur toutes les cases qui contiennent une TACHE."
+			title = Loc.t("Vérification")
+			body = Loc.t("Clique sur toutes les cases qui contiennent une TACHE.")
 			extra = 56.0
 		"c_round":
-			title = "Vérification"
-			body = "Prouve que tu es un artiste : clique sur le rond."
+			title = Loc.t("Vérification")
+			body = Loc.t("Prouve que tu es un artiste : clique sur le rond.")
 			extra = 26.0
 	# hauteur selon la longueur du texte (~19 caractères par ligne dans cette police, 13 px par ligne)
 	var lines := ceili(body.length() / 19.0)
@@ -164,12 +164,12 @@ func _build(kind: String) -> Control:
 	match kind:
 		"trap":
 			# le gros bouton FERMER est un piège : il ouvre deux fenêtres de plus
-			UI.put(w, _btn("FERMER", _trap.bind(w)), Vector2((W - 80.0) / 2.0, ty), Vector2(80, 16))
+			UI.put(w, _btn(Loc.t("FERMER"), _trap.bind(w)), Vector2((W - 80.0) / 2.0, ty), Vector2(80, 16))
 		"memory":
 			# du bluff : « Accepter » ne supprime rien, ça ferme juste la fenêtre
-			UI.put(w, _btn("Accepter", func(): close(w)), Vector2((W - 70.0) / 2.0, ty), Vector2(70, 15))
+			UI.put(w, _btn(Loc.t("Accepter"), func(): close(w)), Vector2((W - 70.0) / 2.0, ty), Vector2(70, 15))
 		"honest":
-			UI.put(w, _btn("ICI", _honest.bind(w)), Vector2((W - 50.0) / 2.0, ty), Vector2(50, 15))
+			UI.put(w, _btn(Loc.t("ICI"), _honest.bind(w)), Vector2((W - 50.0) / 2.0, ty), Vector2(50, 15))
 	return w
 
 
@@ -183,7 +183,7 @@ func _honest(w: Control) -> void:
 	var g := 5 + Run.wave
 	Run.gold += g
 	if arena:
-		arena.float_text(arena.player.position + Vector2(0, -28), "+● %d (pub honnête !)" % g, Pal.ACCENT)
+		arena.float_text(arena.player.position + Vector2(0, -28), Loc.t("+● %d (pub honnête !)") % g, Pal.ACCENT)
 	Sfx.play("coin")
 	close(w)
 

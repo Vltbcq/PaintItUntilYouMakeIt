@@ -5,7 +5,7 @@ extends RefCounted
 ## marqués "buy" (achetés à l'établi). "req" : autre amélioration nécessaire ; "wins" : victoires nécessaires ;
 ## "best_wave" : vague à avoir finie au moins une fois.
 
-const LIST := [
+static var LIST := [
 	{"id": "pack_primaires", "cat": "Couleurs", "name": "Pack primaire", "cost": [15], "buy": true, "best_wave": 3,
 		"desc": "Rouge (Feu), Bleu (Glace), Jaune (Foudre). Chaque couleur donne une résistance et un effet d'arme."},
 	{"id": "pack_secondaires", "cat": "Couleurs", "name": "Pack secondaire", "cost": [140], "buy": true, "wins": 1,
@@ -44,7 +44,7 @@ const LIST := [
 
 ## Amélioration achetable avec des pigments (sinon : succès).
 static func for_pigments(d: Dictionary) -> bool:
-	return d.cat in ["Encre", "Boutique", "Mécénat"] or d.get("buy", false)
+	return d.cat in [Loc.t("Encre"), Loc.t("Boutique"), Loc.t("Mécénat")] or d.get("buy", false)
 
 
 ## Le succès qui débloque cette amélioration ({} si elle s'achète).

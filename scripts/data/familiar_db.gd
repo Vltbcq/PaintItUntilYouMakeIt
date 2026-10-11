@@ -4,7 +4,7 @@ extends RefCounted
 ## comportement (attaquer, soigner, gêner, encaisser...). Tous uniques, nombre illimité.
 ## « Woinic » : en hommage au chien de Theorus. « Yuki » et « Teemeo » : clins d'œil à League of Legends.
 
-const LIST := [
+static var LIST := [
 	# Communs
 	{"id": "moustique", "name": "Moustique", "rar": 0, "ink": 40,
 		"desc": "Pique les ennemis et te rend un peu de PV."},

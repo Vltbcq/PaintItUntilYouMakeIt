@@ -226,16 +226,16 @@ func take_hit(dmg: float, element: int, src: Node) -> void:
 		dmg *= wmult
 		if weak_t <= 0.0:
 			weak_t = 1.5
-			arena.float_text(position + Vector2(0, -26), "FAIBLESSE !" if wmult > 1.0 else "RÉSISTE", Pal.BAD if wmult > 1.0 else Pal.DIM)
+			arena.float_text(position + Vector2(0, -26), Loc.t("FAIBLESSE !") if wmult > 1.0 else Loc.t("RÉSISTE"), Pal.BAD if wmult > 1.0 else Pal.DIM)
 	if paper > 0:
 		# Bouclier de papier : ce coup-là est ignoré
 		paper -= 1
 		inv = 0.5
-		arena.float_text(position + Vector2(0, -14), "BOUCLIER !", Pal.TEXT)
+		arena.float_text(position + Vector2(0, -14), Loc.t("BOUCLIER !"), Pal.TEXT)
 		arena.burst(position, Color.WHITE, 12, 90.0)
 		return
 	if randf() * 100.0 < st.dodge:
-		arena.float_text(position + Vector2(0, -14), "ESQUIVE", Pal.DIM)
+		arena.float_text(position + Vector2(0, -14), Loc.t("ESQUIVE"), Pal.DIM)
 		inv = 0.25
 		if Run.amulet_count("ombre_portee") > 0:
 			shadow_ready = true
@@ -257,11 +257,11 @@ func take_hit(dmg: float, element: int, src: Node) -> void:
 		if shield <= 0.0:
 			shield = 0.0
 			shield_cd = SHIELD_CD   # il a cassé : pas de nouveau bouclier pendant 4 s
-			arena.float_text(position + Vector2(0, -22), "BOUCLIER CASSÉ", Color(0.85, 0.3, 0.35))
+			arena.float_text(position + Vector2(0, -22), Loc.t("BOUCLIER CASSÉ"), Color(0.85, 0.3, 0.35))
 		queue_redraw()
 		if d < 1.0:
 			inv = 0.5
-			arena.float_text(position + Vector2(0, -14), "ABSORBÉ", Color(0.85, 0.3, 0.35))
+			arena.float_text(position + Vector2(0, -14), Loc.t("ABSORBÉ"), Color(0.85, 0.3, 0.35))
 			return
 	hp -= d
 	was_hurt = true
@@ -304,7 +304,7 @@ func take_hit(dmg: float, element: int, src: Node) -> void:
 			arena.explosion(position, 80.0, Color(Pal.GOOD, 0.9))
 			for e in arena.near(position, 80.0):
 				e.knock += (e.position - position).normalized() * 220.0
-			arena.numbers.add(position + Vector2(0, -26), "RENAISSANCE !", Pal.GOOD, 1.8)
+			arena.numbers.add(position + Vector2(0, -26), Loc.t("RENAISSANCE !"), Pal.GOOD, 1.8)
 			return
 		arena.player_died()
 
@@ -399,9 +399,9 @@ func stain() -> void:
 					pimg.set_pixelv(q, Pal.SHADES[0][0])
 		ptex.update(pimg)
 	if main_color() == Pal.NOIR and before != Pal.NOIR:
-		arena.float_text(position + Vector2(0, -30), "TU PASSES À L'OMBRE !", Pal.BAD)
+		arena.float_text(position + Vector2(0, -30), Loc.t("TU PASSES À L'OMBRE !"), Pal.BAD)
 	else:
-		arena.float_text(position + Vector2(0, -22), "TACHÉ !", Pal.DIM)
+		arena.float_text(position + Vector2(0, -22), Loc.t("TACHÉ !"), Pal.DIM)
 
 
 ## Buvard : les taches s'en vont.
@@ -410,7 +410,7 @@ func clean() -> void:
 		return
 	stains = 0
 	refresh_image()
-	arena.float_text(position + Vector2(0, -22), "NETTOYÉ !", Pal.GOOD)
+	arena.float_text(position + Vector2(0, -22), Loc.t("NETTOYÉ !"), Pal.GOOD)
 
 
 ## La Toile Blanche gomme un morceau de ton dessin : -12% PV max jusqu'à la fin de la vague.
@@ -434,7 +434,7 @@ func erase_at(_world: Vector2) -> void:
 	ptex.update(pimg)
 	erase_mult = maxf(0.5, erase_mult - 0.12)
 	refresh_max_hp()
-	arena.float_text(position + Vector2(0, -22), "EFFACÉ !", Pal.TEXT)
+	arena.float_text(position + Vector2(0, -22), Loc.t("EFFACÉ !"), Pal.TEXT)
 	Sfx.play("explode")
 
 

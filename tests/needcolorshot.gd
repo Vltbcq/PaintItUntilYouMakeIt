@@ -1,7 +1,7 @@
 extends Node
 ## Capture : choix d'un dessin d'ennemi avec une COULEUR IMPOSÉE (pastille en haut, pastilles
 ## sur les vignettes, dessins de la mauvaise couleur grisés). Lit la vraie galerie sans rien écrire.
-## Godot --path . res://tests/needcolorshot.tscn -- <capture.png> [élément] [pick]
+## Godot --path . res://tests/needcolorshot.tscn -- <capture.png> [élément] [pick] [arme]
 
 
 func _ready() -> void:
@@ -11,7 +11,11 @@ func _ready() -> void:
 	Meta.settings.tips = false
 	var args := OS.get_cmdline_user_args()
 	var cfg := DrawCfg.enemy("tache")
-	cfg.need_el = int(args[1]) if args.size() > 1 else 4
+	if "arme" in args:
+		# [arme] : choix du dessin d'une arme achetée (l'élément principal de chaque dessin s'affiche)
+		cfg = DrawCfg.weapon("epee", 0)
+	else:
+		cfg.need_el = int(args[1]) if args.size() > 1 else 4
 	var p := BestiaryPrompt.new(cfg, null)
 	p.size = Vector2(640, 360)
 	add_child(p)

@@ -7,7 +7,7 @@ extends Control
 
 signal done(result)
 
-const TABS := [["armes", "Armes"], ["amulettes", "Amulettes"], ["familiers", "Familiers"], ["ennemis", "Ennemis"]]
+static var TABS := [["armes", "Armes"], ["amulettes", "Amulettes"], ["familiers", "Familiers"], ["ennemis", "Ennemis"]]
 
 var tab := "armes"
 var sel := ""
@@ -95,22 +95,22 @@ func _slots(id: String) -> Array:
 				out.append([Run.weapon_key(id, r), Pal.RARITY_NAMES_F[r], DrawCfg.weapon(id, r, true), Pal.RARITY[r]])
 			if def.kind == "ranged" and not def.get("nobullet", false):
 				var wa := Analyzer.analyze(_default_or_blank("arme_" + id, Vector2i(def.canvas, def.canvas)))
-				out.append(["balle_" + id, "Balles", DrawCfg.bullet(id, wa, "", 0)])
+				out.append(["balle_" + id, Loc.t("Balles"), DrawCfg.bullet(id, wa, "", 0)])
 			return out
 		"amulettes":
 			var ad := AmuletDB.get_def(id)
-			return [["amulette_" + id, "Amulette " + Pal.RARITY_NAMES_F[int(ad.rar)].to_lower(), DrawCfg.amulet(ad), Pal.RARITY[int(ad.rar)]]]
+			return [["amulette_" + id, Loc.t("Amulette %s") % Pal.RARITY_NAMES_F[int(ad.rar)].to_lower(), DrawCfg.amulet(ad), Pal.RARITY[int(ad.rar)]]]
 		"familiers":
 			var fd := FamiliarDB.get_def(id)
-			return [["familier_" + id, "Familier " + Pal.RARITY_NAMES_F[int(fd.rar)].to_lower(), DrawCfg.familiar(fd), Pal.RARITY[int(fd.rar)]]]
+			return [["familier_" + id, Loc.t("Familier %s") % Pal.RARITY_NAMES_F[int(fd.rar)].to_lower(), DrawCfg.familiar(fd), Pal.RARITY[int(fd.rar)]]]
 	var ed := EnemyDB.get_def(id)
 	if ed.has("boss"):
-		return [[id, "Boss", DrawCfg.enemy(id)]]
-	var out := [[id, "Ennemi", DrawCfg.enemy(id)]]
+		return [[id, Loc.t("Boss"), DrawCfg.enemy(id)]]
+	var out := [[id, Loc.t("Ennemi"), DrawCfg.enemy(id)]]
 	# Élite : on part de son dessin de base du Codex (comme les raretés d'une arme)
 	var base = Meta.bestiary_get(id)
 	if base != null:
-		out.append([id + "_elite", "Élite", DrawCfg.elite(id, base.image, base.effect, base.outline), Pal.ACCENT])
+		out.append([id + "_elite", Loc.t("Élite"), DrawCfg.elite(id, base.image, base.effect, base.outline), Pal.ACCENT])
 	return out
 
 
@@ -172,7 +172,7 @@ func _build() -> void:
 		c.queue_free()
 	picker = null
 	UI.fill_bg(self)
-	UI.put(self, UI.label("CODEX", 20, Pal.ACCENT), Vector2(12, 8))
+	UI.put(self, UI.label(Loc.t("CODEX"), 20, Pal.ACCENT), Vector2(12, 8))
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 3)
 	UI.put(self, tabs, Vector2(12, 34), Vector2(250, 16))
@@ -186,18 +186,17 @@ func _build() -> void:
 		if tid == tab:
 			b.add_theme_stylebox_override("normal", UI.sb(UI.SELECTED, Pal.ACCENT, 1))
 		var tc := _completion(tid)
-		b.tooltip_text = "%s : %d%% dessiné · %d%% débloqué" % [t[1], roundi(tc[0]), roundi(tc[1])]
+		b.tooltip_text = Loc.t("%s : %d%% dessiné · %d%% débloqué") % [t[1], roundi(tc[0]), roundi(tc[1])]
 		tabs.add_child(b)
 	# Complétion du Codex (tout confondu) et de l'onglet ouvert
 	var all := _completion()
-	var cl := UI.label("COMPLÉTION  %d%% dessiné · %d%% débloqué" % [roundi(all[0]), roundi(all[1])], 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_RIGHT)
+	var cl := UI.label(Loc.t("COMPLÉTION  %d%% dessiné · %d%% débloqué") % [roundi(all[0]), roundi(all[1])], 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_RIGHT)
 	cl.mouse_filter = Control.MOUSE_FILTER_STOP
-	cl.tooltip_text = "Dessiné : cases du Codex qui ont un dessin par défaut (chaque rareté d'arme compte)
-Débloqué : armes, amulettes et ennemis disponibles"
+	cl.tooltip_text = Loc.t("Dessiné : cases du Codex qui ont un dessin par défaut (chaque rareté d'arme compte)\nDébloqué : armes, amulettes et ennemis disponibles")
 	UI.put(self, cl, Vector2(270, 36), Vector2(358, 12))
 
-	var cb := UI.button("Cercle des faiblesses", func(): UI.cercle_popup(self, "", false))
-	cb.tooltip_text = "Les faiblesses entre couleurs (éléments)"
+	var cb := UI.button(Loc.t("Cercle des faiblesses"), func(): UI.cercle_popup(self, "", false))
+	cb.tooltip_text = Loc.t("Les faiblesses entre couleurs (éléments)")
 	UI.put(self, cb, Vector2(100, 334), Vector2(130, 18))   # (aligné sur « Retour »)
 
 	var items := _items()
@@ -252,16 +251,16 @@ Débloqué : armes, amulettes et ennemis disponibles"
 		UI.put(fr, UI.thumb(Gfx.icon(Gfx.ICON_UNKNOWN), Vector2(68, 68)), Vector2(4, 4), Vector2(68, 68))
 		var why := ""
 		if tab == "ennemis":
-			why = "Tu n'as pas encore rencontré cette créature."
+			why = Loc.t("Tu n'as pas encore rencontré cette créature.")
 		else:
 			var ik := _item_key(sel)
-			why = {"armes": "Cette arme", "familiers": "Ce familier"}.get(tab, "Cette amulette") + " n'apparaît pas encore en boutique.\n\nSuccès : " + ItemUnlockDB.text(ItemUnlockDB.CONDS[ik])
+			why = {"armes": Loc.t("Cette arme"), "familiers": Loc.t("Ce familier")}.get(tab, Loc.t("Cette amulette")) + Loc.t(" n'apparaît pas encore en boutique.\n\nSuccès : ") + ItemUnlockDB.text(ItemUnlockDB.CONDS[ik])
 			if ik in Meta.data.get("pending_unlocks", []):
-				why += "\n\n⌛ Obtenu : disponible à la fin de la partie."
-		var lk := UI.label("VERROUILLÉ\n\n" + why, 10, Pal.DIM)
+				why += Loc.t("\n\n⌛ Obtenu : disponible à la fin de la partie.")
+		var lk := UI.label(Loc.t("VERROUILLÉ\n\n") + why, 10, Pal.DIM)
 		lk.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		UI.put(p, lk, Vector2(96, 36), Vector2(250, 120))
-		UI.put(self, UI.hotkey(UI.button("Retour", func(): done.emit(null)), [KEY_ESCAPE]), Vector2(12, 334), Vector2(80, 18))
+		UI.put(self, UI.hotkey(UI.button(Loc.t("Retour"), func(): done.emit(null)), [KEY_ESCAPE]), Vector2(12, 334), Vector2(80, 18))
 		return
 	var slots := _slots(sel)
 	var compact := slots.size() > 2
@@ -273,7 +272,7 @@ Débloqué : armes, amulettes et ennemis disponibles"
 	var info := UI.rich(_stats_text(sel), 10, Pal.TEXT, 11)   # quantités de stats en icônes
 	info.custom_minimum_size.x = 338
 	UI.put(p, info, Vector2(10, 146 if compact else 128), Vector2(338, 120))
-	UI.put(self, UI.hotkey(UI.button("Retour", func(): done.emit(null)), [KEY_ESCAPE]), Vector2(12, 334), Vector2(80, 18))
+	UI.put(self, UI.hotkey(UI.button(Loc.t("Retour"), func(): done.emit(null)), [KEY_ESCAPE]), Vector2(12, 334), Vector2(80, 18))
 
 
 ## Version compacte (armes : une case par rareté + balles).
@@ -287,9 +286,9 @@ func _slot_small(parent: Control, slot: Array, pos: Vector2) -> void:
 	UI.put(parent, frame, pos + Vector2(4, 12), Vector2(56, 56))
 	var img: Image = ((Gfx.baked_outline(Analyzer.trim(d.image)) if d.outline else Analyzer.trim(d.image)) if d != null else Gfx.icon(Gfx.ICON_UNKNOWN))
 	UI.put(frame, UI.thumb(img, Vector2(48, 48)), Vector2(4, 4), Vector2(48, 48))
-	var g := UI.button("Galerie", func(): _open_picker(key, cfg))
+	var g := UI.button(Loc.t("Galerie"), func(): _open_picker(key, cfg))
 	UI.put(parent, g, pos + Vector2(0, 72), Vector2(64, 16))
-	var m := UI.button("Modifier" if d != null else "Dessiner", func():
+	var m := UI.button(Loc.t("Modifier") if d != null else Loc.t("Dessiner"), func():
 		done.emit({"a": "draw", "key": key, "cfg": cfg, "tab": tab, "sel": sel}))
 	UI.put(parent, m, pos + Vector2(0, 90), Vector2(64, 16))
 	if d != null:
@@ -297,7 +296,7 @@ func _slot_small(parent: Control, slot: Array, pos: Vector2) -> void:
 			Meta.bestiary_remove(key)
 			Sfx.play("click")
 			_build())
-		x.tooltip_text = "Retirer ce dessin par défaut"
+		x.tooltip_text = Loc.t("Retirer ce dessin par défaut")
 		UI.put(parent, x, pos + Vector2(50, 12), Vector2(14, 14))
 
 
@@ -315,11 +314,11 @@ func _slot_ui(parent: Control, slot: Array, pos: Vector2) -> void:
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 3)
 	UI.put(parent, col, pos + Vector2(82, 12), Vector2(76, 76))
-	col.add_child(UI.button("Galerie", func(): _open_picker(key, cfg)))
-	col.add_child(UI.button("Modifier" if d != null else "Dessiner", func():
+	col.add_child(UI.button(Loc.t("Galerie"), func(): _open_picker(key, cfg)))
+	col.add_child(UI.button(Loc.t("Modifier") if d != null else Loc.t("Dessiner"), func():
 		done.emit({"a": "draw", "key": key, "cfg": cfg, "tab": tab, "sel": sel})))
 	if d != null:
-		col.add_child(UI.button("Retirer", func():
+		col.add_child(UI.button(Loc.t("Retirer"), func():
 			Meta.bestiary_remove(key)
 			Sfx.play("click")
 			_build()))
@@ -344,20 +343,20 @@ func _stats_text(id: String) -> String:
 	if ItemUnlockDB.CONDS.has(ik):
 		var cond := ItemUnlockDB.text(ItemUnlockDB.CONDS[ik])
 		if Meta.item_open(ik):
-			L.append("✓ Débloqué · " + cond)
+			L.append(Loc.t("✓ Débloqué · ") + cond)
 		elif ik in Meta.data.get("pending_unlocks", []):
-			L.append("⌛ Obtenu : disponible à la fin de la partie · " + cond)
+			L.append(Loc.t("⌛ Obtenu : disponible à la fin de la partie · ") + cond)
 		else:
-			L.append("VERROUILLÉ · Succès : " + cond)
+			L.append(Loc.t("VERROUILLÉ · Succès : ") + cond)
 		L.append("")
 	match tab:
 		"armes":
 			var def := WeaponDB.get_def(id)
-			L.append("%s — %s" % ["Corps à corps" if def.kind == "melee" else "À distance", def.desc])
-			var ink := "Encre %d" % def.ink
+			L.append("%s — %s" % [Loc.t("Corps à corps") if def.kind == "melee" else Loc.t("À distance"), def.desc])
+			var ink := Loc.t("Encre %d") % def.ink
 			if def.kind == "ranged" and not def.get("nobullet", false):
-				ink += " + balles %d" % def.bink
-			L.append(ink + "  ·  Rareté : puissance ×1,8 / ×3,2 / ×6")
+				ink += Loc.t(" + balles %d") % def.bink
+			L.append(ink + Loc.t("  ·  Rareté : puissance ×1,8 / ×3,2 / ×6"))
 			var d = Meta.bestiary_get("arme_" + id)
 			if d != null:
 				var mr := int(def.get("min_rar", 0))
@@ -376,25 +375,25 @@ func _stats_text(id: String) -> String:
 					for bl in st.bullets:
 						hit += bl.damage
 					hit *= st.pellets
-				L.append("Avec ton dessin (" + Pal.RARITY_NAMES_F[mr].to_lower() + ") : %.1f dégâts / %.2fs = %.1f dégâts/s, critique %d%%" % [hit, st.cooldown, hit / st.cooldown, roundi(st.crit)])
+				L.append(Loc.t("Avec ton dessin (%s) : %.1f dégâts / %.2fs = %.1f dégâts/s, critique %d%%") % [Pal.RARITY_NAMES_F[mr].to_lower(), hit, st.cooldown, hit / st.cooldown, roundi(st.crit)])
 		"amulettes":
 			var def := AmuletDB.get_def(id)
-			L.append("%s — encre %d" % [Pal.RARITY_NAMES_F[def.rar], AmuletDB.ink(def)])
+			L.append(Loc.t("%s — encre %d") % [Pal.RARITY_NAMES_F[def.rar], AmuletDB.ink(def)])
 			L.append(AmuletDB.describe(def))
 		"familiers":
 			var fdef := FamiliarDB.get_def(id)
-			L.append("Familier %s (unique) — encre %d" % [Pal.RARITY_NAMES_F[int(fdef.rar)].to_lower(), FamiliarDB.ink(fdef)])
+			L.append(Loc.t("Familier %s (unique) — encre %d") % [Pal.RARITY_NAMES_F[int(fdef.rar)].to_lower(), FamiliarDB.ink(fdef)])
 			L.append(String(fdef.desc))
 		"ennemis":
 			var def := EnemyDB.get_def(id)
-			var kind := "Boss" if def.get("boss", 0) == 2 else ("Mini-boss" if def.has("boss") else "Ennemi")
-			L.append("%s — %s, vague %d." % [kind, MapDB.get_def(int(def.get("map", 1))).name, def.wave])
-			L.append("PV de base %d · dégâts %s · vitesse %d · encre %d%s" % [roundi(def.hp), str(def.dmg), roundi(def.spd), def.ink,
-				" (95 % minimum)" if def.has("boss") else ""])
+			var kind := Loc.t("Boss") if def.get("boss", 0) == 2 else (Loc.t("Mini-boss") if def.has("boss") else Loc.t("Ennemi"))
+			L.append(Loc.t("%s — %s, vague %d.") % [kind, MapDB.get_def(int(def.get("map", 1))).name, def.wave])
+			L.append(Loc.t("PV de base %d · dégâts %s · vitesse %d · encre %d%s") % [roundi(def.hp), str(def.dmg), roundi(def.spd), def.ink,
+				Loc.t(" (95 % minimum)") if def.has("boss") else ""])
 			var d = Meta.bestiary_get(id)
 			if d != null:
 				var m := Stats.enemy_art(Analyzer.analyze(d.image), def.ink, d.get("effect", ""))
-				L.append("Avec ton dessin : PV ×%.2f, vitesse ×%.2f, esquive %d%%, armure %d%%, dégâts +%d%%, butin ×%.2f, élément %s" % [
+				L.append(Loc.t("Avec ton dessin : PV ×%.2f, vitesse ×%.2f, esquive %d%%, armure %d%%, dégâts +%d%%, butin ×%.2f, élément %s") % [
 					m.hp, m.speed, roundi(m.dodge), roundi(m.armor), roundi(m.dmg), m.loot, Pal.NAMES[m.element]])
 	return "\n".join(L)
 
@@ -404,8 +403,8 @@ func _stats_text(id: String) -> String:
 func _open_picker(key: String, cfg: Dictionary) -> void:
 	picker = UI.panel(Color(Pal.BG, 0.97), Pal.ACCENT)
 	UI.put(self, picker, Vector2(20, 20), Vector2(600, 320))
-	UI.put(picker, UI.label("Choisis le dessin par défaut", 10, Pal.ACCENT), Vector2(10, 8))
-	UI.put(picker, UI.hotkey(UI.button("Fermer", func():
+	UI.put(picker, UI.label(Loc.t("Choisis le dessin par défaut"), 10, Pal.ACCENT), Vector2(10, 8))
+	UI.put(picker, UI.hotkey(UI.button(Loc.t("Fermer"), func():
 		picker.queue_free()
 		picker = null), [KEY_ESCAPE]), Vector2(530, 6), Vector2(60, 16))
 	var sc := ScrollContainer.new()
@@ -432,7 +431,7 @@ func _open_picker(key: String, cfg: Dictionary) -> void:
 		var th := UI.thumb(gi, Vector2(44, 44))
 		th.position = Vector2(4, 4)
 		b.add_child(th)
-		b.tooltip_text = "Encre : %d / %d" % [Analyzer.ink_cost(gi), int(cfg.ink)]
+		b.tooltip_text = Loc.t("Encre : %d / %d") % [Analyzer.ink_cost(gi), int(cfg.ink)]
 		var fx: String = e.get("effect", "")
 		b.pressed.connect(func():
 			var out := Image.create_empty(s.x, s.y, false, Image.FORMAT_RGBA8)
@@ -445,4 +444,4 @@ func _open_picker(key: String, cfg: Dictionary) -> void:
 		grid.add_child(b)
 		shown += 1
 	if shown == 0:
-		UI.put(picker, UI.label("Aucun dessin de ta galerie n'a la bonne taille.", 10, Pal.DIM), Vector2(10, 40))
+		UI.put(picker, UI.label(Loc.t("Aucun dessin de ta galerie n'a la bonne taille."), 10, Pal.DIM), Vector2(10, 40))

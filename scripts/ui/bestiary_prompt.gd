@@ -12,7 +12,7 @@ signal done(result)
 var cfg: Dictionary
 var existing          # {image, effect, outline} ou null
 var reward := 0
-var caption := "TON DESSIN DE BASE"
+var caption := Loc.t("TON DESSIN DE BASE")
 
 var sel_img: Image
 var sel_effect := ""
@@ -27,9 +27,11 @@ var mod_btn: Button
 var alt_row: Control      # « Modifier » / « Nouveau » : cachés quand il n'y a encore aucun dessin
 var bord_btn: Button
 var gallery_btns := []
+var pic_el: TextureRect   # icône de l'élément principal du dessin choisi (armes, couleur imposée)
+var show_el := false
 
 
-func _init(draw_cfg: Dictionary, current, pigments_reward := 0, featured_caption := "TON DESSIN DE BASE") -> void:
+func _init(draw_cfg: Dictionary, current, pigments_reward := 0, featured_caption := Loc.t("TON DESSIN DE BASE")) -> void:
 	cfg = draw_cfg
 	existing = current
 	reward = pigments_reward
@@ -49,7 +51,7 @@ func _ready() -> void:
 		row.add_theme_constant_override("separation", 8)
 		UI.put(self, row, Vector2(0, 36), Vector2(640, 22))
 		row.add_child(_el_icon(el, 20))
-		var nl := UI.label("COULEUR IMPOSÉE : %s" % String(Pal.NAMES[el]).to_upper(), 16, Pal.SHADES[el][1].lightened(0.25))
+		var nl := UI.label(Loc.t("COULEUR IMPOSÉE : %s") % String(Pal.NAMES[el]).to_upper(), 16, Pal.SHADES[el][1].lightened(0.25))
 		nl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		row.add_child(nl)
 
@@ -67,20 +69,27 @@ func _ready() -> void:
 	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UI.put(inner, pic, Vector2(7, 7), Vector2(170, 160))
 
-	keep_btn = UI.hotkey(UI.button("Utiliser ce dessin", _keep, 20), [KEY_ENTER, KEY_KP_ENTER])
+	# L'élément principal du dessin : toujours montré pour une arme (c'est lui qui décide de la
+	# synergie et des faiblesses), et quand une couleur est imposée
+	show_el = cfg.has("need_el") or String(cfg.kind) in ["melee", "ranged", "bullet"]
+	pic_el = _el_icon(0, 20)
+	pic_el.visible = false
+	UI.put(inner, pic_el, Vector2(160, 4), Vector2(20, 20))
+
+	keep_btn = UI.hotkey(UI.button(Loc.t("Utiliser ce dessin"), _keep, 20), [KEY_ENTER, KEY_KP_ENTER])
 	UI.put(self, keep_btn, Vector2(24, 274), Vector2(200, 24))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 4)
 	UI.put(self, row, Vector2(24, 302), Vector2(200, 16))
 	alt_row = row
-	mod_btn = UI.hotkey(UI.button("Modifier", _redraw), [KEY_M])
+	mod_btn = UI.hotkey(UI.button(Loc.t("Modifier"), _redraw), [KEY_M])
 	mod_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(mod_btn)
-	var nw := UI.hotkey(UI.button("Nouveau", func(): done.emit({"a": "draw", "outline": outline})), [KEY_N])
+	var nw := UI.hotkey(UI.button(Loc.t("Nouveau"), func(): done.emit({"a": "draw", "outline": outline})), [KEY_N])
 	nw.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(nw)
 	bord_btn = UI.hotkey(UI.button("", _toggle_outline), [KEY_C])
-	bord_btn.tooltip_text = "Contour noir autour du dessin en jeu"
+	bord_btn.tooltip_text = Loc.t("Contour noir autour du dessin en jeu")
 	UI.put(self, bord_btn, Vector2(24, 322), Vector2(200, 16))
 
 	if existing != null:
@@ -92,7 +101,7 @@ func _ready() -> void:
 
 	# --- Droite : dessins de la galerie qui conviennent
 	var fits := _fitting()
-	UI.put(self, UI.label("TA GALERIE", 10, Pal.DIM), Vector2(248, 64))
+	UI.put(self, UI.label(Loc.t("TA GALERIE"), 10, Pal.DIM), Vector2(248, 64))
 	var sc := ScrollContainer.new()
 	UI.put(self, sc, Vector2(248, 78), Vector2(380, 252))
 	var grid := GridContainer.new()
@@ -111,31 +120,33 @@ func _ready() -> void:
 		var th := UI.thumb(gi, Vector2(50, 50))
 		th.position = Vector2(4, 4)
 		b.add_child(th)
-		b.tooltip_text = "Encre : %d" % Analyzer.ink_cost(gi)
-		if cfg.has("need_el"):
+		b.tooltip_text = Loc.t("Encre : %d") % Analyzer.ink_cost(gi)
+		if show_el:
 			# icône de l'élément de sa couleur dominante, dans le coin
-			var ic := _el_icon(int(Analyzer.analyze(gi).dominant), 13)
+			var gel := int(Analyzer.analyze(gi).dominant)
+			var ic := _el_icon(gel, 13)
 			ic.position = Vector2(43, 2)
 			b.add_child(ic)
+			b.tooltip_text += "\n" + Loc.t("Élément : %s") % Pal.NAMES[maxi(gel, 0)]
 		var issue: String = block if block != "" else f[3]
 		if issue != "":
 			# pas utilisable tel quel (trop grand, couleurs verrouillées, mauvaise couleur) : pâli,
 			# mais on peut le prendre pour le MODIFIER ; c'est au joueur de le rendre valide
 			th.modulate = Color(1, 1, 1, 0.3)
-			b.tooltip_text = "%s\n(tu peux le prendre et le modifier)" % issue
+			b.tooltip_text = Loc.t("%s\n(tu peux le prendre et le modifier)") % issue
 		b.pressed.connect(func():
 			Sfx.play("click")
 			from_carnet = false
-			frame_cap.text = "DESSIN CHOISI DANS TA GALERIE"
+			frame_cap.text = Loc.t("DESSIN CHOISI DANS TA GALERIE")
 			outline = e.get("outline", false)   # le bord choisi dans la galerie
-			bord_btn.text = "Bord : %s" % ("oui" if outline else "non")
+			bord_btn.text = Loc.t("Bord : %s") % (Loc.t("oui") if outline else Loc.t("non"))
 			_select(gi, _effect_ok(e.get("effect", "")))
 			for o in gallery_btns:
 				_style_thumb(o, o == b))
 		grid.add_child(b)
 		gallery_btns.append(b)
 	if existing != null:
-		UI.put(self, UI.button("< Remettre le dessin de base", func():
+		UI.put(self, UI.button(Loc.t("< Remettre le dessin de base"), func():
 			from_carnet = true
 			frame_cap.text = caption
 			outline = existing.outline
@@ -143,7 +154,7 @@ func _ready() -> void:
 			for o in gallery_btns:
 				_style_thumb(o, false)), Vector2(248, 338), Vector2(200, 18))
 	if cfg.get("cancel", false):
-		UI.put(self, UI.hotkey(UI.button(String(cfg.get("cancel_label", "Retour")), func(): done.emit({"a": "cancel"})), [KEY_ESCAPE]), Vector2(528, 338), Vector2(100, 18))
+		UI.put(self, UI.hotkey(UI.button(String(cfg.get("cancel_label", Loc.t("Retour"))), func(): done.emit({"a": "cancel"})), [KEY_ESCAPE]), Vector2(528, 338), Vector2(100, 18))
 
 
 func _style_thumb(b: Button, on: bool) -> void:
@@ -174,22 +185,28 @@ func _select(img: Image, effect: String) -> void:
 	pic.texture = ImageTexture.create_from_image(Gfx.padded(shown))
 	pic_mat = Gfx.material(sel_effect, outline and sel_img != null)
 	pic.material = pic_mat
-	var why := _usable(img) if img else "Rien pour l'instant : dessine-le !"   # (sur le dessin d'origine)
+	pic_el.visible = show_el and sel_img != null
+	if pic_el.visible:
+		var sel_el := int(Analyzer.analyze(sel_img).dominant)
+		pic_el.texture = UI.element_icon(sel_el if sel_el > 0 else Pal.NOIR)
+		pic_el.tooltip_text = Loc.t("Élément : %s") % Pal.NAMES[maxi(sel_el, 0)]
+		pic_el.mouse_filter = Control.MOUSE_FILTER_STOP
+	var why := _usable(img) if img else Loc.t("Rien pour l'instant : dessine-le !")   # (sur le dessin d'origine)
 	keep_btn.disabled = why != ""
 	mod_btn.disabled = sel_img == null
 	alt_row.visible = sel_img != null   # pas de dessin : seul « Dessiner » (Nouveau ferait pareil)
-	mod_btn.text = "Modifier" + ("  (+%d ◆)" % reward if reward > 0 and from_carnet else "")
+	mod_btn.text = Loc.t("Modifier") + ("  (+%d ◆)" % reward if reward > 0 and from_carnet else "")
 	keep_btn.tooltip_text = why if sel_img else ""   # pourquoi on ne peut pas l'utiliser tel quel
-	keep_btn.text = "Utiliser ce dessin" if sel_img else "Dessiner"
+	keep_btn.text = Loc.t("Utiliser ce dessin") if sel_img else Loc.t("Dessiner")
 	if sel_img == null:
 		keep_btn.disabled = false
-	bord_btn.text = "Bord : %s" % ("oui" if outline else "non")
+	bord_btn.text = Loc.t("Bord : %s") % (Loc.t("oui") if outline else Loc.t("non"))
 
 
 func _toggle_outline() -> void:
 	outline = not outline
 	pic_mat.set_shader_parameter("outline", outline and sel_img != null)
-	bord_btn.text = "Bord : %s" % ("oui" if outline else "non")
+	bord_btn.text = Loc.t("Bord : %s") % (Loc.t("oui") if outline else Loc.t("non"))
 
 
 func _keep() -> void:
@@ -209,19 +226,19 @@ func _redraw() -> void:
 ## "" si le dessin est utilisable tel quel, sinon la raison.
 func _usable(img: Image) -> String:
 	if img == null:
-		return "Rien"
+		return Loc.t("Rien")
 	var s: Vector2i = cfg.size
 	var r := img.get_used_rect()
 	if r.size.x > s.x or r.size.y > s.y:
-		return "Trop grand pour cette toile"
+		return Loc.t("Trop grand pour cette toile")
 	var cost := Analyzer.ink_cost(img)
 	if cost > int(cfg.ink):
-		return "Trop d'encre (%d / %d)" % [cost, int(cfg.ink)]
+		return Loc.t("Trop d'encre (%d / %d)") % [cost, int(cfg.ink)]
 	if cost < int(cfg.get("min_ink", 0)):
-		return "Pas assez d'encre (%d / %d min)" % [cost, int(cfg.min_ink)]
+		return Loc.t("Pas assez d'encre (%d / %d min)") % [cost, int(cfg.min_ink)]
 	var lc := Meta.locked_colors(img)
 	if not lc.is_empty():
-		return "Couleurs pas encore débloquées : " + ", ".join(lc)
+		return Loc.t("Couleurs pas encore débloquées : ") + ", ".join(lc)
 	return DrawCfg.color_issue(cfg, img)
 
 

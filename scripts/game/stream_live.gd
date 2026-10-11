@@ -17,15 +17,15 @@ const HYPE_TIME := 8.0
 const POLL_EVERY := 20.0
 const POLL_VOTE := 5.0
 ## Effets de sondage : id -> [texte, durée (s)]
-const POLL_FX := {
+static var POLL_FX := {
 	"dmg": ["+25 % DÉGÂTS", 15.0], "gold": ["PLUIE D'OR (+50 % d'or)", 15.0], "heal": ["SOIN (+20 % PV)", 0.0],
 	"speed": ["+25 % VITESSE", 15.0], "chaos": ["SPAWN DE MONSTRES", 0.0],
 }
-const NAMES := ["xX_Pinceau_Xx", "Gribouilleur", "Crayon2000", "PixelPierre", "Tomate_Officiel", "Aquarellix",
+static var NAMES := ["xX_Pinceau_Xx", "Gribouilleur", "Crayon2000", "PixelPierre", "Tomate_Officiel", "Aquarellix",
 	"ScribbleQueen", "GommeMagique", "LeVraiPicasso", "encre_de_chine", "Taillecrayon", "MonsieurPalette",
 	"Patate_Bleue", "LaMuseFan", "chevalet42", "Mlle_Feutre", "Rature_Lover", "BobLaGouache"]
 const NAME_COLS := [Color("ff7a7a"), Color("7ac8ff"), Color("ffd36b"), Color("8ae07a"), Color("d39bff"), Color("ffb36b"), Color("7affe0")]
-const SAY := {
+static var SAY := {
 	"idle": ["salut le tchat", "première fois sur le stream", "c'est quoi ce dessin mdr", "le perso est trop beau",
 		"!build", "lag ?", "la musique ?", "<3", "il dessine avec les pieds ou quoi", "GG l'artiste",
 		"on est combien ?", "ça c'est de l'art", "follow pour la suite", "il gère"],
@@ -79,12 +79,12 @@ func _ready() -> void:
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), Color(0.05, 0.03, 0.08, 0.45))
 	draw_rect(Rect2(Vector2.ZERO, Vector2(size.x, 13)), Color(0.45, 0.25, 0.75, 0.75))
-	draw_string(UI.font, Vector2(4, 10), "● EN DIRECT", HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Color.WHITE)
+	draw_string(UI.font, Vector2(4, 10), Loc.t("● EN DIRECT"), HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Color.WHITE)
 	# Sondage en cours
 	var y := 192.0
 	if not poll.is_empty():
 		var tot := maxf(1.0, poll.va + poll.vb)
-		draw_string(UI.font, Vector2(4, y + 8), "SONDAGE", HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Pal.ACCENT)
+		draw_string(UI.font, Vector2(4, y + 8), Loc.t("SONDAGE"), HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Pal.ACCENT)
 		for k in 2:
 			var yy := y + 12 + k * 13
 			var v: float = poll.va if k == 0 else poll.vb
@@ -92,14 +92,14 @@ func _draw() -> void:
 			draw_rect(Rect2(4, yy, (W - 8) * v / tot, 11), Color(0.45, 0.25, 0.75, 0.9))
 			draw_string(UI.font, Vector2(6, yy + 9), String(POLL_FX[poll.a if k == 0 else poll.b][0]), HORIZONTAL_ALIGNMENT_LEFT, W - 12, UI.fs(10), Color.WHITE)
 	elif effect_t > 0.0:
-		draw_string(UI.font, Vector2(4, y + 8), "%s  %ds" % [POLL_FX[effect][0], ceili(effect_t)], HORIZONTAL_ALIGNMENT_LEFT, W - 8, UI.fs(10), Pal.ACCENT)
+		draw_string(UI.font, Vector2(4, y + 8), Loc.t("%s  %ds") % [POLL_FX[effect][0], ceili(effect_t)], HORIZONTAL_ALIGNMENT_LEFT, W - 8, UI.fs(10), Pal.ACCENT)
 	# Jauge de hype
 	var hy := size.y - 14.0
 	draw_rect(Rect2(4, hy, W - 8, 10), Color(0, 0, 0, 0.6))
 	var k2 := 1.0 if hype_t > 0.0 else hype / 100.0
 	var col := Color("ff5aa0") if hype_t > 0.0 and int(Time.get_ticks_msec() / 120) % 2 == 0 else Color("ff8a3a")
 	draw_rect(Rect2(4, hy, (W - 8) * k2, 10), col)
-	draw_string(UI.font, Vector2(6, hy + 8), "HYPE TRAIN !" if hype_t > 0.0 else "HYPE", HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Color.WHITE)
+	draw_string(UI.font, Vector2(6, hy + 8), Loc.t("HYPE TRAIN !") if hype_t > 0.0 else Loc.t("HYPE"), HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Color.WHITE)
 
 
 func _process(delta: float) -> void:
@@ -125,7 +125,7 @@ func _process(delta: float) -> void:
 		var ids := POLL_FX.keys()
 		ids.shuffle()
 		poll = {"a": ids[0], "b": ids[1], "va": 0.0, "vb": 0.0, "t": POLL_VOTE}
-		_line("Le Stream", Pal.ACCENT, "SONDAGE : %s ou %s ?" % [POLL_FX[ids[0]][0], POLL_FX[ids[1]][0]])
+		_line(Loc.t("Le Stream"), Pal.ACCENT, Loc.t("SONDAGE : %s ou %s ?") % [POLL_FX[ids[0]][0], POLL_FX[ids[1]][0]])
 	elif not poll.is_empty():
 		poll.t -= delta
 		# les votes arrivent petit à petit (un camp est un peu favori)
@@ -144,19 +144,19 @@ func _process(delta: float) -> void:
 		var g := 3 + Run.wave
 		Run.gold += g
 		Sfx.play("coin")
-		_line(_name(), Pal.ACCENT, "s'est abonné ! +● %d" % g)
-		arena.float_text(p.position + Vector2(0, -24), "ABONNEMENT ! +%d OR" % g, Pal.ACCENT)
+		_line(_name(), Pal.ACCENT, Loc.t("s'est abonné ! +● %d") % g)
+		arena.float_text(p.position + Vector2(0, -24), Loc.t("ABONNEMENT ! +%d OR") % g, Pal.ACCENT)
 	# Trolls
 	troll_t -= delta
 	if troll_t <= 0.0:
 		troll_t = randf_range(30.0, 45.0)
 		if randf() < 0.5:
-			_line(_name(), _col(), "!shake")
+			_line(_name(), _col(), Loc.t("!shake"))
 			arena.shake(9.0)
 		else:
-			_line(_name(), _col(), "!flip")
+			_line(_name(), _col(), Loc.t("!flip"))
 			flip_t = 2.0
-			arena.float_text(p.position + Vector2(0, -24), "COMMANDES INVERSÉES !", Pal.BAD)
+			arena.float_text(p.position + Vector2(0, -24), Loc.t("COMMANDES INVERSÉES !"), Pal.BAD)
 	# Réactions
 	if not said_boss and arena.enemies.any(func(e): return e.is_boss):
 		said_boss = true
@@ -182,7 +182,7 @@ func on_kill(e: Enemy) -> void:
 			hype = 100.0
 			hype_t = HYPE_TIME
 			_say("hype")
-			arena.hud.announce("HYPE TRAIN !", Color("ff5aa0"), "+30 % dégâts et vitesse d'attaque pendant 8 s")
+			arena.hud.announce(Loc.t("HYPE TRAIN !"), Color("ff5aa0"), Loc.t("+30 % dégâts et vitesse d'attaque pendant 8 s"))
 			Sfx.play("level")
 	if e.elite and randf() < 0.6:
 		_say("elite")
@@ -213,8 +213,8 @@ func gold_mult() -> float:
 
 
 func _apply(id: String) -> void:
-	_line("Le Stream", Pal.ACCENT, "Le tchat a choisi : %s" % POLL_FX[id][0])
-	arena.hud.announce("LE TCHAT A VOTÉ", Color("b98aff"), String(POLL_FX[id][0]))
+	_line(Loc.t("Le Stream"), Pal.ACCENT, Loc.t("Le tchat a choisi : %s") % POLL_FX[id][0])
+	arena.hud.announce(Loc.t("LE TCHAT A VOTÉ"), Color("b98aff"), String(POLL_FX[id][0]))
 	match id:
 		"heal":
 			arena.player.heal(arena.player.max_hp * 0.2)
@@ -248,5 +248,5 @@ func _line(who: String, col: Color, text: String) -> void:
 		lines = lines.slice(lines.size() - LINES)
 	var b := ""
 	for l in lines:
-		b += "[color=#%s]%s[/color] %s\n" % [(l[1] as Color).to_html(false), l[0], String(l[2]).replace("[", "(")]
+		b += Loc.t("[color=#%s]%s[/color] %s\n") % [(l[1] as Color).to_html(false), l[0], String(l[2]).replace("[", "(")]
 	chat.text = b

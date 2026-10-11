@@ -44,7 +44,7 @@ func _ready() -> void:
 	add_child(announce_sub)
 	# Afficher / cacher les amulettes sur ton perso (réglage gardé d'une partie à l'autre)
 	var ab := UI.button("", _toggle_amulets)
-	ab.tooltip_text = "Afficher ou cacher les amulettes posées sur ton perso"
+	ab.tooltip_text = Loc.t("Afficher ou cacher les amulettes posées sur ton perso")
 	UI.put(self, ab, Vector2(8, 54), Vector2(96, 14))
 	_amulet_btn = ab
 	_refresh_amulet_btn()
@@ -60,7 +60,7 @@ func _toggle_amulets() -> void:
 
 
 func _refresh_amulet_btn() -> void:
-	_amulet_btn.text = "Amulettes : " + ("oui" if bool(Meta.setting("show_amulets")) else "non")
+	_amulet_btn.text = Loc.t("Amulettes : ") + (Loc.t("oui") if bool(Meta.setting("show_amulets")) else Loc.t("non"))
 
 
 func _process(delta: float) -> void:
@@ -78,11 +78,11 @@ func _process(delta: float) -> void:
 	if o.is_empty():
 		order_label.text = ""
 	elif o.done:
-		order_label.text = "Commande réussie ✓"
+		order_label.text = Loc.t("Commande réussie ✓")
 	elif o.kind == "hp":
-		order_label.text = "Commande : %s" % o.text
+		order_label.text = Loc.t("Commande : %s") % o.text
 	else:
-		order_label.text = "Commande : %s (%d/%d)" % [o.text, int(o.progress), int(o.n)]
+		order_label.text = Loc.t("Commande : %s (%d/%d)") % [o.text, int(o.progress), int(o.n)]
 	draw_layer.queue_redraw()
 
 
@@ -128,7 +128,7 @@ func _draw_hud() -> void:
 	# Horloge : le temps est arrêté
 	if arena.stop_t > 0.0:
 		draw_layer.draw_rect(Rect2(0, 0, 640, 360), Color(0.6, 0.75, 1.0, 0.13))
-		_text(Vector2(0, 322), "TEMPS ARRÊTÉ  %.1f" % arena.stop_t, Color(0.8, 0.9, 1.0), 10, 640, HORIZONTAL_ALIGNMENT_CENTER)
+		_text(Vector2(0, 322), Loc.t("TEMPS ARRÊTÉ  %.1f") % arena.stop_t, Color(0.8, 0.9, 1.0), 10, 640, HORIZONTAL_ALIGNMENT_CENTER)
 	# Interro du Professeur : la question, en grand, toujours visible
 	for qz in arena.quizzes:
 		var k: float = clampf(1.0 - qz.t / qz.dur, 0.0, 1.0)
@@ -145,7 +145,7 @@ func _draw_hud() -> void:
 			draw_layer.draw_rect(r, Color(Pal.BG, 0.9))
 			draw_layer.draw_rect(r, Pal.ACCENT if i == mine else Pal.BORDER, false, 2.0 if i == mine else 1.0)
 			_text(Vector2(r.position.x, 104), str(qz.answers[i]), Pal.TEXT, 10, r.size.x, HORIZONTAL_ALIGNMENT_CENTER)
-		_text(Vector2(160, 122), "Va dans la colonne de la bonne réponse !", Pal.ACCENT, 10, 320, HORIZONTAL_ALIGNMENT_CENTER)
+		_text(Vector2(160, 122), Loc.t("Va dans la colonne de la bonne réponse !"), Pal.ACCENT, 10, 320, HORIZONTAL_ALIGNMENT_CENTER)
 	# Nuit d'encre (Encrier renversé) : noir partout sauf autour du joueur
 	if arena.dark_t > 0.0:
 		var a := clampf(arena.dark_t, 0.0, 1.0) * clampf((6.0 - arena.dark_t) * 2.0, 0.0, 1.0)
@@ -197,17 +197,17 @@ func _draw_hud() -> void:
 		var ak := clampf(1.0 - cb.st_t / Enemy.ALTF4_SEC, 0.0, 1.0)
 		draw_layer.draw_rect(Rect2(200, 62, 240, 30), Color(0.05, 0.05, 0.1, 0.9))
 		draw_layer.draw_rect(Rect2(200, 62, 240, 30), Pal.BAD, false, 2.0)
-		draw_layer.draw_string(UI.font, Vector2(200, 75), "ALT + F4 : FRAPPE-LE !", HORIZONTAL_ALIGNMENT_CENTER, 240, UI.fs(10), Color.WHITE)
+		draw_layer.draw_string(UI.font, Vector2(200, 75), Loc.t("ALT + F4 : FRAPPE-LE !"), HORIZONTAL_ALIGNMENT_CENTER, 240, UI.fs(10), Color.WHITE)
 		draw_layer.draw_rect(Rect2(208, 80, 224, 6), Color(1, 1, 1, 0.25))
 		draw_layer.draw_rect(Rect2(208, 80, 224 * ak, 6), Pal.BAD)
 	if not arena.formula.is_empty():
 		# Le Tableur : la barre de formule, en haut
 		draw_layer.draw_rect(Rect2(210, 44, 220, 14), Color(0.95, 0.95, 0.9))
 		draw_layer.draw_rect(Rect2(210, 44, 220, 14), Pal.INK, false, 1.0)
-		draw_layer.draw_string(UI.font, Vector2(214, 55), "fx   " + String(arena.formula.text), HORIZONTAL_ALIGNMENT_LEFT, 212, UI.fs(10), Pal.INK)
+		draw_layer.draw_string(UI.font, Vector2(214, 55), Loc.t("fx   ") + String(arena.formula.text), HORIZONTAL_ALIGNMENT_LEFT, 212, UI.fs(10), Pal.INK)
 	var hp_txt := "♥ %d / %d" % [ceili(maxf(0.0, p.hp)), int(p.max_hp)]
 	if p.erase_mult < 1.0:
-		hp_txt += " (gommé)"
+		hp_txt += Loc.t(" (gommé)")
 	var hp_k: float = p.hp / p.max_hp
 	if arena.bugs and arena.bugs.is_on("fakehp"):
 		# L'Écran, boss Le Bug : la barre de vie affiche n'importe quoi (ça change 6 fois par seconde)
@@ -216,17 +216,17 @@ func _draw_hud() -> void:
 		hp_k = float(hash(hk + 3) % 100) / 100.0
 	_bar(Vector2(8, 8), Vector2(140, 12), hp_k, Color("d8433b"), hp_txt)
 	_bar(Vector2(8, 24), Vector2(140, 4), float(Run.xp) / Run.xp_needed(), Pal.GOOD)
-	_text(Vector2(152, 30), "NIV %d" % Run.level, Pal.GOOD)
+	_text(Vector2(152, 30), Loc.t("NIV %d") % Run.level, Pal.GOOD)
 	_text(Vector2(8, 42), "● %d" % Run.gold, Pal.ACCENT)
 
-	_text(Vector2(0, 22), "VAGUE %d" % Run.wave, Pal.TEXT, 20, 640, HORIZONTAL_ALIGNMENT_CENTER)
+	_text(Vector2(0, 22), Loc.t("VAGUE %d") % Run.wave, Pal.TEXT, 20, 640, HORIZONTAL_ALIGNMENT_CENTER)
 	if arena.boss_id == "":
 		var tl := maxf(0.0, arena.time_left)
 		var col := Pal.BAD if tl < 5.0 else Pal.TEXT
 		_text(Vector2(0, 36), "%d" % ceili(tl), col, 10, 640, HORIZONTAL_ALIGNMENT_CENTER)
 	_text(Vector2(0, 12), Meta.DIFFICULTIES[Run.difficulty].name, Pal.DIM, 10, 632, HORIZONTAL_ALIGNMENT_RIGHT)
-	_text(Vector2(0, 24), "Échap : pause", Pal.DIM, 10, 632, HORIZONTAL_ALIGNMENT_RIGHT)
-	_text(Vector2(0, 36), "Molette / + - : zoom", Pal.DIM, 10, 632, HORIZONTAL_ALIGNMENT_RIGHT)
+	_text(Vector2(0, 24), Loc.t("Échap : pause"), Pal.DIM, 10, 632, HORIZONTAL_ALIGNMENT_RIGHT)
+	_text(Vector2(0, 36), Loc.t("Molette / + - : zoom"), Pal.DIM, 10, 632, HORIZONTAL_ALIGNMENT_RIGHT)
 
 	var b := arena.boss
 	if b and is_instance_valid(b) and not b.dead:
@@ -377,25 +377,25 @@ func _draw_crash() -> void:
 		"win":
 			# fausse victoire : comme la vraie... puis le doute
 			crash_view.draw_rect(Rect2(0, 0, 640, 360), Color(Pal.BG, 0.96))
-			crash_view.draw_string(UI.font, Vector2(0, 150), "VICTOIRE !", HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(40), Pal.ACCENT)
+			crash_view.draw_string(UI.font, Vector2(0, 150), Loc.t("VICTOIRE !"), HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(40), Pal.ACCENT)
 			if k > 0.3:
-				crash_view.draw_string(UI.font, Vector2(0, 186), "Le Curseur est vaincu.", HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(10), Pal.TEXT)
+				crash_view.draw_string(UI.font, Vector2(0, 186), Loc.t("Le Curseur est vaincu."), HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(10), Pal.TEXT)
 			if k > 0.72:
-				crash_view.draw_string(UI.font, Vector2(0, 226), "... ou pas.", HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(20), Pal.BAD)
+				crash_view.draw_string(UI.font, Vector2(0, 226), Loc.t("... ou pas."), HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(20), Pal.BAD)
 		"closed":
 			crash_view.draw_rect(Rect2(0, 0, 640, 360), Color(0.02, 0.02, 0.04))
-			crash_view.draw_string(UI.font, Vector2(0, 176), "PaintIt.exe a été fermé.", HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(16), Color(1, 1, 1, 0.9))
+			crash_view.draw_string(UI.font, Vector2(0, 176), Loc.t("PaintIt.exe a été fermé."), HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(16), Color(1, 1, 1, 0.9))
 		_:
 			crash_view.draw_rect(Rect2(0, 0, 640, 360), Color("1d3fae"))
 			crash_view.draw_string(UI.font, Vector2(60, 110), ":(", HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(40), Color.WHITE)
-			crash_view.draw_string(UI.font, Vector2(60, 160), "Une erreur est survenue dans PaintIt.exe", HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(16), Color.WHITE)
-			crash_view.draw_string(UI.font, Vector2(60, 190), "ERREUR_CURSEUR_HORS_DE_CONTRÔLE", HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Color(1, 1, 1, 0.8))
+			crash_view.draw_string(UI.font, Vector2(60, 160), Loc.t("Une erreur est survenue dans PaintIt.exe"), HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(16), Color.WHITE)
+			crash_view.draw_string(UI.font, Vector2(60, 190), Loc.t("ERREUR_CURSEUR_HORS_DE_CONTRÔLE"), HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Color(1, 1, 1, 0.8))
 			if crash_pct:
-				crash_view.draw_string(UI.font, Vector2(60, 230), "Récupération du dessin : %d %%" % int(k * 100.0), HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Color.WHITE)
+				crash_view.draw_string(UI.font, Vector2(60, 230), Loc.t("Récupération du dessin : %d %%") % int(k * 100.0), HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Color.WHITE)
 				crash_view.draw_rect(Rect2(60, 240, 300, 8), Color(1, 1, 1, 0.3))
 				crash_view.draw_rect(Rect2(60, 240, 300 * k, 8), Color.WHITE)
 			else:
-				crash_view.draw_string(UI.font, Vector2(60, 230), "Redémarrage...", HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Color.WHITE)
+				crash_view.draw_string(UI.font, Vector2(60, 230), Loc.t("Redémarrage..."), HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Color.WHITE)
 
 
 ## Le Curseur RÉDUIT la fenêtre du jeu : un faux bureau cache tout, le jeu continue derrière.
@@ -414,7 +414,7 @@ func minimize(max_dur: float) -> void:
 	desk.mouse_filter = Control.MOUSE_FILTER_STOP
 	desk.draw.connect(_draw_desk.bind(desk))
 	add_child(desk)
-	var b := UI.button("PaintIt", restore, 10)
+	var b := UI.button(Loc.t("PaintIt"), restore, 10)
 	UI.put(desk, b, Vector2(40, 340), Vector2(90, 18))
 	desk.set_meta("btn", b)
 
@@ -435,15 +435,15 @@ func _draw_desk(d: Control) -> void:
 		d.draw_rect(Rect2(ip, Vector2(22, 26)), Pal.INK, false, 1.0)
 		d.draw_rect(Rect2(ip + Vector2(4, 6), Vector2(14, 2)), Color("8a93a8"))
 		d.draw_rect(Rect2(ip + Vector2(4, 11), Vector2(14, 2)), Color("8a93a8"))
-		d.draw_string(UI.font, ip + Vector2(-29, 38), ["Dessin1", "Dessin2", "Brouillon", "Corbeille", "Notes"][k], HORIZONTAL_ALIGNMENT_CENTER, 80, UI.fs(10), Color.WHITE)
+		d.draw_string(UI.font, ip + Vector2(-29, 38), [Loc.t("Dessin1"), Loc.t("Dessin2"), Loc.t("Brouillon"), Loc.t("Corbeille"), Loc.t("Notes")][k], HORIZONTAL_ALIGNMENT_CENTER, 80, UI.fs(10), Color.WHITE)
 	# barre des tâches
 	d.draw_rect(Rect2(0, 336, 640, 24), Color("23262e"))
 	d.draw_rect(Rect2(6, 340, 26, 16), Color("46548c"))
 	var blink := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 110.0)
 	d.draw_rect(Rect2(38, 338, 94, 22), Color(Pal.ACCENT, blink), false, 2.0)
-	d.draw_string(UI.font, Vector2(0, 150), "Le Curseur a réduit la fenêtre !", HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(16), Color.WHITE)
-	d.draw_string(UI.font, Vector2(0, 176), "Clique « PaintIt » dans la barre des tâches (manette : un bouton)", HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(10), Color(1, 1, 1, 0.85))
-	d.draw_string(UI.font, Vector2(0, 196), "Ton perso se bat toujours derrière...", HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(10), Color(1, 1, 1, 0.6))
+	d.draw_string(UI.font, Vector2(0, 150), Loc.t("Le Curseur a réduit la fenêtre !"), HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(16), Color.WHITE)
+	d.draw_string(UI.font, Vector2(0, 176), Loc.t("Clique « PaintIt » dans la barre des tâches (manette : un bouton)"), HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(10), Color(1, 1, 1, 0.85))
+	d.draw_string(UI.font, Vector2(0, 196), Loc.t("Ton perso se bat toujours derrière..."), HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(10), Color(1, 1, 1, 0.6))
 
 
 ## Le Virus : le calque de ses fenêtres (par-dessus tout le HUD), créé la première fois qu'il en ouvre une.
@@ -494,15 +494,15 @@ func toggle_pause() -> void:
 func _build_pause() -> void:
 	var pm := pause_menu
 	UI.fill_bg(pm, Color(Pal.BG, 0.85))   # on devine la partie derrière
-	UI.put(pm, UI.label("PAUSE", 30, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(640, 36))
-	var wave_txt := ("Vague %d · infini" % Run.wave) if Run.endless else ("Vague %d / %d" % [Run.wave, Run.WAVES])
-	var info := "%s   ·   ♥ %d / %d   ·   ● %d   ·   Niveau %d" % [wave_txt, ceili(arena.player.hp), int(arena.player.max_hp), Run.gold, Run.level]
+	UI.put(pm, UI.label(Loc.t("PAUSE"), 30, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(640, 36))
+	var wave_txt := (Loc.t("Vague %d · infini") % Run.wave) if Run.endless else (Loc.t("Vague %d / %d") % [Run.wave, Run.WAVES])
+	var info := Loc.t("%s   ·   ♥ %d / %d   ·   ● %d   ·   Niveau %d") % [wave_txt, ceili(arena.player.hp), int(arena.player.max_hp), Run.gold, Run.level]
 	UI.put(pm, UI.label(info, 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 42), Vector2(640, 12))
 
 	# --- Gauche : les stats (icônes, le nom au survol)
 	var left := UI.panel()
 	UI.put(pm, left, Vector2(14, 62), Vector2(196, 150))
-	UI.put(left, UI.label("STATS", 10, Pal.ACCENT), Vector2(8, 4))
+	UI.put(left, UI.label(Loc.t("STATS"), 10, Pal.ACCENT), Vector2(8, 4))
 	# Beaucoup de résistances : la liste défile (barre à droite, molette)
 	var sc := ScrollContainer.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -525,10 +525,10 @@ func _build_pause() -> void:
 	var syn_box := VBoxContainer.new()
 	syn_box.add_theme_constant_override("separation", 3)
 	UI.put(pm, syn_box, Vector2(318, 196), Vector2(100, 100))
-	syn_box.add_child(UI.label("SYNERGIES", 10, Pal.DIM))
+	syn_box.add_child(UI.label(Loc.t("SYNERGIES"), 10, Pal.DIM))
 	var counts := Run.synergy_counts()
 	if counts.is_empty():
-		syn_box.add_child(UI.label("aucune", 10, Pal.DIM))
+		syn_box.add_child(UI.label(Loc.t("aucune"), 10, Pal.DIM))
 	for e in counts:
 		var on: bool = counts[e] >= Run.synergy_need()
 		var chip := UI.panel(Color(Pal.main_color(e), 0.9 if on else 0.35), Pal.ACCENT if on else Pal.BORDER, 1)
@@ -543,15 +543,15 @@ func _build_pause() -> void:
 	var right := UI.panel()
 	UI.put(pm, right, Vector2(430, 62), Vector2(196, 280))
 	var y := 4.0
-	var groups := [["ARMES", Run.weapons.map(func(w): return [Run.weapon_image(w), Pal.RARITY[w.rar],
+	var groups := [[Loc.t("ARMES"), Run.weapons.map(func(w): return [Run.weapon_image(w), Pal.RARITY[w.rar],
 			"%s %s" % [WeaponDB.get_def(w.type).name, Pal.RARITY_NAMES[w.rar]]])],
-		["AMULETTES", Run.amulets.map(func(a): return [a.image, Pal.RARITY[int(AmuletDB.get_def(a.id).rar)],
+		[Loc.t("AMULETTES"), Run.amulets.map(func(a): return [a.image, Pal.RARITY[int(AmuletDB.get_def(a.id).rar)],
 			"%s (%s)" % [AmuletDB.get_def(a.id).name, a.get("zone", "")]])],
-		["FAMILIERS", Run.familiars.filter(func(f): return Run.familiar_art.has(f)).map(func(f): return [Run.familiar_art[f].image,
+		[Loc.t("FAMILIERS"), Run.familiars.filter(func(f): return Run.familiar_art.has(f)).map(func(f): return [Run.familiar_art[f].image,
 			Pal.RARITY[int(FamiliarDB.get_def(f).rar)], String(FamiliarDB.get_def(f).name)])]]
 	for g in groups:
 		var items: Array = g[1]
-		if items.is_empty() and g[0] == "FAMILIERS":
+		if items.is_empty() and g[0] == Loc.t("FAMILIERS"):
 			continue
 		UI.put(right, UI.label(g[0], 10, Pal.ACCENT), Vector2(8, y))
 		y += 14.0
@@ -571,7 +571,7 @@ func _build_pause() -> void:
 				cell.add_child(th)
 			grid.add_child(cell)
 		if items.is_empty():
-			UI.put(right, UI.label("aucune", 10, Pal.DIM), Vector2(8, y))
+			UI.put(right, UI.label(Loc.t("aucune"), 10, Pal.DIM), Vector2(8, y))
 		var rows := maxi(1, ceili(items.size() / 7.0))
 		y += rows * 26.0 + 4.0
 
@@ -579,22 +579,22 @@ func _build_pause() -> void:
 	var row := VBoxContainer.new()
 	row.add_theme_constant_override("separation", 4)
 	UI.put(pm, row, Vector2(14, 220), Vector2(196, 92))
-	row.add_child(UI.hotkey(UI.button("Reprendre", toggle_pause), [KEY_ENTER, KEY_KP_ENTER]))
-	row.add_child(UI.hotkey(UI.button("Options", func():
+	row.add_child(UI.hotkey(UI.button(Loc.t("Reprendre"), toggle_pause), [KEY_ENTER, KEY_KP_ENTER]))
+	row.add_child(UI.hotkey(UI.button(Loc.t("Options"), func():
 		var op := OptionsPanel.new()
 		pm.add_child(op)
 		op.done.connect(func(_r):
 			op.queue_free()
 			Engine.time_scale = arena.game_speed())), [KEY_O]))
-	var sq := UI.button("Sauvegarder et quitter", func():
+	var sq := UI.button(Loc.t("Sauvegarder et quitter"), func():
 		get_tree().paused = false
 		arena.ended = true
 		arena.done.emit("suspend"))
-	sq.tooltip_text = "Retour au menu. Tu pourras reprendre plus tard :\ncette vague recommencera depuis son début."
+	sq.tooltip_text = Loc.t("Retour au menu. Tu pourras reprendre plus tard :\ncette vague recommencera depuis son début.")
 	row.add_child(sq)
-	row.add_child(UI.button("Abandonner la partie", func():
+	row.add_child(UI.button(Loc.t("Abandonner la partie"), func():
 		# confirmation : une partie abandonnée compte comme perdue
-		var c := ChoiceScreens.confirm("Abandonner la partie ?", "Elle comptera comme une défaite.", "Abandonner", "Annuler", true)
+		var c := ChoiceScreens.confirm(Loc.t("Abandonner la partie ?"), Loc.t("Elle comptera comme une défaite."), Loc.t("Abandonner"), Loc.t("Annuler"), true)
 		c.process_mode = Node.PROCESS_MODE_ALWAYS
 		pm.add_child(c)
 		c.done.connect(func(yes):
@@ -608,7 +608,7 @@ func _build_pause() -> void:
 	var seed_row := HBoxContainer.new()
 	seed_row.add_theme_constant_override("separation", 6)
 	UI.put(pm, seed_row, Vector2(14, 322), Vector2(196, 16))
-	seed_row.add_child(UI.label("Seed : %s%s" % [Run.seed_code(), "  (rien ne se débloque)" if Run.seeded else ""], 10, Pal.DIM))
-	var cs := UI.button("Copier", func(): DisplayServer.clipboard_set(Run.seed_code()))
-	cs.tooltip_text = "Copier la seed pour la partager"
+	seed_row.add_child(UI.label(Loc.t("Seed : %s%s") % [Run.seed_code(), Loc.t("  (rien ne se débloque)") if Run.seeded else ""], 10, Pal.DIM))
+	var cs := UI.button(Loc.t("Copier"), func(): DisplayServer.clipboard_set(Run.seed_code()))
+	cs.tooltip_text = Loc.t("Copier la seed pour la partager")
 	seed_row.add_child(cs)

@@ -10,7 +10,7 @@ extends Control
 
 signal done(changed)
 
-const KINDS := GalleryScreen.KINDS
+static var KINDS := GalleryScreen.KINDS
 const CELL := 64.0
 
 var mode := "export"         # "export" | "import"
@@ -41,7 +41,7 @@ static func open_import(parent: Control, path: String) -> GalleryShare:
 	s.picked = s.items.map(func(it): return not it.dup)
 	parent.add_child(s)
 	if not r.ok:
-		s._message("Import impossible", String(r.error), Pal.BAD)
+		s._message(Loc.t("Import impossible"), String(r.error), Pal.BAD)
 	return s
 
 
@@ -66,15 +66,15 @@ func _build() -> void:
 	cells = []
 	body = UI.panel(Pal.BG, Pal.ACCENT, 2)
 	UI.put(self, body, Vector2(16, 10), Vector2(608, 340))
-	var title := "EXPORTER DES DESSINS" if mode == "export" else "IMPORTER DES DESSINS"
+	var title := Loc.t("EXPORTER DES DESSINS") if mode == "export" else Loc.t("IMPORTER DES DESSINS")
 	UI.put(body, UI.label(title, 20, Pal.ACCENT), Vector2(12, 6), Vector2(400, 24))
 	var sub := ""
 	if mode == "export":
-		sub = "Choisis ce que tu partages : tout est coché. Clique un dessin pour le retirer."
+		sub = Loc.t("Choisis ce que tu partages : tout est coché. Clique un dessin pour le retirer.")
 	else:
 		var dups := items.filter(func(it): return it.dup).size()
-		sub = "%s · %d dessin%s · %d nouveau%s%s" % [src_name, items.size(), "s" if items.size() > 1 else "",
-			items.size() - dups, "x" if items.size() - dups > 1 else "", (" · %d déjà dans ta galerie (grisés)" % dups) if dups > 0 else ""]
+		sub = Loc.t("%s · %d dessin%s · %d nouveau%s%s") % [src_name, items.size(), "s" if items.size() > 1 else "",
+			items.size() - dups, Loc.agr(items.size() - dups, "x"), (Loc.t(" · %d déjà dans ta galerie (grisés)") % dups) if dups > 0 else ""]
 	var sl := UI.label(sub, 10, Pal.DIM)
 	sl.clip_text = true
 	UI.put(body, sl, Vector2(12, 32), Vector2(584, 12))
@@ -109,12 +109,12 @@ func _build() -> void:
 
 	# Bas : le compte et les boutons
 	var n_sel := _count()
-	var what := "dessin%s choisi%s" % ["s" if n_sel > 1 else "", "s" if n_sel > 1 else ""]
+	var what := Loc.t("dessin%s choisi%s") % ["s" if n_sel > 1 else "", Loc.agr(n_sel)]
 	UI.put(body, UI.label("%d %s" % [n_sel, what], 10, Pal.TEXT), Vector2(12, 310), Vector2(120, 12))
-	UI.put(body, UI.button("Tout cocher", func(): _set_all(true)), Vector2(132, 306), Vector2(80, 22))
-	UI.put(body, UI.button("Rien", func(): _set_all(false)), Vector2(216, 306), Vector2(56, 22))
-	UI.put(body, UI.hotkey(UI.button("Annuler", _close), [KEY_ESCAPE]), Vector2(300, 306), Vector2(100, 22))
-	var go_txt := ("Exporter (%d) →" % n_sel) if mode == "export" else ("Ajouter à ma galerie (%d)" % n_sel)
+	UI.put(body, UI.button(Loc.t("Tout cocher"), func(): _set_all(true)), Vector2(132, 306), Vector2(80, 22))
+	UI.put(body, UI.button(Loc.t("Rien"), func(): _set_all(false)), Vector2(216, 306), Vector2(56, 22))
+	UI.put(body, UI.hotkey(UI.button(Loc.t("Annuler"), _close), [KEY_ESCAPE]), Vector2(300, 306), Vector2(100, 22))
+	var go_txt := (Loc.t("Exporter (%d) →") % n_sel) if mode == "export" else (Loc.t("Ajouter à ma galerie (%d)") % n_sel)
 	var go := UI.hotkey(UI.button(go_txt, _export if mode == "export" else _import, 10), [KEY_ENTER, KEY_KP_ENTER])
 	go.disabled = n_sel == 0
 	UI.put(body, go, Vector2(408, 306), Vector2(188, 22))
@@ -158,7 +158,7 @@ func _cell(i: int) -> Control:
 	for k in KINDS:
 		if k[0] == it.kind:
 			cat = k[1]
-	b.tooltip_text = cat + (" · déjà dans ta galerie" if dup else "")
+	b.tooltip_text = cat + (Loc.t(" · déjà dans ta galerie") if dup else "")
 	if img:
 		var th := UI.thumb(Analyzer.trim(img), Vector2(CELL - 10, CELL - 10))
 		th.position = Vector2(5, 5)
@@ -166,7 +166,7 @@ func _cell(i: int) -> Control:
 	if dup:
 		b.disabled = true
 		b.modulate = Color(1, 1, 1, 0.45)
-		var tag := UI.label("déjà là", 10, Pal.INK, HORIZONTAL_ALIGNMENT_CENTER)
+		var tag := UI.label(Loc.t("déjà là"), 10, Pal.INK, HORIZONTAL_ALIGNMENT_CENTER)
 		UI.put(b, tag, Vector2(0, CELL - 13), Vector2(CELL, 12))
 	elif on:
 		var ck := _Check.new()
@@ -189,18 +189,18 @@ func _export() -> void:
 	for i in items.size():
 		if picked[i]:
 			chosen.append(items[i])
-	var fd := _dialog(FileDialog.FILE_MODE_SAVE_FILE, "Enregistrer tes dessins")
-	fd.current_file = "PaintIt_dessins_%s.zip" % Time.get_date_string_from_system()
+	var fd := _dialog(FileDialog.FILE_MODE_SAVE_FILE, Loc.t("Enregistrer tes dessins"))
+	fd.current_file = Loc.t("PaintIt_dessins_%s.zip") % Time.get_date_string_from_system()
 	fd.file_selected.connect(func(path: String):
 		if not path.to_lower().ends_with(".zip"):
 			path += ".zip"
 		var n := Meta.export_gallery(chosen, path)
 		if n < 0:
-			_message("Export impossible", "Le fichier n'a pas pu être écrit à cet endroit.", Pal.BAD)
+			_message(Loc.t("Export impossible"), Loc.t("Le fichier n'a pas pu être écrit à cet endroit."), Pal.BAD)
 			return
 		Sfx.play("level")
-		_message("%d dessin%s exporté%s !" % [n, "s" if n > 1 else "", "s" if n > 1 else ""],
-			"%s\nEnvoie ce fichier : ton ami l'ouvre avec « Importer » dans sa galerie." % path.get_file(), Pal.GOOD, path))
+		_message(Loc.t("%d dessin%s exporté%s !") % [n, "s" if n > 1 else "", Loc.agr(n)],
+			Loc.t("%s\nEnvoie ce fichier : ton ami l'ouvre avec « Importer » dans sa galerie.") % path.get_file(), Pal.GOOD, path))
 	fd.popup_centered_ratio(0.6)
 
 
@@ -211,7 +211,7 @@ func _dialog(m: int, title: String) -> FileDialog:
 	fd.access = FileDialog.ACCESS_FILESYSTEM
 	fd.file_mode = m
 	fd.title = title
-	fd.filters = PackedStringArray(["*.zip ; Dessins Paint It"])
+	fd.filters = PackedStringArray([Loc.t("*.zip ; Dessins Paint It")])
 	fd.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_DOWNLOADS)
 	add_child(fd)
 	return fd
@@ -222,7 +222,7 @@ static func pick_import(parent: Control, on_file: Callable) -> void:
 	holder.body = Control.new()
 	holder.visible = false
 	parent.add_child(holder)
-	var fd := holder._dialog(FileDialog.FILE_MODE_OPEN_FILE, "Choisis un fichier de dessins (.zip)")
+	var fd := holder._dialog(FileDialog.FILE_MODE_OPEN_FILE, Loc.t("Choisis un fichier de dessins (.zip)"))
 	fd.file_selected.connect(func(path: String):
 		holder.queue_free()
 		on_file.call(path))
@@ -256,8 +256,8 @@ func _import() -> void:
 	if not is_inside_tree():
 		return
 	Sfx.play("level")
-	_message("%d dessin%s ajouté%s à ta galerie !" % [n, "s" if n > 1 else "", "s" if n > 1 else ""],
-		"Tu peux les reprendre dès qu'on te demande de dessiner (bouton « Galerie »).", Pal.GOOD)
+	_message(Loc.t("%d dessin%s ajouté%s à ta galerie !") % [n, "s" if n > 1 else "", Loc.agr(n)],
+		Loc.t("Tu peux les reprendre dès qu'on te demande de dessiner (bouton « Galerie »)."), Pal.GOOD)
 
 
 # ------------------------------------------------------------------ Messages
@@ -273,10 +273,10 @@ func _message(title: String, text: String, col: Color, path := "") -> void:
 	tl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.put(body, tl, Vector2(16, 48), Vector2(368, 44))
 	if path != "":
-		UI.put(body, UI.button("Ouvrir le dossier", func(): OS.shell_show_in_file_manager(path)), Vector2(70, 104), Vector2(130, 20))
-		UI.put(body, UI.hotkey(UI.button("Fermer", _close), [KEY_ESCAPE, KEY_ENTER]), Vector2(210, 104), Vector2(120, 20))
+		UI.put(body, UI.button(Loc.t("Ouvrir le dossier"), func(): OS.shell_show_in_file_manager(path)), Vector2(70, 104), Vector2(130, 20))
+		UI.put(body, UI.hotkey(UI.button(Loc.t("Fermer"), _close), [KEY_ESCAPE, KEY_ENTER]), Vector2(210, 104), Vector2(120, 20))
 	else:
-		UI.put(body, UI.hotkey(UI.button("Fermer", _close), [KEY_ESCAPE, KEY_ENTER]), Vector2(140, 104), Vector2(120, 20))
+		UI.put(body, UI.hotkey(UI.button(Loc.t("Fermer"), _close), [KEY_ESCAPE, KEY_ENTER]), Vector2(140, 104), Vector2(120, 20))
 
 
 ## Petite coche dorée sur une vignette choisie.

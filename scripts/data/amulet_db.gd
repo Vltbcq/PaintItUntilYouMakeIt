@@ -7,7 +7,7 @@ extends RefCounted
 ## Toutes les amulettes ont un malus intégré : aucune n'est un bonus gratuit.
 ## Les LÉGENDAIRES sont uniques : une seule par partie (plus proposées une fois achetées).
 ## "malus" = [stat, valeur] (fixe, ne dépend pas du dessin).
-const LIST := [
+static var LIST := [
 	# Communes
 	{"id": "plume", "ink": 20, "name": "Plume", "rar": 0, "stat": "speed", "v": 8.0, "plus": [["dodge", 3.0]], "desc": "+{v}% vitesse, +3% esquive · {m} armure", "malus": ["armor", -2.0]},
 	{"id": "coeur", "ink": 45, "name": "Cœur d'encre", "rar": 0, "stat": "max_hp", "v": 4.0, "plus": [["regen", 1.0]], "desc": "+{v} PV max, +1 régénération · {m}% vitesse", "malus": ["speed", -5.0]},
@@ -193,7 +193,7 @@ const LIST := [
 ]
 
 ## Bonus selon l'endroit où l'amulette est posée sur le perso.
-const ZONES := {
+static var ZONES := {
 	"Tête": {"stat": "crit", "v": 3.0, "desc": "+3% critique"},
 	"Cœur": {"stat": "max_hp", "v": 3.0, "desc": "+3 PV max"},
 	"Mains": {"stat": "atk_speed", "v": 5.0, "desc": "+5% vit. d'attaque"},
@@ -246,11 +246,10 @@ static func describe(def: Dictionary, mag := 1.0) -> String:
 		var v := snappedf(def.v * mag, 0.1)
 		s = s.replace("{v}", str(int(v)) if is_equal_approx(v, roundf(v)) else str(v))
 	if int(def.rar) == 3:
-		s += " · UNIQUE"
+		s += Loc.t(" · UNIQUE")
 	# Valeur ACTUELLE des amulettes dont l'effet varie (pendant une partie)
 	if Run.active:
 		var live := Stats.amulet_live(String(def.id))
 		if live != "":
-			s = "%s
-Actuellement : %s" % [s, live]
+			s = Loc.t("%s\nActuellement : %s") % [s, live]
 	return s

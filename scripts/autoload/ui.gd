@@ -73,35 +73,35 @@ func _build_theme() -> Theme:
 	t.default_font = font
 	t.default_font_size = fs(PixelFont.SIZE)
 
-	t.set_stylebox("normal", "Button", _shadowed(sb(WOOD, GOLD_DARK, 1)))
-	t.set_stylebox("hover", "Button", _shadowed(sb(WOOD_PANEL, GOLD, 1)))
-	t.set_stylebox("pressed", "Button", sb(GOLD, GOLD, 1))
-	t.set_stylebox("hover_pressed", "Button", sb(GOLD, GOLD, 1))
-	t.set_stylebox("disabled", "Button", sb(Color("2a1a12"), Color("4a3524"), 1))
-	t.set_stylebox("focus", "Button", StyleBoxEmpty.new())
-	t.set_color("font_color", "Button", BTN_TEXT)
-	t.set_color("font_hover_color", "Button", Pal.ACCENT)
-	t.set_color("font_pressed_color", "Button", Pal.INK)
-	t.set_color("font_hover_pressed_color", "Button", Pal.INK)
-	t.set_color("font_focus_color", "Button", Pal.TEXT)
-	t.set_color("font_disabled_color", "Button", Pal.DISABLED)
+	t.set_stylebox("normal", Loc.t("Button"), _shadowed(sb(WOOD, GOLD_DARK, 1)))
+	t.set_stylebox("hover", Loc.t("Button"), _shadowed(sb(WOOD_PANEL, GOLD, 1)))
+	t.set_stylebox("pressed", Loc.t("Button"), sb(GOLD, GOLD, 1))
+	t.set_stylebox("hover_pressed", Loc.t("Button"), sb(GOLD, GOLD, 1))
+	t.set_stylebox("disabled", Loc.t("Button"), sb(Color("2a1a12"), Color("4a3524"), 1))
+	t.set_stylebox("focus", Loc.t("Button"), StyleBoxEmpty.new())
+	t.set_color("font_color", Loc.t("Button"), BTN_TEXT)
+	t.set_color("font_hover_color", Loc.t("Button"), Pal.ACCENT)
+	t.set_color("font_pressed_color", Loc.t("Button"), Pal.INK)
+	t.set_color("font_hover_pressed_color", Loc.t("Button"), Pal.INK)
+	t.set_color("font_focus_color", Loc.t("Button"), Pal.TEXT)
+	t.set_color("font_disabled_color", Loc.t("Button"), Pal.DISABLED)
 
-	t.set_color("font_color", "Label", Pal.TEXT)
-	t.set_constant("line_spacing", "Label", 1)
+	t.set_color("font_color", Loc.t("Label"), Pal.TEXT)
+	t.set_constant("line_spacing", Loc.t("Label"), 1)
 
-	t.set_stylebox("panel", "Panel", _shadowed(sb(Pal.PANEL, Pal.BORDER, 2)))
-	t.set_stylebox("panel", "PanelContainer", _shadowed(sb(Pal.PANEL, Pal.BORDER, 2, 6, 6)))
+	t.set_stylebox("panel", Loc.t("Panel"), _shadowed(sb(Pal.PANEL, Pal.BORDER, 2)))
+	t.set_stylebox("panel", Loc.t("PanelContainer"), _shadowed(sb(Pal.PANEL, Pal.BORDER, 2, 6, 6)))
 
-	t.set_stylebox("background", "ProgressBar", sb(Pal.INK, Pal.BORDER, 1, 0, 0))
-	t.set_stylebox("fill", "ProgressBar", sb(Pal.ACCENT, Color.TRANSPARENT, 0, 0, 0))
+	t.set_stylebox("background", Loc.t("ProgressBar"), sb(Pal.INK, Pal.BORDER, 1, 0, 0))
+	t.set_stylebox("fill", Loc.t("ProgressBar"), sb(Pal.ACCENT, Color.TRANSPARENT, 0, 0, 0))
 
-	t.set_stylebox("panel", "TooltipPanel", sb(WOOD, GOLD, 1, 4, 3))
-	t.set_color("font_color", "TooltipLabel", Pal.TEXT)
+	t.set_stylebox("panel", Loc.t("TooltipPanel"), sb(WOOD, GOLD, 1, 4, 3))
+	t.set_color("font_color", Loc.t("TooltipLabel"), Pal.TEXT)
 
-	t.set_stylebox("slider", "HSlider", sb(WOOD, GOLD_DARK, 1, 0, 3))
-	t.set_stylebox("grabber_area", "HSlider", sb(GOLD_DARK, GOLD_DARK, 1, 0, 3))
-	t.set_stylebox("grabber_area_highlight", "HSlider", sb(GOLD, GOLD, 1, 0, 3))
-	for bar in ["VScrollBar", "HScrollBar"]:
+	t.set_stylebox("slider", Loc.t("HSlider"), sb(WOOD, GOLD_DARK, 1, 0, 3))
+	t.set_stylebox("grabber_area", Loc.t("HSlider"), sb(GOLD_DARK, GOLD_DARK, 1, 0, 3))
+	t.set_stylebox("grabber_area_highlight", Loc.t("HSlider"), sb(GOLD, GOLD, 1, 0, 3))
+	for bar in [Loc.t("VScrollBar"), Loc.t("HScrollBar")]:
 		t.set_stylebox("scroll", bar, sb(Color(0, 0, 0, 0.3), Color.TRANSPARENT, 0, 2, 2))
 		t.set_stylebox("grabber", bar, sb(GOLD_DARK))
 		t.set_stylebox("grabber_highlight", bar, sb(Pal.ACCENT))
@@ -370,7 +370,7 @@ func logo(parent: Node, center_x: float, y: float, w := 230.0) -> TextureRect:
 
 # ------------------------------------------------------------------ Cercle des faiblesses
 
-const CERCLE_TEXT := "Chaque couleur fait ×1,5 de dégâts à celle que vise sa flèche, et ×0,75 à celle d'avant. La Lumière et l'Ombre se battent l'un l'autre.\nCe qui compte : la couleur principale de ton perso, de chaque arme et de chaque ennemi (au moins un quart du dessin)."
+static var CERCLE_TEXT := "Chaque couleur fait ×1,5 de dégâts à celle que vise sa flèche, et ×0,75 à celle d'avant. La Lumière et l'Ombre se battent l'un l'autre.\nCe qui compte : la couleur principale de ton perso, de chaque arme et de chaque ennemi (au moins un quart du dessin)."
 
 
 ## Image du cercle (assets/ui/cercle.png, ou la petite version sans les noms).
@@ -385,7 +385,7 @@ func cercle(parent: Node, pos: Vector2, mini := false) -> TextureRect:
 
 
 ## Icônes de stats dans un texte : « +4 PV max » -> « +4 » + l'icône du cœur (BBCode). Voir stat_bbcode.
-const STAT_WORDS := [["vit. d'attaque", "atk_speed"], ["vitesse d'attaque", "atk_speed"], ["PV max", "max_hp"],
+static var STAT_WORDS := [["vit. d'attaque", "atk_speed"], ["vitesse d'attaque", "atk_speed"], ["PV max", "max_hp"],
 	["régénération", "regen"], ["armure", "armor"], ["esquive", "dodge"], ["vitesse", "move"], ["dégâts", "dmg"],
 	["dégât", "dmg"], ["critique", "crit"], ["portée", "range"], ["vol de vie", "lifesteal"], ["chance", "luck"],
 	["pourboire", "harvest"], ["épines", "thorns"], ["épine", "thorns"], ["Épines", "thorns"], ["Épine", "thorns"], ["puissance élémentaire", "el_power"],
@@ -403,9 +403,9 @@ func stat_bbcode(text: String, px := 12) -> String:
 		# - après « tes / ton / ta / le / la / les », après « = », « × » ou « % », ou en début de phrase (« Tes épines... »).
 		# Sauf si un mot précise que c'est autre chose (« dégâts de mêlée », « des familiers », « contre les boss »).
 		var num := "([+\\-−×]?\\d+(?:[.,]\\d+)?\\s?%?)\\s+"
-		var art := "((?:^|\\b)(?:tes|ton|ta|le|la|les)\\s+|=\\s*|×\\s*|%\\s*|\\(|^)"   # (« × armure », « / % vitesse » : ratios)
-		var word := "(" + "|".join(alt) + ")(?![\\wàâéèêëîïôûùç])"
-		var other := "(?!\\s*(?:d['’]|de |des |du |à |À |au |aux |contre ))"
+		var art := Loc.t("((?:^|\\b)(?:tes|ton|ta|le|la|les)\\s+|=\\s*|×\\s*|%\\s*|\\(|^)")   # (« × armure », « / % vitesse » : ratios)
+		var word := "(" + "|".join(alt) + Loc.t(")(?![\\wàâéèêëîïôûùç])")
+		var other := Loc.t("(?!\\s*(?:d['’]|de |des |du |à |À |au |aux |contre ))")
 		_stat_re = RegEx.create_from_string("(?i)(?:" + num + "|" + art + ")" + word + other)
 	var out := ""
 	var pos := 0
@@ -417,7 +417,7 @@ func stat_bbcode(text: String, px := 12) -> String:
 			if String(sw[0]).to_lower() == w:
 				key = sw[1]
 				break
-		var icon := "[img=%dx%d]res://assets/ui/stats/%s.png[/img]" % [px, px, key]
+		var icon := Loc.t("[img=%dx%d]res://assets/ui/stats/%s.png[/img]") % [px, px, key]
 		if m.get_string(1) != "":
 			out += "%s %s" % [m.get_string(1), icon]   # « +4 » + icône
 		else:
@@ -439,7 +439,7 @@ func rich(text: String, size := 10, color := Pal.TEXT, px := 12, center := false
 	r.add_theme_font_size_override("normal_font_size", fs(size))
 	r.add_theme_color_override("default_color", color)
 	var t := stat_bbcode(text, px)
-	r.text = ("[center]%s[/center]" % t) if center else t
+	r.text = (Loc.t("[center]%s[/center]") % t) if center else t
 	return r
 
 
@@ -491,7 +491,7 @@ func element_badge(parent: Node, c: int, pos: Vector2) -> TextureRect:
 	var tr := TextureRect.new()
 	tr.texture = element_icon(c)
 	tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	tr.tooltip_text = "Couleur : " + Pal.color_name(c)
+	tr.tooltip_text = Loc.t("Couleur : ") + Pal.color_name(c)
 	put(parent, tr, pos, Vector2(13, 13))
 	return tr
 
@@ -508,12 +508,12 @@ func cercle_popup(parent: Node, extra := "", with_text := true) -> Control:
 	var p := panel(Pal.PANEL, Pal.BORDER, 2)
 	var ph := 328.0 if with_text else 232.0
 	put(ov, p, Vector2(150, (360.0 - ph) / 2.0), Vector2(340, ph))
-	put(p, label("CERCLE DES FAIBLESSES", 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(340, 24))
+	put(p, label(Loc.t("CERCLE DES FAIBLESSES"), 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(340, 24))
 	cercle(p, Vector2(52, 32))
 	if with_text:
 		var t := label(CERCLE_TEXT + ("\n" + extra if extra != "" else ""), 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
 		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		put(p, t, Vector2(12, 202), Vector2(316, 98))
-	var close := hotkey(button("Fermer", func(): ov.queue_free()), [KEY_ESCAPE])
+	var close := hotkey(button(Loc.t("Fermer"), func(): ov.queue_free()), [KEY_ESCAPE])
 	put(p, close, Vector2(120, ph - 24.0), Vector2(100, 16))
 	return ov

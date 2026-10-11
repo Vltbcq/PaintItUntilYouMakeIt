@@ -5,7 +5,7 @@ extends RefCounted
 ## La couleur dominante du dessin donne son élément à l'ennemi. "map" : carte (1 par défaut).
 ## Les comportements sont pensés autour du dessin : flaques, traits, règle, compas, gomme...
 
-const TYPES := {
+static var TYPES := {
 	"tache": {"name": "Tache", "beh": "hop", "hp": 10.0, "dmg": 3.9, "spd": 58.0, "wave": 1, "weight": 10, "canvas": 24, "ink": 160, "loot": 1,
 		"desc": "Avance par bonds et laisse des flaques d'encre qui ralentissent."},
 	"gribouille": {"name": "Gribouille", "beh": "scribble", "hp": 8.0, "dmg": 3.9, "spd": 84.0, "wave": 2, "weight": 8, "canvas": 24, "ink": 140, "loot": 1,

@@ -384,7 +384,7 @@ func _pigeon(delta: float) -> void:
 			return
 		if tgt == arena.player:
 			arena.player.poop_t = 1.5
-			arena.float_text(arena.player.position + Vector2(0, -22), "BEURK !", Pal.DIM)
+			arena.float_text(arena.player.position + Vector2(0, -22), Loc.t("BEURK !"), Pal.DIM)
 		elif not (tgt as Enemy).dead:
 			hit(tgt as Enemy, dmg)
 			(tgt as Enemy).slow_t = maxf((tgt as Enemy).slow_t, 1.5))
@@ -404,7 +404,7 @@ func _taupe(delta: float) -> void:
 						hit(o, fdmg(6.0, 1.8), (o.position - position).normalized() * 60.0)
 					arena.explosion(position, 28.0, Color(0.55, 0.35, 0.17, 0.6), true)
 					arena.burst(position, Color("8a5a2b"), 16, 110.0)
-					arena.float_text(position + Vector2(0, -16), "SURPRISE !", Color("c08040"))
+					arena.float_text(position + Vector2(0, -16), Loc.t("SURPRISE !"), Color("c08040"))
 					_action()
 				sprite.modulate.a = 1.0
 				state = "walk"
@@ -517,7 +517,7 @@ func _grenouille(delta: float) -> void:
 		_action()
 		for e in arena.near(position, GRENOUILLE_R):
 			hit(e, fdmg(10.0, 3.0), (e.position - position).normalized() * 70.0)
-		arena.float_text(position + Vector2(0, -16), "SLURP !", Color("e85a8a"))
+		arena.float_text(position + Vector2(0, -16), Loc.t("SLURP !"), Color("e85a8a"))
 
 
 func _fantome(delta: float) -> void:
@@ -566,11 +566,11 @@ func _yuki(delta: float) -> void:
 	if cd2 <= 0.0 and p.paper <= 0:
 		cd2 = fcd(12.0)
 		p.paper += 1
-		arena.float_text(p.position + Vector2(0, -26), "YUKI TE PROTÈGE", Color("9ad0ff"))
+		arena.float_text(p.position + Vector2(0, -26), Loc.t("YUKI TE PROTÈGE"), Color("9ad0ff"))
 	if cd3 <= 0.0 and p.hp < p.max_hp * 0.25:
 		cd3 = 10.0
 		p.yuki_t = 3.0
-		arena.float_text(p.position + Vector2(0, -26), "VITE !", Color("9ad0ff"))
+		arena.float_text(p.position + Vector2(0, -26), Loc.t("VITE !"), Color("9ad0ff"))
 
 
 func _pavel(delta: float) -> void:
@@ -581,7 +581,7 @@ func _pavel(delta: float) -> void:
 			visible = true
 			hp = max_hp
 			position = arena.player.position + Vector2(16, 0)
-			arena.float_text(position + Vector2(0, -18), "WOINIC REVIENT !", Pal.GOOD)
+			arena.float_text(position + Vector2(0, -18), Loc.t("WOINIC REVIENT !"), Pal.GOOD)
 		return
 	# se place entre toi et l'ennemi le plus proche
 	var p := arena.player.position
@@ -596,7 +596,7 @@ func _pavel(delta: float) -> void:
 	if hp <= 0.0:
 		ko_t = 10.0
 		arena.burst(position, Pal.BAD, 14, 90.0)
-		arena.float_text(position + Vector2(0, -18), "WOINIC K.O.", Pal.BAD)
+		arena.float_text(position + Vector2(0, -18), Loc.t("WOINIC K.O."), Pal.BAD)
 
 
 ## Woinic est-il là pour attirer les ennemis ?
@@ -657,7 +657,7 @@ func _paon(delta: float) -> void:
 		if arena.charm(e, 3.0):
 			n += 1
 	if n > 0:
-		arena.float_text(position + Vector2(0, -20), "CHARMÉS !", Color("f08ac0"))
+		arena.float_text(position + Vector2(0, -20), Loc.t("CHARMÉS !"), Color("f08ac0"))
 		Sfx.play("level")
 	_action()
 
@@ -710,7 +710,7 @@ func _pie(delta: float) -> void:
 func _give(v: int) -> void:
 	Run.gold += v
 	arena.burst(arena.player.position, Pal.ACCENT, 12, 110.0)
-	arena.float_text(arena.player.position + Vector2(0, -22), "+%d OR" % v, Pal.ACCENT)
+	arena.float_text(arena.player.position + Vector2(0, -22), Loc.t("+%d OR") % v, Pal.ACCENT)
 	Sfx.play("coin")
 	_action()
 
@@ -739,7 +739,7 @@ func _perroquet(delta: float) -> void:
 	var wn: WeaponNode = wns.pick_random()
 	var st: Dictionary = wn.st
 	var dir := (e.position - position).normalized()
-	arena.float_text(position + Vector2(0, -14), "COPIÉ !", Color("5ec04a"))
+	arena.float_text(position + Vector2(0, -14), Loc.t("COPIÉ !"), Color("5ec04a"))
 	_action()
 	if st.kind == "ranged" and not st.get("bullets", []).is_empty() and not wn.bullet_tex.is_empty():
 		var b: Dictionary = st.bullets[0]

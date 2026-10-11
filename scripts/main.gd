@@ -66,13 +66,13 @@ func _choose_slot() -> void:
 				Meta.select_slot(r.n)
 				break
 			"delete":
-				var ok = await _ask(ChoiceScreens.confirm("Supprimer la sauvegarde %d ?" % r.n,
-					"Progression, pigments, galerie, Codex et partie en cours seront effacés. Impossible de revenir en arrière.",
-					"Supprimer", "Annuler", true))
+				var ok = await _ask(ChoiceScreens.confirm(Loc.t("Supprimer la sauvegarde %d ?") % r.n,
+					Loc.t("Progression, pigments, galerie, Codex et partie en cours seront effacés. Impossible de revenir en arrière."),
+					Loc.t("Supprimer"), Loc.t("Annuler"), true))
 				if ok:
 					Meta.delete_slot(r.n)
 			"quit":
-				var sure = await _ask(ChoiceScreens.confirm("Quitter le jeu ?", "À bientôt !", "Quitter", "Rester"))
+				var sure = await _ask(ChoiceScreens.confirm(Loc.t("Quitter le jeu ?"), Loc.t("À bientôt !"), Loc.t("Quitter"), Loc.t("Rester")))
 				if sure:
 					get_tree().quit()
 					return
@@ -88,8 +88,8 @@ func _title() -> void:
 	match r:
 		"play":
 			if Meta.has_run():
-				var ok = await _ask(ChoiceScreens.confirm("Nouvelle partie ?",
-					"Ta partie en cours sera perdue (elle ne comptera pas comme une défaite).", "Nouvelle partie", "Annuler"))
+				var ok = await _ask(ChoiceScreens.confirm(Loc.t("Nouvelle partie ?"),
+					Loc.t("Ta partie en cours sera perdue (elle ne comptera pas comme une défaite)."), Loc.t("Nouvelle partie"), Loc.t("Annuler")))
 				if not ok:
 					_title()
 					return
@@ -110,7 +110,9 @@ func _title() -> void:
 			await _ask(GalleryScreen.new())
 			_title()
 		"options":
-			await _ask(OptionsPanel.new())
+			var opts := OptionsPanel.new()
+			opts.from_title = true
+			await _ask(opts)
 			_title()
 		"codex":
 			await _codex()
@@ -139,7 +141,7 @@ func _new_run() -> void:
 		Run.start(int(d.diff), int(d.map), int(d.seed))
 	else:
 		Run.start(d, map)
-	var r = await _obtain("perso", DrawCfg.character(), 0, "TON DERNIER PERSO")
+	var r = await _obtain("perso", DrawCfg.character(), 0, Loc.t("TON DERNIER PERSO"))
 	if r == null:
 		_title()
 		return
@@ -149,7 +151,7 @@ func _new_run() -> void:
 	Run.unseed()
 	var type = await _ask(wk)
 	await _get_weapon(type, 0, 0, false)
-	Run.log_event("buy", "Arme de départ : " + Run.item_label("weapon", type, 0))
+	Run.log_event("buy", Loc.t("Arme de départ : ") + Run.item_label("weapon", type, 0))
 	_game_loop()
 
 
@@ -176,7 +178,7 @@ func _draw_rarity(type: String, rar: int, cancel: bool) -> bool:
 	if not base.is_empty() and Meta.bestiary_get(key) == null:
 		return await _retouch_rarity(type, rar, base, cancel)
 	var def := WeaponDB.get_def(type)
-	var r = await _obtain(key, DrawCfg.weapon(type, rar, cancel), 0, "TON ARME " + Pal.RARITY_NAMES_F[rar].to_upper())
+	var r = await _obtain(key, DrawCfg.weapon(type, rar, cancel), 0, Loc.t("TON ARME %s") % Pal.RARITY_NAMES_F[rar].to_upper())
 	if r == null:
 		return false
 	var bullet: Image = null
@@ -188,7 +190,7 @@ func _draw_rarity(type: String, rar: int, cancel: bool) -> bool:
 		beffect = base.beffect
 		boutline = base.get("boutline", false)
 	elif def.kind == "ranged" and not def.get("nobullet", false):
-		var bb = await _obtain("balle_" + type, DrawCfg.bullet(type, Analyzer.analyze(r.image), r.effect, rar), 0, "TES DERNIÈRES BALLES")
+		var bb = await _obtain("balle_" + type, DrawCfg.bullet(type, Analyzer.analyze(r.image), r.effect, rar), 0, Loc.t("TES DERNIÈRES BALLES"))
 		bullet = bb.image
 		beffect = bb.effect
 		boutline = bb.outline
@@ -209,10 +211,10 @@ func _retouch_rarity(type: String, rar: int, base: Dictionary, cancel := true) -
 	if base.get("bullet") != null:
 		cfg.bullet_a = Analyzer.analyze(base.bullet)   # couleur finale = arme + balles
 	cfg.random = false
-	cfg.title = "%s %s : retouche ton dessin" % [def.name, Pal.RARITY_NAMES_F[rar].to_lower()]
-	cfg.sub = "Cette rareté a son propre dessin (%d d'encre). Tes armes des autres raretés gardent le leur." % int(cfg.ink)
+	cfg.title = Loc.t("%s %s : retouche ton dessin") % [def.name, Pal.RARITY_NAMES_F[rar].to_lower()]
+	cfg.sub = Loc.t("Cette rareté a son propre dessin (%d d'encre). Tes armes des autres raretés gardent le leur.") % int(cfg.ink)
 	cfg.cancel = cancel
-	cfg.cancel_label = "Retour"
+	cfg.cancel_label = Loc.t("Retour")
 	var r = await _paint(cfg)
 	if r == null:
 		return false
@@ -227,7 +229,7 @@ func _retouch_rarity(type: String, rar: int, base: Dictionary, cancel := true) -
 func _get_familiar(id: String) -> bool:
 	var def := FamiliarDB.get_def(id)
 	if not Run.familiar_art.has(id):
-		var r = await _obtain("familier_" + id, DrawCfg.familiar(def), 0, "TON FAMILIER")
+		var r = await _obtain("familier_" + id, DrawCfg.familiar(def), 0, Loc.t("TON FAMILIER"))
 		if r == null:
 			return false
 		Run.set_familiar_art(id, r.image, r.effect, r.outline)
@@ -238,7 +240,7 @@ func _get_familiar(id: String) -> bool:
 func _get_amulet(id: String) -> bool:
 	var def := AmuletDB.get_def(id)
 	if not Run.amulet_art.has(id):
-		var r = await _obtain("amulette_" + id, DrawCfg.amulet(def), 0, "TA DERNIÈRE AMULETTE")
+		var r = await _obtain("amulette_" + id, DrawCfg.amulet(def), 0, Loc.t("TA DERNIÈRE AMULETTE"))
 		if r == null:
 			return false
 		Run.set_amulet_art(id, r.image, r.effect, r.outline)
@@ -249,7 +251,7 @@ func _get_amulet(id: String) -> bool:
 		# Lunettes de l'oculiste : le test de vision, tout de suite
 		var ok = await _ask(OculistTest.new())
 		Run.oculist_ok = 1 if ok else 0
-		Run.log_event("event", "Test de vision : %s" % ("réussi" if ok else "raté"))
+		Run.log_event("event", Loc.t("Test de vision : %s") % (Loc.t("réussi") if ok else Loc.t("raté")))
 		Run.recompute()
 	return true
 
@@ -263,12 +265,12 @@ func _consume(id: String) -> bool:
 				return false
 			Sfx.play("level")
 			for c in ch:
-				Run.log_event("event", "Boîte de Pandore : %s → %s" % c)
+				Run.log_event("event", Loc.t("Boîte de Pandore : %s → %s") % c)
 			if Run.amulet_count("oculiste") > 0 and Run.oculist_ok < 0:
 				var ok = await _ask(OculistTest.new())
 				Run.oculist_ok = 1 if ok else 0
 				Run.recompute()
-			await _ask(ChoiceScreens.info("BOÎTE DE PANDORE", "\n".join(ch.map(func(c): return "%s  →  %s" % c))))
+			await _ask(ChoiceScreens.info(Loc.t("BOÎTE DE PANDORE"), "\n".join(ch.map(func(c): return "%s  →  %s" % c))))
 			return true
 		"diplome":
 			var idx := []
@@ -279,7 +281,7 @@ func _consume(id: String) -> bool:
 				return false
 			var i: int = idx.pick_random()
 			var w: Dictionary = Run.weapons[i]
-			Run.log_event("event", "Diplôme : %s → %s" % [Run.item_label("weapon", w.type, int(w.rar)), Pal.RARITY_NAMES_F[int(w.rar) + 1].to_lower()])
+			Run.log_event("event", Loc.t("Diplôme : %s → %s") % [Run.item_label("weapon", w.type, int(w.rar)), Pal.RARITY_NAMES_F[int(w.rar) + 1].to_lower()])
 			await _upgrade_weapon(i)
 			Run.recompute()
 			return true
@@ -324,13 +326,13 @@ func _game_loop(stage := "wave", start := 1) -> void:
 				_title()   # la partie reprendra au début de cette vague
 				return
 			if res != "cleared":
-				Run.log_event("wave", "Effacé à la vague %d" % w)
+				Run.log_event("wave", Loc.t("Effacé à la vague %d") % w)
 				if Run.endless:
 					await _end_endless()
 				else:
 					await _end(false)
 				return
-			Run.log_event("wave", "Vague %d terminée (PV %d / %d, ● %d)" % [w, ceili(Run.hp), int(Run.stats.max_hp), Run.gold])
+			Run.log_event("wave", Loc.t("Vague %d terminée (PV %d / %d, ● %d)") % [w, ceili(Run.hp), int(Run.stats.max_hp), Run.gold])
 			# Outil de dev : saut direct à une vague (sans niveaux ni boutique)
 			if Run.dev_jump > 0:
 				w = Run.dev_jump
@@ -341,7 +343,7 @@ func _game_loop(stage := "wave", start := 1) -> void:
 				# Victoire : on la compte tout de suite ; le joueur peut continuer en mode infini
 				if not await _end(true, true):
 					return
-				Run.log_event("wave", "Mode infini : la partie continue !")
+				Run.log_event("wave", Loc.t("Mode infini : la partie continue !"))
 			Run.shop_offers = []
 			_checkpoint("after")
 		await _level_ups()
@@ -388,10 +390,10 @@ func _pre_wave(w: int) -> void:
 ## dessin par défaut du Codex, ou un dessin compatible de la galerie, ou de dessiner.
 ## « < Choix » dans l'écran de dessin ramène à cette sélection.
 ## Retourne {image, effect, outline}, ou null si le joueur annule (quand c'est permis).
-func _obtain(key: String, cfg: Dictionary, reward := 0, caption := "TON DESSIN DE BASE"):
+func _obtain(key: String, cfg: Dictionary, reward := 0, caption := Loc.t("TON DESSIN DE BASE")):
 	var existing = Meta.bestiary_get(key)
 	if existing != null:
-		caption = "TON DESSIN DE BASE"
+		caption = Loc.t("TON DESSIN DE BASE")
 	while true:
 		var r = await _ask(BestiaryPrompt.new(cfg, existing, reward, caption))
 		match r.a:
@@ -402,7 +404,7 @@ func _obtain(key: String, cfg: Dictionary, reward := 0, caption := "TON DESSIN D
 				return {"image": r.image, "effect": r.effect, "outline": r.outline}
 		var c: Dictionary = cfg.duplicate()
 		c.cancel = true
-		c.cancel_label = "< Choix"
+		c.cancel_label = Loc.t("< Choix")
 		c.outline = r.get("outline", false)
 		if r.a == "redraw":
 			c.base = r.image
@@ -443,7 +445,7 @@ func _codex() -> void:
 			c.effect = d0.effect
 			c.outline = d0.outline
 		c.cancel = true
-		c.cancel_label = "Retour"
+		c.cancel_label = Loc.t("Retour")
 		c.random = c.get("random", false) and d0 == null
 		var d = await _paint(c)
 		if d != null:
@@ -518,11 +520,11 @@ func _buy(i: int) -> void:
 		Run.legend_buys += 1   # succès Vernissage
 	var what := Run.item_label(o.type, o.wtype if o.type == "weapon" else o.id, int(o.rar))
 	if o.has("replace"):
-		Run.log_event("event", "Restaurateur : %s → %s (● %d)" % [AmuletDB.get_def(o.replace.id).name, what, o.price])
+		Run.log_event("event", Loc.t("Restaurateur : %s → %s (● %d)") % [AmuletDB.get_def(o.replace.id).name, what, o.price])
 	elif o.get("gift", false):
-		Run.log_event("event", "Obtenu : %s%s" % [what, (" (● %d)" % o.price) if o.price > 0 else ""])
+		Run.log_event("event", Loc.t("Obtenu : %s%s") % [what, (" (● %d)" % o.price) if o.price > 0 else ""])
 	else:
-		Run.log_event("buy", "Achat : %s (● %d)" % [what, o.price])
+		Run.log_event("buy", Loc.t("Achat : %s (● %d)") % [what, o.price])
 	Run.apply_capital()   # Le Capital vient d'être acheté : toute la boutique passe au prix moyen
 	if o.has("replace"):
 		# Restaurateur : l'amulette donnée disparaît
@@ -552,10 +554,10 @@ func _ink_pot(i: int) -> void:
 	cfg.ink = budget
 	cfg.effect = Run.char_effect
 	cfg.outline = Run.char_outline
-	cfg.title = "Retouche ton perso (+%d d'encre)" % add
-	cfg.sub = "Ajoute (ou gomme) ce que tu veux : tes stats changent. Ensuite, replace tes armes et amulettes."
+	cfg.title = Loc.t("Retouche ton perso (+%d d'encre)") % add
+	cfg.sub = Loc.t("Ajoute (ou gomme) ce que tu veux : tes stats changent. Ensuite, replace tes armes et amulettes.")
 	cfg.cancel = true
-	cfg.cancel_label = "Annuler"
+	cfg.cancel_label = Loc.t("Annuler")
 	var r = await _paint(cfg)
 	if r == null:
 		return   # rien payé
@@ -563,7 +565,7 @@ func _ink_pot(i: int) -> void:
 	o.sold = true
 	Run.char_ink_bonus += add
 	Run.set_character(r.image, r.effect, r.outline)
-	Run.log_event("buy", "Pot d'encre : perso retouché (+%d d'encre, ● %d)" % [add, o.price])
+	Run.log_event("buy", Loc.t("Pot d'encre : perso retouché (+%d d'encre, ● %d)") % [add, o.price])
 	var p = await _ask(ArrangeScreen.new("", 0))
 	Run.apply_weapon_moves(p.moves)
 	Run.apply_amulet_moves(p.get("amulet_moves", []))
@@ -577,7 +579,7 @@ func _fuse(type: String, rar: int) -> void:
 			idx.append(i)
 	if idx.size() < 2 or rar >= 3:
 		return
-	Run.log_event("buy", "Fusion : 2× %s → %s" % [Run.item_label("weapon", type, rar), Pal.RARITY_NAMES_F[rar + 1].to_lower()])
+	Run.log_event("buy", Loc.t("Fusion : 2× %s → %s") % [Run.item_label("weapon", type, rar), Pal.RARITY_NAMES_F[rar + 1].to_lower()])
 	var gone: Dictionary = Run.weapons[idx[1]]
 	Run.weapons[idx[0]].price = int(Run.weapons[idx[0]].price) + int(gone.price)
 	Run.weapons.remove_at(idx[1])

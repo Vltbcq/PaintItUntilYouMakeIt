@@ -138,7 +138,7 @@ const CONDS := {
 	"f:chimere": {"kind": "pets", "v": 5},
 }
 
-const STAT_NAMES := {"max_hp": "PV max", "armor": "d'armure", "speed": "% de vitesse", "crit": "% de critique",
+static var STAT_NAMES := {"max_hp": "PV max", "armor": "d'armure", "speed": "% de vitesse", "crit": "% de critique",
 	"luck": "de chance", "range": "% de portée", "lifesteal": "% de vol de vie", "thorns": "d'épines",
 	"el_power": "% de puissance élémentaire", "dodge": "% d'esquive", "atk_speed": "% de vitesse d'attaque"}
 
@@ -158,15 +158,15 @@ static func key_familiar(id: String) -> String:
 ## Nom lisible d'une clé ("Arme : Plume solitaire").
 static func label(key: String) -> String:
 	if key.begins_with("w:"):
-		return "Arme : " + String(WeaponDB.get_def(key.substr(2)).name)
+		return Loc.t("Arme : ") + String(WeaponDB.get_def(key.substr(2)).name)
 	if key.begins_with("f:"):
-		return "Familier : " + String(FamiliarDB.get_def(key.substr(2)).name)
-	return "Amulette : " + String(AmuletDB.get_def(key.substr(2)).name)
+		return Loc.t("Familier : ") + String(FamiliarDB.get_def(key.substr(2)).name)
+	return Loc.t("Amulette : ") + String(AmuletDB.get_def(key.substr(2)).name)
 
 
 ## " sur <la carte>" si la condition est liée à une carte, sinon rien.
 static func _on(c: Dictionary) -> String:
-	return (" sur " + String(MapDB.MAPS[int(c.map)].name)) if c.has("map") else ""
+	return (Loc.t(" sur ") + String(MapDB.MAPS[int(c.map)].name)) if c.has("map") else ""
 
 
 ## La condition vaut-elle sur la carte de ce contexte ? (sans carte dans le contexte : non)
@@ -178,74 +178,74 @@ static func _here(c: Dictionary, ctx: Dictionary) -> bool:
 static func text(c: Dictionary) -> String:
 	match String(c.kind):
 		"stat":
-			return "Atteins %d %s dans une partie." % [int(c.v), STAT_NAMES.get(c.stat, c.stat)]
+			return Loc.t("Atteins %d %s dans une partie.") % [int(c.v), STAT_NAMES.get(c.stat, c.stat)]
 		"gold":
-			return "Aie %d or en poche." % int(c.v)
+			return Loc.t("Aie %d or en poche.") % int(c.v)
 		"colors":
-			return "Joue un perso avec %d couleurs différentes." % int(c.v)
+			return Loc.t("Joue un perso avec %d couleurs différentes.") % int(c.v)
 		"pixels":
-			return "Joue un perso de %d pixels ou plus." % int(c.v)
+			return Loc.t("Joue un perso de %d pixels ou plus.") % int(c.v)
 		"solo":
-			return "Termine la vague %d avec une seule arme." % int(c.v)
+			return Loc.t("Termine la vague %d avec une seule arme.") % int(c.v)
 		"wave":
-			return "Termine la vague %d%s." % [int(c.v), _on(c)]
+			return Loc.t("Termine la vague %d%s.") % [int(c.v), _on(c)]
 		"win":
-			return "Gagne une partie" + _on(c) + (" en %s ou plus dur." % Meta.DIFFICULTIES[int(c.v)].name if int(c.v) > 0 else ".")
+			return Loc.t("Gagne une partie") + _on(c) + (Loc.t(" en %s ou plus dur.") % Meta.DIFFICULTIES[int(c.v)].name if int(c.v) > 0 else ".")
 		"only":
-			return "Termine la vague %d avec uniquement des armes %s." % [int(c.v), "de mêlée" if c.wkind == "melee" else "à distance"]
+			return Loc.t("Termine la vague %d avec uniquement des armes %s.") % [int(c.v), Loc.t("de mêlée") if c.wkind == "melee" else Loc.t("à distance")]
 		"kills":
-			return "Tue %d ennemis (toutes parties)." % int(c.v)
+			return Loc.t("Tue %d ennemis (toutes parties).") % int(c.v)
 		"elites":
-			return "Tue %d élites (toutes parties)." % int(c.v)
+			return Loc.t("Tue %d élites (toutes parties).") % int(c.v)
 		"level":
-			return "Atteins le niveau %d dans une partie." % int(c.v)
+			return Loc.t("Atteins le niveau %d dans une partie.") % int(c.v)
 		"boss":
-			return "Vaincs %s." % String(EnemyDB.get_def(c.boss).name)
+			return Loc.t("Vaincs %s.") % String(EnemyDB.get_def(c.boss).name)
 		"runs":
-			return "Joue %d parties." % int(c.v)
+			return Loc.t("Joue %d parties.") % int(c.v)
 		"syn":
 			var el: String = Pal.NAMES[int(c.el)]
-			return ("Active la synergie %s (3 armes %s)." % [el, el]) if int(c.v) <= 1 else ("Aie la synergie %s active à la vague %d." % [el, int(c.v)])
+			return (Loc.t("Active la synergie %s (3 armes %s).") % [el, el]) if int(c.v) <= 1 else (Loc.t("Aie la synergie %s active à la vague %d.") % [el, int(c.v)])
 		"syn2":
-			return "Aie %d synergies d'éléments actives en même temps." % int(c.v)
+			return Loc.t("Aie %d synergies d'éléments actives en même temps.") % int(c.v)
 		"legends":
-			return "Possède %d armes légendaires en même temps." % int(c.v)
+			return Loc.t("Possède %d armes légendaires en même temps.") % int(c.v)
 		"clean":
-			return "Termine une vague %d ou plus%s sans perdre de PV." % [int(c.v), _on(c)]
+			return Loc.t("Termine une vague %d ou plus%s sans perdre de PV.") % [int(c.v), _on(c)]
 		"gallery":
-			return "Aie %d dessins dans ta galerie." % int(c.v)
+			return Loc.t("Aie %d dessins dans ta galerie.") % int(c.v)
 		"mono6":
-			return "Termine une vague avec 6 armes de la même couleur."
+			return Loc.t("Termine une vague avec 6 armes de la même couleur.")
 		"boss_clean":
-			return "Vaincs un boss sans perdre de PV pendant sa vague."
+			return Loc.t("Vaincs un boss sans perdre de PV pendant sa vague.")
 		"boss_total":
-			return "Vaincs %d boss (toutes parties)." % int(c.v)
+			return Loc.t("Vaincs %d boss (toutes parties).") % int(c.v)
 		"damage":
-			return "Inflige %d dégâts (toutes parties)." % int(c.v)
+			return Loc.t("Inflige %d dégâts (toutes parties).") % int(c.v)
 		"boss_crit":
-			return "Achève un boss d'un coup critique."
+			return Loc.t("Achève un boss d'un coup critique.")
 		"mono_color":
-			return "Termine la vague %d avec un perso d'une seule couleur." % int(c.v)
+			return Loc.t("Termine la vague %d avec un perso d'une seule couleur.") % int(c.v)
 		"spent":
-			return "Dépense %d or (toutes parties)." % int(c.v)
+			return Loc.t("Dépense %d or (toutes parties).") % int(c.v)
 		"roulette":
-			return "Gagne %d fois à la roulette (toutes parties)." % int(c.v)
+			return Loc.t("Gagne %d fois à la roulette (toutes parties).") % int(c.v)
 		"wave_kills":
-			return "Tue %d ennemis en une seule vague." % int(c.v)
+			return Loc.t("Tue %d ennemis en une seule vague.") % int(c.v)
 		"maps":
-			return "Termine une vague sur %d cartes différentes." % int(c.v)
+			return Loc.t("Termine une vague sur %d cartes différentes.") % int(c.v)
 		"fast_win":
-			return "Gagne une partie en moins de %d minutes." % int(c.v)
+			return Loc.t("Gagne une partie en moins de %d minutes.") % int(c.v)
 		"legend_buys":
-			return "Achète %d objets légendaires dans une même partie." % int(c.v)
+			return Loc.t("Achète %d objets légendaires dans une même partie.") % int(c.v)
 		"earned":
-			return "Ramasse %d or (toutes parties)." % int(c.v)
+			return Loc.t("Ramasse %d or (toutes parties).") % int(c.v)
 		"win_pet":
-			return "Gagne une partie avec au moins un familier."
+			return Loc.t("Gagne une partie avec au moins un familier.")
 		"pets":
-			return "Aie %d familiers en même temps." % int(c.v)
+			return Loc.t("Aie %d familiers en même temps.") % int(c.v)
 		"pets_wave":
-			return "Termine la vague %d avec %d familiers." % [int(c.v), int(c.n)]
+			return Loc.t("Termine la vague %d avec %d familiers.") % [int(c.v), int(c.n)]
 	return "?"
 
 

@@ -16,7 +16,7 @@ const PAD := 22         # marge autour du perso pour poser amulettes et marques 
 const MAX_WEAPONS := 6
 
 ## Bonus proposés en montant de niveau : [stat, valeur de base, texte]
-const UPGRADES := [
+static var UPGRADES := [
 	["max_hp", 3.0, "+{v} PV max"], ["regen", 1.5, "+{v} régénération"], ["armor", 1.0, "+{v} armure"],
 	["dodge", 3.0, "+{v}% esquive"], ["speed", 5.0, "+{v}% vitesse"], ["dmg", 5.0, "+{v}% dégâts"],
 	["atk_speed", 5.0, "+{v}% vit. d'attaque"], ["crit", 3.0, "+{v}% critique"], ["range", 8.0, "+{v}% portée"],
@@ -28,11 +28,11 @@ const PACT_CHANCE := 0.3     # un choix sur 3 peut être un « pacte » : bonus 
 
 ## Synergies : 3 armes (ou plus) d'un même élément dominant.
 const SYNERGY_NEED := 3   # (2 avec Accord parfait : voir synergy_need)
-const SYNERGY_DESC := ["", "Brûlure contagieuse", "Éclats de glace à la mort des ennemis gelés",
+static var SYNERGY_DESC := ["", "Brûlure contagieuse", "Éclats de glace à la mort des ennemis gelés",
 	"Chaînes d'éclairs plus longues (4 cibles)", "Nuage toxique à la mort des empoisonnés",
 	"Marque arcanique doublée (+50% dégâts subis)", "Toutes tes explosions sont 33% plus grandes"]
 
-const HEALS := {
+static var HEALS := {
 	"potion": {"name": "Fiole d'encre", "heal": 0.3, "price": 7, "desc": "Soigne 30% de tes PV max."},
 	"grande_potion": {"name": "Grand flacon", "heal": 0.7, "price": 15, "desc": "Soigne 70% de tes PV max."},
 	"encre": {"name": "Pot d'encre", "heal": 0.0, "ink": 40, "price": 12,
@@ -47,7 +47,7 @@ const ROULETTE_PAY := {"rouge": 2, "noir": 2, "vert": 36}   # comme au casino : 
 const POTION_CHANCE := 0.5
 ## Case opening : la boutique ne vend plus que des caisses (Bois / Argent / Or, Armes ou Amulettes).
 ## CASE_ODDS[caisse] = % de [commune, rare, épique, légendaire] ; prix = valeur moyenne du contenu −20 %.
-const CASE_NAMES := ["Caisse en bois", "Caisse d'argent", "Caisse dorée", "Caisse de diamant"]
+static var CASE_NAMES := ["Caisse en bois", "Caisse d'argent", "Caisse dorée", "Caisse de diamant"]
 const CASE_ODDS := [[80.0, 18.0, 2.0, 0.0], [15.0, 70.0, 13.0, 2.0], [0.0, 20.0, 70.0, 10.0], [0.0, 0.0, 55.0, 45.0]]
 const CASE_DISCOUNT := 0.8
 const EVENTS := ["roulette", "scratch", "auction", "restorer", "patron"]
@@ -55,7 +55,7 @@ const EVENT_CHANCE := 0.35
 const SCRATCH_PRICE := 8
 const RESTORE_PRICE := [15, 30, 50]   # Restaurateur : selon la rareté de l'amulette donnée
 ## Mécène : [id, multiplicateur d'or, texte du contrat] ; or = (20 + 8 × vague) × multiplicateur
-const PATRON_DEALS := [["more", 1.0, "+15% d'ennemis à la vague suivante"], ["elites", 1.25, "8 élites en plus à la vague suivante"]]
+static var PATRON_DEALS := [["more", 1.0, "+15% d'ennemis à la vague suivante"], ["elites", 1.25, "8 élites en plus à la vague suivante"]]
 const PATRON_MORE := 1.15   # contrat I : ennemis en plus
 const PATRON_ELITES := 8    # contrat II : élites en plus
 
@@ -409,16 +409,16 @@ func zone_at(pos: Vector2i, size: Vector2i) -> String:
 	var c := Vector2(pos) + Vector2(size) / 2.0
 	var rf := Rect2(r).grow(1)
 	if not rf.has_point(c):
-		return "Aura"
+		return Loc.t("Aura")
 	var ty := (c.y - r.position.y) / float(r.size.y)
 	var tx := (c.x - r.position.x) / float(r.size.x)
 	if ty < 0.33:
-		return "Tête"
+		return Loc.t("Tête")
 	if ty > 0.7:
-		return "Pieds"
+		return Loc.t("Pieds")
 	if tx < 0.22 or tx > 0.78:
-		return "Mains"
-	return "Cœur"
+		return Loc.t("Mains")
+	return Loc.t("Cœur")
 
 
 ## Centre du dessin du perso dans l'image composite (origine du joueur en jeu).
@@ -789,28 +789,28 @@ func item_label(type: String, id: String, rar: int) -> String:
 
 
 func write_journal() -> void:
-	var L := ["PAINT IT UNTIL YOU MAKE IT — Journal de la dernière partie", "",
-		"Carte : %s · Difficulté : %s" % [MapDB.get_def(map).name, Meta.DIFFICULTIES[difficulty].name],
-		"Vague %d / %d · Niveau %d · Or %d · Ennemis tués %d" % [wave, WAVES, level, gold, kills], ""]
+	var L := [Loc.t("PAINT IT UNTIL YOU MAKE IT — Journal de la dernière partie"), "",
+		Loc.t("Carte : %s · Difficulté : %s") % [MapDB.get_def(map).name, Meta.DIFFICULTIES[difficulty].name],
+		Loc.t("Vague %d / %d · Niveau %d · Or %d · Ennemis tués %d") % [wave, WAVES, level, gold, kills], ""]
 	if not wave_stats.is_empty():
-		L.append("== Stats au début de la vague %d ==" % int(wave_stats.wave))
+		L.append(Loc.t("== Stats au début de la vague %d ==") % int(wave_stats.wave))
 		L.append(String(wave_stats.text))
 		L.append("")
-	L.append("== Armes ==")
+	L.append(Loc.t("== Armes =="))
 	for w in weapons:
 		L.append("- " + item_label("weapon", w.type, int(w.rar)))
-	L.append("== Amulettes ==")
+	L.append(Loc.t("== Amulettes =="))
 	for am in amulets:
 		L.append("- %s" % AmuletDB.get_def(am.id).name)
 	L.append("")
-	L.append("== Journal ==")
+	L.append(Loc.t("== Journal =="))
 	for e in journal:
 		L.append("[V%d] %s" % [int(e.w), e.t])
 	Meta.write_text(Meta.slot_dir() + "journal_derniere_partie.txt", "\n".join(L))
 
 
 func apply_upgrade(u: Dictionary) -> void:
-	log_event("level", "Niveau %d : %s" % [level - pending_levels, String(u.get("text", "")).replace("\n", " · ")])
+	log_event("level", Loc.t("Niveau %d : %s") % [level - pending_levels, String(u.get("text", "")).replace("\n", " · ")])
 	bonus[u.stat] = float(bonus.get(u.stat, 0.0)) + u.v
 	if u.has("malus"):
 		bonus[u.malus[0]] = float(bonus.get(u.malus[0], 0.0)) + u.malus[1]
@@ -963,11 +963,11 @@ func _new_order() -> void:
 	var reward := 20 + 5 * wave
 	var w := wave + 1
 	var kinds := [
-		{"kind": "kills", "n": 20 + 3 * w, "text": "Tue %d ennemis"},
-		{"kind": "elem", "n": 6 + w, "text": "Tue %d ennemis touchés par un élément (brûlés, gelés...)"},
-		{"kind": "gold", "n": 10 + 3 * w, "text": "Ramasse %d or pendant la vague"},
-		{"kind": "nohit", "n": 20, "text": "Tiens %d s d'affilée sans perdre de PV"},
-		{"kind": "hp", "n": 60, "text": "Termine la vague avec au moins %d%% de tes PV"},
+		{"kind": "kills", "n": 20 + 3 * w, "text": Loc.t("Tue %d ennemis")},
+		{"kind": "elem", "n": 6 + w, "text": Loc.t("Tue %d ennemis touchés par un élément (brûlés, gelés...)")},
+		{"kind": "gold", "n": 10 + 3 * w, "text": Loc.t("Ramasse %d or pendant la vague")},
+		{"kind": "nohit", "n": 20, "text": Loc.t("Tiens %d s d'affilée sans perdre de PV")},
+		{"kind": "hp", "n": 60, "text": Loc.t("Termine la vague avec au moins %d%% de tes PV")},
 	]
 	var k: Dictionary = kinds.pick_random()
 	order = {"kind": k.kind, "n": int(k.n), "progress": 0.0, "reward": reward, "done": false,

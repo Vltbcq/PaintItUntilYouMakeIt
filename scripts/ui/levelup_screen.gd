@@ -14,11 +14,11 @@ func _ready() -> void:
 	if Run.levelup_choices.is_empty():
 		Run.levelup_choices = Run.roll_upgrades()
 	choices = Run.levelup_choices
-	UI.put(self, UI.label("NIVEAU %d !" % (Run.level - Run.pending_levels + 1), 40, Pal.GOOD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 24), Vector2(640, 48))
-	var sub := "Choisis un bonus parmi les %s." % (["", "un", "deux", "trois", "quatre", "cinq", "six"][choices.size()] if choices.size() < 7 else str(choices.size()))
+	UI.put(self, UI.label(Loc.t("NIVEAU %d !") % (Run.level - Run.pending_levels + 1), 40, Pal.GOOD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 24), Vector2(640, 48))
+	var sub := Loc.t("Choisis un bonus parmi les %s.") % (["", Loc.t("un"), Loc.t("deux"), Loc.t("trois"), Loc.t("quatre"), Loc.t("cinq"), Loc.t("six")][choices.size()] if choices.size() < 7 else str(choices.size()))
 	UI.put(self, UI.label(sub, 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 80), Vector2(640, 14))
 	if Run.pending_levels > 1:
-		UI.put(self, UI.label("Encore %d niveau(x) après celui-ci" % (Run.pending_levels - 1), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 96), Vector2(640, 14))
+		UI.put(self, UI.label(Loc.t("Encore %d niveau(x) après celui-ci") % (Run.pending_levels - 1), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 96), Vector2(640, 14))
 	# Zone des cartes : de x = 20 à 464 (les stats du perso sont à droite). 2 cartes (Palimpseste)
 	# ou 4 et plus (Stéroïdes) : toujours centrées, et rétrécies si elles ne tiennent pas
 	var n := choices.size()
@@ -31,7 +31,7 @@ func _ready() -> void:
 		UI.put(self, p, Vector2(x0 + i * (cw + 10.0), 130), Vector2(cw, 150))
 		UI.put(p, UI.label(Pal.RARITY_NAMES[u.rar], 10, rc, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 10), Vector2(cw, 12))
 		if u.get("pact", false):
-			UI.put(p, UI.label("PACTE : bonus doublé, mais...", 10, Pal.BAD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 24), Vector2(cw, 12))
+			UI.put(p, UI.label(Loc.t("PACTE : bonus doublé, mais..."), 10, Pal.BAD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 24), Vector2(cw, 12))
 		# Le bonus avec l'icône de la stat à la place du mot (son nom au survol)
 		# Bonus simple (« +5 % » + icône) en grand ; un pacte (2 lignes) en petit
 		var big: bool = not String(u.text).contains("\n")
@@ -42,11 +42,11 @@ func _ready() -> void:
 		UI.put(p, l, Vector2(8, 44 if big else 40), Vector2(cw - 16, 66))
 		var up: Dictionary = u
 		var bw := minf(100.0, cw - 12.0)
-		UI.put(p, UI.button("Choisir", func(): done.emit(up)), Vector2((cw - bw) / 2.0, 116), Vector2(bw, 20))
+		UI.put(p, UI.button(Loc.t("Choisir"), func(): done.emit(up)), Vector2((cw - bw) / 2.0, 116), Vector2(bw, 20))
 	# Les stats actuelles du perso, pour choisir en connaissance de cause
 	var sp := UI.panel(Pal.PANEL, Pal.BORDER, 2)
 	UI.put(self, sp, Vector2(474, 112), Vector2(150, 236))
-	UI.put(sp, UI.label("TON PERSO", 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(150, 12))
+	UI.put(sp, UI.label(Loc.t("TON PERSO"), 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(150, 12))
 	var stx := StatText.new(2)
 	UI.put(sp, stx, Vector2(8, 22), Vector2(136, 208))
 	stx.set_text(Stats.describe_player(Run.stats))

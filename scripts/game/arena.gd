@@ -91,7 +91,7 @@ var ghost: Player         # Reflet : ton double en miroir
 var wave_kills := 0       # ennemis tués pendant cette vague
 var safe_t := 0.0         # Carnet de commandes : temps sans perdre de PV
 var last_hp := 0.0
-const THEMES := {"geants": "ENNEMIS GÉANTS", "minus": "ENNEMIS MINUSCULES", "rapide": "TOUT VA PLUS VITE",
+static var THEMES := {"geants": "ENNEMIS GÉANTS", "minus": "ENNEMIS MINUSCULES", "rapide": "TOUT VA PLUS VITE",
 	"glissant": "SOL GLISSANT", "nuit": "NUIT D'ENCRE"}
 var blotters: Array = []  # Encrier renversé : buvards qui nettoient tes taches {pos, t}
 var telegraphs_fx: Array = []   # repères visuels (copie de la Photocopieuse) {pos, t}
@@ -192,13 +192,13 @@ func _ready() -> void:
 	if Run.regen_boost > 0.0:
 		player.sap_t = Run.regen_boost   # Élixir de sève (acheté à la boutique précédente)
 		Run.regen_boost = 0.0
-		_after(0.6, func(): float_text(player.position + Vector2(0, -24), "SÈVE : RÉGÉN ×4", Pal.GOOD))
+		_after(0.6, func(): float_text(player.position + Vector2(0, -24), Loc.t("SÈVE : RÉGÉN ×4"), Pal.GOOD))
 	if Run.star_buff > 0.0:
 		Run.wave_dmg = Run.star_buff   # Grattage (étoile) : pour cette vague
 		Run.star_buff = 0.0
 		Run.recompute()
 		player.st = Run.stats
-		_after(0.9, func(): float_text(player.position + Vector2(0, -34), "ÉTOILE : +%d%% DÉGÂTS" % roundi(Run.wave_dmg), Pal.ACCENT))
+		_after(0.9, func(): float_text(player.position + Vector2(0, -34), Loc.t("ÉTOILE : +%d%% DÉGÂTS") % roundi(Run.wave_dmg), Pal.ACCENT))
 	match Run.patron:
 		"more":
 			patron_mult = Run.PATRON_MORE
@@ -206,7 +206,7 @@ func _ready() -> void:
 			for k in Run.PATRON_ELITES:
 				patron_elites.append((k + 1.0) / (Run.PATRON_ELITES + 1.0))   # réparties sur la vague
 	if Run.patron != "":
-		var txt := ("MÉCÈNE : +%d%% D'ENNEMIS" % roundi((Run.PATRON_MORE - 1.0) * 100.0)) if Run.patron == "more" else ("MÉCÈNE : %d ÉLITES EN PLUS" % Run.PATRON_ELITES)
+		var txt := (Loc.t("MÉCÈNE : +%d%% D'ENNEMIS") % roundi((Run.PATRON_MORE - 1.0) * 100.0)) if Run.patron == "more" else (Loc.t("MÉCÈNE : %d ÉLITES EN PLUS") % Run.PATRON_ELITES)
 		_after(1.2, func(): float_text(player.position + Vector2(0, -44), txt, Pal.BAD))
 		Run.patron = ""
 
@@ -241,7 +241,7 @@ func _ready() -> void:
 		fx_layer.layer = 1
 		hud.layer = 2
 		var trip := ColorRect.new()
-		trip.name = "Extasie"
+		trip.name = Loc.t("Extasie")
 		trip.set_anchors_preset(Control.PRESET_FULL_RECT)
 		trip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var sm := ShaderMaterial.new()
@@ -259,25 +259,25 @@ func _ready() -> void:
 		bugs.auto = boss_id == ""
 	if boss_id != "":
 		time_left = -1.0
-		hud.announce("VAGUE %d — BOSS" % Run.wave, Pal.BAD)
+		hud.announce(Loc.t("VAGUE %d — BOSS") % Run.wave, Pal.BAD)
 		Sfx.play("boss")
 	else:
 		time_left = minf(20.0 + (Run.eff_wave() - 1) * 2.5, 60.0) * pow(1.25, Run.amulet_count("sablier_brise"))
 		time_left *= pow(0.5, Run.amulet_count("performance"))   # Performance live : vagues 2× plus courtes
 		wave_len = time_left
-		hud.announce("VAGUE %d" % Run.wave, Pal.ACCENT)
+		hud.announce(Loc.t("VAGUE %d") % Run.wave, Pal.ACCENT)
 		Sfx.play("wave")
 	if Run.amulet_count("porte") > 0:
 		knock_t = randf_range(0.15, 0.85) * wave_len if boss_id == "" else randf_range(8.0, 35.0)
 	if theme != "":
 		_after(1.6, func():
 			if not ended:
-				hud.announce("SALLE : " + String(THEMES[theme]), Pal.ACCENT))
+				hud.announce(Loc.t("SALLE : ") + String(THEMES[theme]), Pal.ACCENT))
 	# Carnet de commandes : l'objectif de la vague s'annonce au début (après la salle thématique)
 	if not Run.order.is_empty():
 		_after(3.2 if theme != "" else 1.6, func():
 			if not ended:
-				hud.announce("COMMANDE", Pal.ACCENT, "%s  →  +● %d" % [String(Run.order.text), int(Run.order.reward)]))
+				hud.announce(Loc.t("COMMANDE"), Pal.ACCENT, "%s  →  +● %d" % [String(Run.order.text), int(Run.order.reward)]))
 
 
 ## Vitesse du jeu : le réglage, ×1,25 par Speed painting.
@@ -361,7 +361,7 @@ func _process(delta: float) -> void:
 		if clock_cd <= 0.0:
 			clock_cd = 12.0
 			stop_t = 2.0
-			hud.announce("TEMPS ARRÊTÉ", Color(0.7, 0.85, 1.0))
+			hud.announce(Loc.t("TEMPS ARRÊTÉ"), Color(0.7, 0.85, 1.0))
 			Sfx.play("zap")
 	var frozen := stop_t > 0.0
 	if not frozen:
@@ -390,7 +390,7 @@ func _process(delta: float) -> void:
 		var was := laugh_t
 		laugh_t += delta
 		if was * LAUGH_RATE < LAUGH_MAX and laugh_t * LAUGH_RATE >= LAUGH_MAX:
-			float_text(player.position + Vector2(0, -30), "LE PUBLIC EST CONQUIS ! +40 %", Pal.ACCENT)
+			float_text(player.position + Vector2(0, -30), Loc.t("LE PUBLIC EST CONQUIS ! +40 %"), Pal.ACCENT)
 	for e in enemies.duplicate():
 		if ended:
 			break
@@ -569,7 +569,7 @@ func _spawn_pos(min_dist: float) -> Vector2:
 func spawn_enemy_now(id: String, pos: Vector2, small: bool, elite := false) -> Enemy:
 	var e0 := _spawn_enemy_raw(id, pos, small, elite)
 	if e0 and e0.power != "":
-		float_text(pos + Vector2(0, -20), "ÉLITE " + String(Enemy.TRAITS[e0.power][0]), e0.power_color())
+		float_text(pos + Vector2(0, -20), Loc.t("ÉLITE ") + String(Enemy.TRAITS[e0.power][0]), e0.power_color())
 	return e0
 
 
@@ -691,7 +691,7 @@ func spawn_enemy_bullet(src: Enemy, pos: Vector2, vel: Vector2, hang := 0.0, lig
 ## Éclat de lumière : petite étoile blanche au cœur jaune pâle.
 func _light_tex() -> Texture2D:
 	if not dot_tex.has("light"):
-		var rows := ["...#...", "..#o#..", ".#ooo#.", "#oo@oo#", ".#ooo#.", "..#o#..", "...#..."]
+		var rows := ["...#...", "..#o#..", ".#ooo#.", Loc.t("#oo@oo#"), ".#ooo#.", "..#o#..", "...#..."]
 		var img := Image.create_empty(7, 7, false, Image.FORMAT_RGBA8)
 		for y in 7:
 			for x in 7:
@@ -715,7 +715,7 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 	if e.dodge > 0.0 and Run.amulet_count("monocle") == 0 and randf() * 100.0 < e.dodge:   # Monocle : jamais esquivé
 		if e.weak_t <= 0.0:
 			e.weak_t = 0.6
-			float_text(e.position + Vector2(0, -16), "ESQUIVE", Pal.DIM)
+			float_text(e.position + Vector2(0, -16), Loc.t("ESQUIVE"), Pal.DIM)
 		return
 	var s := Run.stats
 	base *= float(wst.get("ghost", 1.0))   # Reflet : ton double fait 40 % des dégâts
@@ -744,7 +744,7 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 		dmg *= wmult
 		if e.weak_t <= 0.0:
 			e.weak_t = 1.2
-			float_text(e.position + Vector2(0, -18), "FAIBLE !" if wmult > 1.0 else "RÉSISTE", Pal.ACCENT if wmult > 1.0 else Pal.DIM)
+			float_text(e.position + Vector2(0, -18), Loc.t("FAIBLE !") if wmult > 1.0 else Loc.t("RÉSISTE"), Pal.ACCENT if wmult > 1.0 else Pal.DIM)
 	match String(wst.get("type", "")):
 		"sifflet":
 			whistle = e
@@ -796,7 +796,7 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 	# Ciseaux : exécution sous 25 % des PV (pas les boss)
 	if wst.get("style", "") == "scissors" and not e.dead and not e.is_boss and e.hp < e.max_hp * 0.25:
 		_slash(e.position)
-		float_text(e.position + Vector2(0, -12), "TRANCHÉ !", Pal.TEXT)
+		float_text(e.position + Vector2(0, -12), Loc.t("TRANCHÉ !"), Pal.TEXT)
 		e.hurt(e.hp + 1.0, true, Vector2.ZERO)
 	var craq := Run.amulet_count("craquelure")
 	if crit and craq > 0:
@@ -1118,7 +1118,7 @@ func collect(p: Pickup) -> void:
 		player.hp = Run.hp
 		player.refresh_max_hp()
 		Sfx.play("level")
-		numbers.add(player.position + Vector2(0, -24), "NIVEAU %d !" % Run.level, Pal.GOOD, 1.6)
+		numbers.add(player.position + Vector2(0, -24), Loc.t("NIVEAU %d !") % Run.level, Pal.GOOD, 1.6)
 		explosion(player.position, 46.0, Color(Pal.GOOD, 0.9), true)
 		burst(player.position, Pal.GOOD, 20, 120.0)
 		burst(player.position, Pal.ACCENT, 12, 90.0)
@@ -1129,7 +1129,7 @@ func player_died() -> void:
 		return
 	ended = true
 	Sfx.play("lose")
-	hud.announce("TU AS ÉTÉ EFFACÉ...", Pal.BAD)
+	hud.announce(Loc.t("TU AS ÉTÉ EFFACÉ..."), Pal.BAD)
 	shake(8.0)
 	_after(2.2, func(): done.emit("dead"))
 
@@ -1143,16 +1143,16 @@ func _end_wave() -> void:
 		if Run.order.kind == "hp" and player.hp >= player.max_hp * float(Run.order.n) / 100.0:
 			_order_progress(1e9)
 		else:
-			hud.announce("COMMANDE RATÉE", Pal.DIM)
+			hud.announce(Loc.t("COMMANDE RATÉE"), Pal.DIM)
 	Run.order = {}
 	# Pitcoin : le cours du jour
 	if Run.amulet_count("pitcoin") > 0:
 		var g := Run.pitcoin_roll()
 		if g > 0:
-			numbers.add(player.position + Vector2(0, -34), "PITCOIN  +● %d !" % g, Pal.ACCENT, 2.4, true)
+			numbers.add(player.position + Vector2(0, -34), Loc.t("PITCOIN  +● %d !") % g, Pal.ACCENT, 2.4, true)
 			Sfx.play("coin")
 		elif g < 0:
-			numbers.add(player.position + Vector2(0, -34), "PITCOIN  −● %d" % -g, Pal.BAD, 2.0)
+			numbers.add(player.position + Vector2(0, -34), Loc.t("PITCOIN  −● %d") % -g, Pal.BAD, 2.0)
 	Meta.map_cleared(Run.map)
 	if Run.wave_dmg > 0.0:
 		Run.wave_dmg = 0.0   # l'étoile du grattage ne dure qu'une vague
@@ -1193,10 +1193,10 @@ func _end_wave() -> void:
 	# La Joconde : une vague sans une égratignure = +12% dégâts pour la partie
 	if Run.amulet_count("joconde") > 0:
 		Run.joconde += Run.amulet_count("joconde")
-		numbers.add(player.position + Vector2(0, -34), "LA JOCONDE SOURIT : +12% DÉGÂTS", Pal.ACCENT, 2.0)
+		numbers.add(player.position + Vector2(0, -34), Loc.t("LA JOCONDE SOURIT : +12% DÉGÂTS"), Pal.ACCENT, 2.0)
 	Run.end_wave()
 	Meta.check_achievements(Run.achievement_ctx(Run.wave, not player.was_hurt, Run.wave == Run.WAVES))
-	hud.announce("VAGUE %d TERMINÉE !" % Run.wave, Pal.GOOD)
+	hud.announce(Loc.t("VAGUE %d TERMINÉE !") % Run.wave, Pal.GOOD)
 	Sfx.play("win" if Run.wave == Run.WAVES else "wave")
 	_after(1.8, func():
 		_flush_pickups()
@@ -1401,7 +1401,7 @@ func _tick_effects(delta: float) -> void:
 					if not e.is_boss and not e.dead and (bnd.rect as Rect2).has_point(e.position):
 						burst(e.position, Color.WHITE, 8, 90.0)
 						kill_enemy(e)
-				float_text((bnd.rect as Rect2).get_center(), "SUPPR", Pal.BAD)
+				float_text((bnd.rect as Rect2).get_center(), Loc.t("SUPPR"), Pal.BAD)
 		elif bnd.done:
 			bnd.acc += delta
 			if bnd.acc >= 0.5:
@@ -1427,7 +1427,7 @@ func _tick_effects(delta: float) -> void:
 			ls.pos = player.position
 			player.root_t = ls.hold
 			player.lasso_safe_t = float(ls.hold) + LASSO_SAFE   # libéré, puis intouchable par les lassos un moment
-			float_text(player.position + Vector2(0, -26), "ATTRAPÉ !", Pal.BAD)
+			float_text(player.position + Vector2(0, -26), Loc.t("ATTRAPÉ !"), Pal.BAD)
 			shake(3.0)
 			Sfx.play("hurt")
 			lz.append(ls)
@@ -1566,7 +1566,7 @@ func _tick_board(delta: float) -> void:
 			Run.gold += g
 			p.heal(3.0)
 			burst(st.pos, Pal.ACCENT, 20, 110.0)
-			float_text(st.pos + Vector2(0, -12), "BON POINT ! +%d or" % g, Pal.ACCENT)
+			float_text(st.pos + Vector2(0, -12), Loc.t("BON POINT ! +%d or") % g, Pal.ACCENT)
 			Sfx.play("level")
 			continue
 		if st.t > 0.0:
@@ -1597,7 +1597,7 @@ func _tick_board(delta: float) -> void:
 		var cw := float(W) / n
 		for i in n:
 			if i == qz.safe:
-				float_text(Vector2(cw * (i + 0.5), 40), "BONNE RÉPONSE : %d" % qz.answers[i], Pal.GOOD)
+				float_text(Vector2(cw * (i + 0.5), 40), Loc.t("BONNE RÉPONSE : %d") % qz.answers[i], Pal.GOOD)
 				continue
 			for k in 4:
 				explosion(Vector2(cw * (i + 0.5), H * (k + 0.5) / 4.0), cw * 0.45, Color(Pal.BAD, 0.6), k > 0)
@@ -1626,20 +1626,20 @@ func _board_event() -> void:
 			var horiz := randf() < 0.5
 			var c := (p.position.y if horiz else p.position.x) + randf_range(-40.0, 40.0)
 			sponges.append({"horiz": horiz, "c": clampf(c, 40.0, (H if horiz else W) - 40.0), "t": 0.0, "tele": 1.6, "dur": 1.3, "hit": {}, "pos": Vector2.ZERO})
-			hud.announce("COUP D'ÉPONGE !", Pal.TEXT)
+			hud.announce(Loc.t("COUP D'ÉPONGE !"), Pal.TEXT)
 		"chalk":
 			for i in 7:
 				var pos := p.position + Vector2.from_angle(randf() * TAU) * randf_range(0.0, 50.0) if i < 2 else _spawn_pos(0.0)
 				chalks.append({"pos": pos, "r": 20.0, "t": 1.2 + i * 0.15, "dmg": 3.0 + Run.wave * 0.5})
-			hud.announce("PLUIE DE CRAIES !", Pal.TEXT)
+			hud.announce(Loc.t("PLUIE DE CRAIES !"), Pal.TEXT)
 		"bell":
 			rush_t = 5.0
 			shake(4.0)
-			hud.announce("DRIIIIING !", Pal.BAD)
+			hud.announce(Loc.t("DRIIIIING !"), Pal.BAD)
 			Sfx.play("boss")
 		"star":
 			stars.append({"pos": _spawn_pos(100.0), "t": 7.0})
-			hud.announce("UN BON POINT À GAGNER !", Pal.ACCENT)
+			hud.announce(Loc.t("UN BON POINT À GAGNER !"), Pal.ACCENT)
 
 
 # ------------------------------------------------------------------ Armes épiques / légendaires
@@ -1681,7 +1681,7 @@ func _tick_amulets(delta: float) -> void:
 			tw.tween_interval(2.6)
 			tw.tween_property(s, "modulate:a", 0.0, 0.4)
 			tw.tween_callback(s.queue_free)
-			float_text(player.position + Vector2(0, -26), "LEURRE !", Pal.ACCENT)
+			float_text(player.position + Vector2(0, -26), Loc.t("LEURRE !"), Pal.ACCENT)
 
 
 ## Chauve-souris : note un soin reçu.
@@ -1819,7 +1819,7 @@ func squid_cloud(pos: Vector2) -> void:
 	burst(pos, Pal.INK, 30, 120.0)
 	for o in near(pos, 90.0):
 		o.blind_t = 2.0
-	float_text(pos + Vector2(0, -26), "ENCRE DE SEICHE !", Pal.TEXT)
+	float_text(pos + Vector2(0, -26), Loc.t("ENCRE DE SEICHE !"), Pal.TEXT)
 
 
 ## Agrafeuse : relie cet ennemi au précédent agrafé (s'il est encore là et pas trop loin).
@@ -1859,7 +1859,7 @@ func spawn_ally(id: String, pos: Vector2, elite := false) -> void:
 	a.contact = false
 	allies.append(a)
 	burst(pos, Pal.GOOD, 14, 90.0)
-	float_text(pos + Vector2(0, -16), "REDESSINÉ !", Pal.GOOD)
+	float_text(pos + Vector2(0, -16), Loc.t("REDESSINÉ !"), Pal.GOOD)
 
 
 ## Le Paon : l'ennemi passe dans ton camp quelques secondes, puis redevient ennemi.
@@ -1997,7 +1997,7 @@ func quiz(n: int, dmg: float) -> void:
 	var dur := maxf(2.8 if hard else 3.2, 1.5 + far / maxf(30.0, float(player.st.move)) * 1.2)
 	quizzes.append({"cols": n, "safe": answers.find(good), "answers": answers, "question": q + " = ?",
 		"t": 0.0, "dur": dur, "dmg": dmg})
-	hud.announce("INTERRO SURPRISE !", Pal.ACCENT)
+	hud.announce(Loc.t("INTERRO SURPRISE !"), Pal.ACCENT)
 	Sfx.play("zap")
 
 
@@ -2053,8 +2053,8 @@ func _order_progress(n: float) -> void:
 		o.done = true
 		Run.gold += int(o.reward)
 		Sfx.play("level")
-		hud.announce("COMMANDE RÉUSSIE ! +● %d" % int(o.reward), Pal.GOOD)
-		Run.log_event("event", "Commande réussie : %s (+● %d)" % [o.text, int(o.reward)])
+		hud.announce(Loc.t("COMMANDE RÉUSSIE ! +● %d") % int(o.reward), Pal.GOOD)
+		Run.log_event("event", Loc.t("Commande réussie : %s (+● %d)") % [o.text, int(o.reward)])
 
 
 ## Carnet de commandes : « sans perdre de PV pendant N s ».
@@ -2078,7 +2078,7 @@ func spawn_blotter(avoid: Vector2) -> void:
 		if p.distance_to(avoid) > 120.0 and p.distance_to(player.position) > 70.0:
 			break
 	blotters.append({"pos": p, "t": 10.0})
-	float_text(p + Vector2(0, -14), "BUVARD", BLOTTER)
+	float_text(p + Vector2(0, -14), Loc.t("BUVARD"), BLOTTER)
 
 
 const BLOTTER := Color("f2a0b8")
@@ -2117,7 +2117,7 @@ func on_player_hit() -> void:
 	if Run.amulet_count("rires") > 0:
 		if laugh_t >= 1.0:
 			Sfx.laugh()
-			float_text(player.position + Vector2(randf_range(-10, 10), -30), ["HAHAHA", "HA HA HA !", "MDR", "HAHA"].pick_random(), Pal.ACCENT)
+			float_text(player.position + Vector2(randf_range(-10, 10), -30), [Loc.t("HAHAHA"), Loc.t("HA HA HA !"), Loc.t("MDR"), Loc.t("HAHA")].pick_random(), Pal.ACCENT)
 		laugh_t = 0.0
 
 
@@ -2135,7 +2135,7 @@ func _tick_party(delta: float) -> void:
 
 ## Chapeau de fête : tous les ennemis dansent sur place.
 func party() -> void:
-	hud.announce("C'EST LA FÊTE !", Pal.ACCENT)
+	hud.announce(Loc.t("C'EST LA FÊTE !"), Pal.ACCENT)
 	Sfx.party()   # (la musique de la vague se met en pause, la musique de fête joue)
 	party_t = PARTY_SEC
 	for e in enemies:
@@ -2609,7 +2609,7 @@ class _Marks extends Node2D:
 				draw_line(g.pos + Vector2(-6, 6), g.pos + Vector2(6, -6), Color(Pal.BAD, blink), 2.0)
 				continue
 			draw_arc(g.pos, 10.0, 0.0, TAU, 16, Color(1, 1, 1, 0.8), 2.0)
-			draw_string(UI.font, g.pos + Vector2(-20, -14), "COPIE", HORIZONTAL_ALIGNMENT_CENTER, 40, UI.fs(10), Color(1, 1, 1, 0.8))
+			draw_string(UI.font, g.pos + Vector2(-20, -14), Loc.t("COPIE"), HORIZONTAL_ALIGNMENT_CENTER, 40, UI.fs(10), Color(1, 1, 1, 0.8))
 		# Agrafes (Agrafeuse)
 		for e in arena.enemies:
 			if e.staple_t > 0.0 and is_instance_valid(e.staple) and not e.staple.dead and e.get_instance_id() < e.staple.get_instance_id():
@@ -2752,7 +2752,7 @@ func fam_credit(id: String, amount: float) -> void:
 ## La Banane : STRIKE ! une glissade a percuté 3 ennemis : flaque de purée qui ralentit.
 func banana_strike(pos: Vector2) -> void:
 	mash.append({"pos": pos, "r": 30.0, "t": 4.0})
-	float_text(pos + Vector2(0, -22), "STRIKE !", Color("f2d23a"))
+	float_text(pos + Vector2(0, -22), Loc.t("STRIKE !"), Color("f2d23a"))
 	burst(pos, Color("f2d23a"), 18, 120.0)
 	marks.queue_redraw()
 
@@ -2761,7 +2761,7 @@ func banana_strike(pos: Vector2) -> void:
 ## (Yuki, Woinic et la Pie restent à leur poste : ce sont des familiers de soutien.)
 func _whistle_call(e: Enemy) -> void:
 	whistle_cd = 3.0
-	float_text(player.position + Vector2(0, -28), "FIIIT !", Pal.ACCENT)
+	float_text(player.position + Vector2(0, -28), Loc.t("FIIIT !"), Pal.ACCENT)
 	Sfx.play("zap")
 	for fm in familiars:
 		if fm.form in ["yuki", "pavel", "pie"]:

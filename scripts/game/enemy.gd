@@ -225,7 +225,7 @@ func slip(dir: Vector2, chain = null) -> void:
 	slip_t = 2.0
 	slide = dir.normalized() * 260.0
 	slide_hits = {}
-	arena.float_text(position + Vector2(0, -14), "OUPS !", Color("f2d23a"))
+	arena.float_text(position + Vector2(0, -14), Loc.t("OUPS !"), Color("f2d23a"))
 	Sfx.play("swing")
 
 
@@ -247,7 +247,7 @@ func _slide_hits() -> void:
 
 
 ## Pouvoirs des élites (Huile et plus) : [nom affiché, couleur de l'aura]
-const TRAITS := {
+static var TRAITS := {
 	"shield": ["BOUCLIER", Color("5aa8ff")],
 	"fast": ["RAPIDE", Color("ffe066")],
 	"vampire": ["VAMPIRE", Color("e03a3a")],
@@ -374,7 +374,7 @@ func tick(delta: float) -> void:
 		bd = delta * 1.35
 		if not frenzy_on:
 			frenzy_on = true
-			arena.float_text(position + Vector2(0, -44), "FUREUR !", Pal.BAD)
+			arena.float_text(position + Vector2(0, -44), Loc.t("FUREUR !"), Pal.BAD)
 			arena.shake(8.0)
 			Sfx.play("boss")
 		flash = maxf(flash, 0.25 if int(t * 10.0) % 2 == 0 else 0.0)
@@ -593,7 +593,7 @@ func hurt(amount: float, crit := false, kb := Vector2.ZERO, el := 0) -> void:
 	if shield_up:
 		shield_up = false   # élite « bouclier » : le premier coup est bloqué
 		flash = 1.0
-		arena.float_text(position + Vector2(0, -16), "BLOQUÉ", Color("5aa8ff"))
+		arena.float_text(position + Vector2(0, -16), Loc.t("BLOQUÉ"), Color("5aa8ff"))
 		queue_redraw()
 		return
 	if mark_t > 0.0:
@@ -1010,7 +1010,7 @@ func _crumple(dirp: Vector2) -> Vector2:
 		body.scale = Vector2(base_scale, base_scale)
 		radius *= 0.85
 		_ring(8, randf() * TAU, 0.8)
-		arena.float_text(position + Vector2(0, -16), "FROISSÉ !", Pal.TEXT)
+		arena.float_text(position + Vector2(0, -16), Loc.t("FROISSÉ !"), Pal.TEXT)
 		arena.burst(position, Color.WHITE, 10, 90.0)
 	return dirp * speed * (1.0 + 0.5 * crumple)
 
@@ -1050,7 +1050,7 @@ func _cursor(delta: float, dirp: Vector2, dist: float) -> Vector2:
 			if cd2 <= 0.0 and dist < 170.0:
 				cd2 = 3.0
 				arena.add_square(arena.player.position, 9.0, 0.55, dmg, ink_col)   # clic !
-				arena.float_text(position + Vector2(0, -14), "CLIC", Pal.DIM)
+				arena.float_text(position + Vector2(0, -14), Loc.t("CLIC"), Pal.DIM)
 		return dash_dir * speed * 2.2
 	if st_t <= 0.0:
 		state = "dash"
@@ -1073,7 +1073,7 @@ func _corrupt(delta: float) -> Vector2:
 		if not pool.is_empty() and arena.enemies.size() < Arena.MAX_ENEMIES - 8:
 			for k in randi_range(3, 5):
 				arena.spawn_enemy_now(pool.pick_random(), position + Vector2.from_angle(randf() * TAU) * (radius + 10.0), false)
-		arena.float_text(position + Vector2(0, -16), "FICHIER OUVERT !", Pal.BAD)
+		arena.float_text(position + Vector2(0, -16), Loc.t("FICHIER OUVERT !"), Pal.BAD)
 		arena.burst(position, ink_col, 14, 110.0)
 		loot = 0.0   # (ouvert : il ne rapporte rien)
 		arena.kill_enemy(self)
@@ -1134,7 +1134,7 @@ func _paste(delta: float, dirp: Vector2) -> Vector2:
 	if bd < radius + best.radius + 4.0 and arena.enemies.size() < Arena.MAX_ENEMIES - 6:
 		cd = 4.5
 		arena.spawn_enemy_now(best.id, best.position + Vector2(12, 0).rotated(randf() * TAU), best.small, false)
-		arena.float_text(position + Vector2(0, -16), "COLLÉ !", Pal.TEXT)
+		arena.float_text(position + Vector2(0, -16), Loc.t("COLLÉ !"), Pal.TEXT)
 		flash = 0.8
 	return (best.position - position).normalized() * speed
 
@@ -1302,7 +1302,7 @@ func _cross(from: Vector2, angle: float, n: int) -> void:
 ## - Formule : une formule s'applique à tes stats 5 s (affichée dans la barre de formule du HUD).
 ## - Somme : il fusionne les ennemis d'une colonne en un seul gros (ou en appelle s'il n'y en a pas).
 const SHEET_CELL := 80.0
-const SHEET_FORMULAS := [["=DÉGÂTS/2", 0.5, 1.0], ["=VITESSE/2", 1.0, 0.6], ["=VITESSE*1,5", 1.0, 1.5], ["=DÉGÂTS*1,5", 1.5, 1.0], ["=DÉGÂTS/2", 0.5, 1.0]]
+static var SHEET_FORMULAS := [["=DÉGÂTS/2", 0.5, 1.0], ["=VITESSE/2", 1.0, 0.6], ["=VITESSE*1,5", 1.0, 1.5], ["=DÉGÂTS*1,5", 1.5, 1.0], ["=DÉGÂTS/2", 0.5, 1.0]]
 
 
 func _boss_sheet(delta: float, dirp: Vector2, dist: float) -> Vector2:
@@ -1355,7 +1355,7 @@ func _sheet_sum() -> void:
 		var pool := EnemyDB.pool(Run.wave).filter(func(i): return Run.enemy_art.has(i) and not EnemyDB.TYPES[i].get("heavy", false) and EnemyDB.TYPES[i].beh != "corrupt")
 		if not pool.is_empty():
 			_summon(pool.pick_random(), 3)
-		arena.float_text(position + Vector2(0, -34), "=ALEA()", Pal.ACCENT)
+		arena.float_text(position + Vector2(0, -34), Loc.t("=ALEA()"), Pal.ACCENT)
 		return
 	var sum_hp := 0.0
 	var sum_loot := 0.0
@@ -1379,7 +1379,7 @@ func _sheet_sum() -> void:
 		big.radius *= 1.5
 		big.body.scale = Vector2(big.base_scale, big.base_scale)
 		arena.burst(at, ink_col, 16, 120.0)
-	arena.float_text(position + Vector2(0, -34), "=SOMME(%d)" % group.size(), Pal.ACCENT)
+	arena.float_text(position + Vector2(0, -34), Loc.t("=SOMME(%d)") % group.size(), Pal.ACCENT)
 
 
 ## Un ennemi que Le Curseur a attrapé : il est soulevé dans sa main, puis LANCÉ sur le joueur
@@ -1494,7 +1494,7 @@ func _boss_cursor(delta: float, dirp: Vector2, dist: float) -> Vector2:
 					grabbed = true
 					struggle = 0
 					shake_dir = Vector2.ZERO
-					arena.float_text(p.position + Vector2(0, -30), "ATTRAPÉ ! SECOUE LES TOUCHES !", Pal.BAD)
+					arena.float_text(p.position + Vector2(0, -30), Loc.t("ATTRAPÉ ! SECOUE LES TOUCHES !"), Pal.BAD)
 				else:
 					state = "walk"
 					st_t = 1.2
@@ -1513,14 +1513,14 @@ func _boss_cursor(delta: float, dirp: Vector2, dist: float) -> Vector2:
 				_cursor_release()
 				state = "jam"
 				st_t = 1.6
-				arena.float_text(p.position + Vector2(0, -30), "LIBÉRÉ !", Pal.GOOD)
+				arena.float_text(p.position + Vector2(0, -30), Loc.t("LIBÉRÉ !"), Pal.GOOD)
 				return Vector2.ZERO
 			if position.distance_to(Arena.TRASH_POS) < 14.0:
 				_cursor_release()
 				p.inv = 0.0   # (la Corbeille fait toujours mal, même juste après un autre coup)
 				p.take_hit(dmg * 2.0, 0, null)
 				arena.explosion(Arena.TRASH_POS, 36.0, Color(0.6, 0.65, 0.75, 0.9))
-				arena.float_text(Arena.TRASH_POS + Vector2(0, -30), "À LA CORBEILLE !", Pal.BAD)
+				arena.float_text(Arena.TRASH_POS + Vector2(0, -30), Loc.t("À LA CORBEILLE !"), Pal.BAD)
 				state = "walk"
 				st_t = 1.6
 				return Vector2.ZERO
@@ -1530,7 +1530,7 @@ func _boss_cursor(delta: float, dirp: Vector2, dist: float) -> Vector2:
 			if cast_hp - hp >= max_hp * 0.035:
 				state = "jam"
 				st_t = 1.8
-				arena.float_text(position + Vector2(0, -40), "ALT+F4 ANNULÉ !", Pal.GOOD)
+				arena.float_text(position + Vector2(0, -40), Loc.t("ALT+F4 ANNULÉ !"), Pal.GOOD)
 			elif st_t <= 0.0:
 				arena.hud.screen("closed", 0.9)
 				arena.hitstop(0.9)
@@ -1576,14 +1576,14 @@ func _boss_cursor(delta: float, dirp: Vector2, dist: float) -> Vector2:
 			"resize":
 				var big := randf() < 0.5
 				p.resize(1.8 if big else 0.55, 6.0)
-				arena.float_text(p.position + Vector2(0, -34), "REDIMENSIONNÉ : %s !" % ("ÉNORME" if big else "MINUSCULE"), Pal.BAD)
+				arena.float_text(p.position + Vector2(0, -34), Loc.t("REDIMENSIONNÉ : %s !") % (Loc.t("ÉNORME") if big else Loc.t("MINUSCULE")), Pal.BAD)
 				arena.burst(p.position, Color("3a86ff"), 10, 80.0)
 			"minimize":
 				arena.hud.minimize(6.0)
 				Sfx.play("zap")
 			"dragwin":
 				arena.win_drag_t = Arena.WIN_DRAG_SEC
-				arena.hud.announce("IL TRAÎNE LA FENÊTRE !", Pal.BAD)
+				arena.hud.announce(Loc.t("IL TRAÎNE LA FENÊTRE !"), Pal.BAD)
 			"altf4":
 				state = "altf4"
 				st_t = ALTF4_SEC
@@ -1648,7 +1648,7 @@ func _boss_copy(delta: float, dirp: Vector2, dist: float) -> Vector2:
 		cd3 = 12.0
 		state = "jam"
 		st_t = 2.2
-		arena.float_text(position + Vector2(0, -34), "BOURRAGE PAPIER !", Pal.ACCENT)
+		arena.float_text(position + Vector2(0, -34), Loc.t("BOURRAGE PAPIER !"), Pal.ACCENT)
 	return dirp.orthogonal() * speed * 0.8 + dirp * speed * (0.4 if dist > 160.0 else -0.4)
 
 
@@ -1696,7 +1696,7 @@ func _boss_geo(delta: float, dirp: Vector2, dist: float) -> Vector2:
 				cd2 = cd3
 				cd = 0.25
 				st_t = cd3 * (0.55 if rage else 0.75) + GEO_WARN + 0.6
-				arena.float_text(position + Vector2(0, -34), "PLANTÉ !", Pal.ACCENT)
+				arena.float_text(position + Vector2(0, -34), Loc.t("PLANTÉ !"), Pal.ACCENT)
 				arena.shake(2.0)
 				return Vector2.ZERO
 	# il vient se placer à mi-distance : assez près pour que ses cercles t'entourent
@@ -1791,11 +1791,11 @@ func _boss_ink(delta: float, dirp: Vector2, dist: float) -> Vector2:
 				arena._after(0.45, func():
 					if is_instance_valid(me) and not me.dead and not arena.ended:
 						me._ring(16, a0 + PI / 16.0, 0.95))
-				arena.float_text(position + Vector2(0, -40), "PROJECTEUR !", Pal.ACCENT)
+				arena.float_text(position + Vector2(0, -40), Loc.t("PROJECTEUR !"), Pal.ACCENT)
 	if toile_phase >= 2 and cd2 <= 0.0:
 		cd2 = 14.0
 		arena.darkness(6.0)
-		arena.float_text(position + Vector2(0, -40), "NUIT D'ENCRE !", Pal.BAD)
+		arena.float_text(position + Vector2(0, -40), Loc.t("NUIT D'ENCRE !"), Pal.BAD)
 	return dirp * speed * (1.0 if dist > 120.0 else 0.3)
 
 
@@ -1805,7 +1805,7 @@ func _ink_transition() -> void:
 	state = "walk"
 	cd = 1.8
 	cd2 = 4.0
-	arena.hud.announce("ÉCLATS DE LUMIÈRE !" if toile_phase == 2 else "TACHES DE RORSCHACH !", Pal.BAD)
+	arena.hud.announce(Loc.t("ÉCLATS DE LUMIÈRE !") if toile_phase == 2 else Loc.t("TACHES DE RORSCHACH !"), Pal.BAD)
 	arena.shake(12.0)
 	arena.hitstop(0.2)
 	Sfx.play("boss")
@@ -1932,7 +1932,7 @@ func _boss_hatch(delta: float, dirp: Vector2, dist: float) -> Vector2:
 						state = "scribble"
 						st_t = 2.2
 						cd3 = 0.0
-						arena.float_text(position + Vector2(0, -40), "GRIBOUILLAGE !", Pal.BAD)
+						arena.float_text(position + Vector2(0, -40), Loc.t("GRIBOUILLAGE !"), Pal.BAD)
 				return Vector2.ZERO
 			return dirp * speed * (1.0 if dist > 90.0 else 0.4)
 		"zz_aim":
@@ -2172,7 +2172,7 @@ func _boss_toile(delta: float, dirp: Vector2, dist: float) -> Vector2:
 				arena.add_eraser(c, 28.0, 1.3, dmg)
 				for k in 4 + 2 * (toile_phase - 2):
 					arena.add_eraser(c + Vector2.from_angle(TAU * k / (4.0 + 2 * (toile_phase - 2)) + randf() * 0.4) * randf_range(45.0, 80.0), 26.0, 1.5 + k * 0.12, dmg)
-				arena.float_text(position + Vector2(0, -50), "PLUIE DE GOMMES", Pal.BAD)
+				arena.float_text(position + Vector2(0, -50), Loc.t("PLUIE DE GOMMES"), Pal.BAD)
 	return dirp * speed * (0.6 if dist < 80.0 else 1.0)
 
 
@@ -2181,7 +2181,7 @@ func _toile_transition() -> void:
 	boss_inv = 1.5
 	state = "walk"
 	cd = 1.8
-	arena.hud.announce("LA TOILE S'EFFACE..." if toile_phase == 2 else "TOUT DOIT DISPARAÎTRE !", Pal.BAD)
+	arena.hud.announce(Loc.t("LA TOILE S'EFFACE...") if toile_phase == 2 else Loc.t("TOUT DOIT DISPARAÎTRE !"), Pal.BAD)
 	arena.shake(12.0)
 	arena.hitstop(0.2)
 	Sfx.play("boss")

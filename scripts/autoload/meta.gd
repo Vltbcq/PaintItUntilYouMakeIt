@@ -7,7 +7,7 @@ extends Node
 const SLOTS := 3
 const RUN_SCRIPT := preload("res://scripts/autoload/run.gd")
 
-const DIFFICULTIES := [
+static var DIFFICULTIES := [
 	{"name": "Esquisse", "desc": "Déjà pas facile.", "hp": 1.0, "dmg": 1.0, "spawn": 1.0, "reward": 1.0},
 	{"name": "Croquis", "desc": "Ennemis plus coriaces. Les élites arrivent.", "hp": 1.3, "dmg": 1.2, "spawn": 1.15, "reward": 1.3},
 	{"name": "Aquarelle", "desc": "Plus d'ennemis, plus rapides. Les tireurs visent où tu vas.", "hp": 1.65, "dmg": 1.45, "spawn": 1.3, "reward": 1.6},
@@ -15,7 +15,7 @@ const DIFFICULTIES := [
 	{"name": "Chef-d'œuvre", "desc": "Seuls les vrais artistes survivent. Les boss entrent en fureur.", "hp": 2.3, "dmg": 2.1, "spawn": 1.6, "reward": 2.5},
 ]
 
-const DEFAULT_SETTINGS := {"volume": 0.8, "window_mode": "fenetre", "zoom": 1.5, "tips": true, "show_amulets": true, "music_volume": 0.8, "sfx_volume": 0.8}
+const DEFAULT_SETTINGS := {"volume": 0.8, "window_mode": "fenetre", "zoom": 1.5, "tips": true, "show_amulets": true, "music_volume": 0.8, "sfx_volume": 0.8, "lang": ""}
 
 var data := {}
 var settings := {}
@@ -79,7 +79,7 @@ func slot_summary(n: int) -> Dictionary:
 		"best_wave": int(d.get("best_wave", 0)), "drawings": (d.get("gallery", []) as Array).size()}
 	var r := read_run(n)
 	if not r.is_empty():
-		out.run = "Vague %d · %s" % [int(r.wave), DIFFICULTIES[int(r.difficulty)].name]
+		out.run = Loc.t("Vague %d · %s") % [int(r.wave), DIFFICULTIES[int(r.difficulty)].name]
 	return out
 
 
@@ -229,11 +229,12 @@ func _bus(bus_name: String) -> int:
 		AudioServer.add_bus()
 		i = AudioServer.bus_count - 1
 		AudioServer.set_bus_name(i, bus_name)
-		AudioServer.set_bus_send(i, "Master")
+		AudioServer.set_bus_send(i, Loc.t("Master"))
 	return i
 
 
 func apply_settings() -> void:
+	Loc.apply(String(setting("lang")))   # ("" : la langue du système)
 	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(0.0001, float(setting("volume")))))
 	AudioServer.set_bus_volume_db(_bus(BUS_MUSIC), linear_to_db(maxf(0.0001, float(setting("music_volume")))))
 	AudioServer.set_bus_volume_db(_bus(BUS_SFX), linear_to_db(maxf(0.0001, float(setting("sfx_volume")))))
@@ -504,8 +505,8 @@ func check_achievements(ctx: Dictionary) -> void:
 			data.item_unlocks[key] = true
 	# Une seule notification, même si plusieurs objets tombent d'un coup
 	if not fresh.is_empty():
-		var head := "DÉBLOQUÉ À LA FIN DE LA PARTIE" if Run.active else "DÉBLOQUÉ"
-		UI.toast(head + "\n" + (ItemUnlockDB.label(fresh[0]) if fresh.size() == 1 else "%d nouveaux objets" % fresh.size()))
+		var head := Loc.t("DÉBLOQUÉ À LA FIN DE LA PARTIE") if Run.active else Loc.t("DÉBLOQUÉ")
+		UI.toast(head + "\n" + (ItemUnlockDB.label(fresh[0]) if fresh.size() == 1 else Loc.t("%d nouveaux objets") % fresh.size()))
 	for a in AchievementDB.LIST:
 		if achieved(a.id) or not AchievementDB.met(a, ctx):
 			continue
@@ -513,11 +514,11 @@ func check_achievements(ctx: Dictionary) -> void:
 		var reward: String = UnlockDB.get_def(a.unlock).name
 		if Run.active:
 			data.pending_unlocks.append(a.id)
-			UI.toast("DÉFI RÉUSSI : %s\n%s : débloqué à la fin de la partie" % [a.name, reward])
+			UI.toast(Loc.t("DÉFI RÉUSSI : %s\n%s : débloqué à la fin de la partie") % [a.name, reward])
 		else:
 			if level(a.unlock) == 0:
 				data.unlocks[a.unlock] = 1
-			UI.toast("DÉFI RÉUSSI : %s\nDébloque : %s" % [a.name, reward])
+			UI.toast(Loc.t("DÉFI RÉUSSI : %s\nDébloque : %s") % [a.name, reward])
 		changed = true
 		Sfx.play("level")
 	if changed:
@@ -609,7 +610,7 @@ func export_gallery(entries: Array, path: String) -> int:
 		zp.close_file()
 		items.append({"file": name, "kind": e.kind, "effect": e.get("effect", ""), "outline": e.get("outline", false)})
 	zp.start_file(SHARE_MANIFEST)
-	zp.write_file(JSON.stringify({"version": 1, "game": "Paint It Until You Make It", "items": items}, "\t").to_utf8_buffer())
+	zp.write_file(JSON.stringify({"version": 1, "game": Loc.t("Paint It Until You Make It"), "items": items}, "\t").to_utf8_buffer())
 	zp.close_file()
 	zp.close()
 	return n
@@ -619,11 +620,11 @@ func export_gallery(entries: Array, path: String) -> int:
 func read_share(path: String) -> Dictionary:
 	var zr := ZIPReader.new()
 	if zr.open(path) != OK:
-		return {"ok": false, "error": "Impossible d'ouvrir ce fichier.", "items": []}
+		return {"ok": false, "error": Loc.t("Impossible d'ouvrir ce fichier."), "items": []}
 	var files := zr.get_files()
 	if not SHARE_MANIFEST in files:
 		zr.close()
-		return {"ok": false, "error": "Ce n'est pas un partage de dessins de Paint It.", "items": []}
+		return {"ok": false, "error": Loc.t("Ce n'est pas un partage de dessins de Paint It."), "items": []}
 	var man = JSON.parse_string(zr.read_file(SHARE_MANIFEST).get_string_from_utf8())
 	var out := []
 	if man is Dictionary:
@@ -643,7 +644,7 @@ func read_share(path: String) -> Dictionary:
 				"dup": gallery_has(String(it.kind), str(hash(img.get_data())))})
 	zr.close()
 	if out.is_empty():
-		return {"ok": false, "error": "Aucun dessin lisible dans ce fichier.", "items": []}
+		return {"ok": false, "error": Loc.t("Aucun dessin lisible dans ce fichier."), "items": []}
 	return {"ok": true, "error": "", "items": out}
 
 
@@ -671,13 +672,13 @@ func gallery_uses(img: Image) -> Array:
 ## Nom lisible d'une case du Codex (« Épée (rare) », « Balles : Arc », « Ton perso »...).
 func bestiary_label(key: String) -> String:
 	if key == "perso":
-		return "Ton perso"
+		return Loc.t("Ton perso")
 	if key.begins_with("amulette_"):
-		return "Amulette : " + String(AmuletDB.get_def(key.substr(9)).get("name", key))
+		return Loc.t("Amulette : ") + String(AmuletDB.get_def(key.substr(9)).get("name", key))
 	if key.begins_with("familier_"):
-		return "Familier : " + String(FamiliarDB.get_def(key.substr(9)).get("name", key))
+		return Loc.t("Familier : ") + String(FamiliarDB.get_def(key.substr(9)).get("name", key))
 	if key.begins_with("balle_"):
-		return "Balles : " + String(WeaponDB.get_def(key.substr(6)).get("name", key))
+		return Loc.t("Balles : ") + String(WeaponDB.get_def(key.substr(6)).get("name", key))
 	if key.begins_with("arme_"):
 		var rest := key.substr(5)
 		var rar := -1
@@ -692,7 +693,7 @@ func bestiary_label(key: String) -> String:
 	var elite := key.ends_with("_elite")
 	var id := key.trim_suffix("_elite")
 	var ed := EnemyDB.get_def(id)
-	return ("Élite : " if elite else ("Boss : " if ed.has("boss") else "Ennemi : ")) + String(ed.get("name", id))
+	return (Loc.t("Élite : ") if elite else (Loc.t("Boss : ") if ed.has("boss") else Loc.t("Ennemi : "))) + String(ed.get("name", id))
 
 
 ## Galerie : active / désactive le bord d'un dessin (utilisé quand on le réutilise).

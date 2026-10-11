@@ -11,7 +11,7 @@ extends Control
 signal done(result)
 
 const TYPES := ["protan", "deutan", "tritan"]
-const TYPE_NAMES := {"protan": "rouge-vert (protanopie)", "deutan": "rouge-vert (deutéranopie)",
+static var TYPE_NAMES := {"protan": "rouge-vert (protanopie)", "deutan": "rouge-vert (deutéranopie)",
 	"tritan": "bleu-jaune (tritanopie)"}
 const SIZE := 120   # la planche (pixels), affichée ×2
 ## Chiffres 5×7 arrondis ('#' = allumé), plus lisibles que des chiffres carrés
@@ -77,8 +77,8 @@ func _ready() -> void:
 	head.shuffle()
 	choices = head + [-1]
 
-	UI.put(self, UI.label("LUNETTES DE L'OCULISTE", 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 10), Vector2(640, 24))
-	UI.put(self, UI.label("Quel chiffre vois-tu dans le cercle ?", 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 38), Vector2(640, 12))
+	UI.put(self, UI.label(Loc.t("LUNETTES DE L'OCULISTE"), 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 10), Vector2(640, 24))
+	UI.put(self, UI.label(Loc.t("Quel chiffre vois-tu dans le cercle ?"), 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 38), Vector2(640, 12))
 	var fr := UI.panel(Pal.PAPER, Pal.BORDER, 2)
 	UI.put(self, fr, Vector2(196, 56), Vector2(248, 248))
 	UI.put(fr, UI.thumb(plate.image, Vector2(SIZE * 2, SIZE * 2)), Vector2(4, 4), Vector2(SIZE * 2, SIZE * 2))
@@ -88,7 +88,7 @@ func _ready() -> void:
 	UI.put(self, row, Vector2(0, 320), Vector2(640, 22))
 	for k in choices.size():
 		var v: int = choices[k]
-		var b := UI.hotkey(UI.button(str(v) if v >= 0 else "Je ne vois rien", func(): _pick(v), 20), [KEY_1 + k])
+		var b := UI.hotkey(UI.button(str(v) if v >= 0 else Loc.t("Je ne vois rien"), func(): _pick(v), 20), [KEY_1 + k])
 		b.custom_minimum_size = Vector2(70 if v >= 0 else 150, 22)
 		row.add_child(b)
 	info = UI.label("", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER)
@@ -101,9 +101,9 @@ func _pick(v: int) -> void:
 	finished = true
 	var ok := v == answer
 	Sfx.play("level" if ok else "hurt")
-	var truth := ("c'était %d" % answer) if answer >= 0 else "il n'y avait pas de chiffre"
-	var title := "BONNE RÉPONSE ! Stats complètes" if ok else "RATÉ : %s. Moitié des stats" % truth
-	info.text = "%s  ·  test %s" % [title, TYPE_NAMES[kind]]
+	var truth := (Loc.t("c'était %d") % answer) if answer >= 0 else Loc.t("il n'y avait pas de chiffre")
+	var title := Loc.t("BONNE RÉPONSE ! Stats complètes") if ok else Loc.t("RATÉ : %s. Moitié des stats") % truth
+	info.text = Loc.t("%s  ·  test %s") % [title, TYPE_NAMES[kind]]
 	info.add_theme_color_override("font_color", Pal.GOOD if ok else Pal.BAD)
 	await get_tree().create_timer(2.2).timeout
 	done.emit(ok)

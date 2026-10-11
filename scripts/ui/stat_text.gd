@@ -5,7 +5,7 @@ extends Control
 ## Les lignes qui ne sont pas des stats restent du texte, en dessous.
 
 ## Nom affiché dans le jeu -> icône (assets/ui/stats, dessinées par docs/stat_icons.py)
-const ICONS := {
+static var ICONS := {
 	"PV max": "max_hp", "PV": "max_hp", "Régénération": "regen", "Armure": "armor", "Esquive": "dodge",
 	"Vitesse": "move", "Dégâts": "dmg", "Vit. d'attaque": "atk_speed", "Critique": "crit", "Portée": "range",
 	"Vol de vie": "lifesteal", "Chance": "luck", "Pourboire": "harvest", "Épines": "thorns",
@@ -15,7 +15,7 @@ const ICONS := {
 const KEY_ICONS := {"max_hp": "max_hp", "regen": "regen", "armor": "armor", "dodge": "dodge", "speed": "move",
 	"move": "move", "dmg": "dmg", "atk_speed": "atk_speed", "crit": "crit", "range": "range",
 	"lifesteal": "lifesteal", "luck": "luck", "harvest": "harvest", "thorns": "thorns", "el_power": "el_power"}
-const KEY_NAMES := {"max_hp": "PV max", "regen": "Régénération", "armor": "Armure", "dodge": "Esquive",
+static var KEY_NAMES := {"max_hp": "PV max", "regen": "Régénération", "armor": "Armure", "dodge": "Esquive",
 	"speed": "Vitesse", "move": "Vitesse", "dmg": "Dégâts", "atk_speed": "Vitesse d'attaque", "crit": "Critique",
 	"range": "Portée", "lifesteal": "Vol de vie", "luck": "Chance", "harvest": "Pourboire (or à chaque fin de vague)",
 	"thorns": "Épines", "el_power": "Puissance élémentaire"}
@@ -44,17 +44,23 @@ func set_text(text: String) -> void:
 	var others := []     # lignes de texte normales
 	for line in text.split("\n"):
 		var l := line.strip_edges()
-		if l.begins_with("Rés. "):
-			for part in l.substr(5).split(" · "):
+		var res_pre: String = Loc.t("Rés. ")
+		if l.begins_with(res_pre):
+			for part in l.substr(res_pre.length()).split(" · "):
 				var bits := part.split(" ")
 				var el := Pal.NAMES.find(bits[0])
 				if el > 0 and bits.size() > 1:
-					cells.append([UI.element_icon(el), bits[1], "Résistance %s" % bits[0]])
+					cells.append([UI.element_icon(el), bits[1], Loc.t("Résistance %s") % bits[0]])
 			continue
+		# « Nom : valeur » en français, « Name: value » en anglais
 		var cut := l.find(" : ")
+		var skip := 3
+		if cut < 0:
+			cut = l.find(": ")
+			skip = 2
 		var name := l.substr(0, cut) if cut > 0 else ""
 		if cut > 0 and ICONS.has(name):
-			cells.append([load("res://assets/ui/stats/%s.png" % ICONS[name]), l.substr(cut + 3), name])
+			cells.append([load("res://assets/ui/stats/%s.png" % ICONS[name]), l.substr(cut + skip), name])
 		elif l != "":
 			others.append(l)
 	var cw := size.x / columns if columns > 0 else size.x

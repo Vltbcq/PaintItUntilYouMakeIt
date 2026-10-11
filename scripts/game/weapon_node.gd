@@ -429,7 +429,7 @@ func _erase_line(origin: Vector2) -> void:
 			e.hurt(e.max_hp * 0.03, false, Vector2.ZERO)
 			arena.hit_enemy(e, st.damage * 1.5, st, atk_dir, 0.0)
 		elif randf() < (0.15 if e.elite else 0.3):
-			arena.float_text(e.position + Vector2(0, -12), "EFFACÉ", Pal.TEXT)
+			arena.float_text(e.position + Vector2(0, -12), Loc.t("EFFACÉ"), Pal.TEXT)
 			e.hurt(e.hp + 1.0, true, Vector2.ZERO)
 		else:
 			e.hurt(e.max_hp * 0.25, false, Vector2.ZERO)
@@ -558,7 +558,7 @@ func _special_step(delta: float) -> void:
 			n += 1
 		arena.explosion(player.position, r, Color(0.8, 0.9, 1.0, 0.5), true)
 		if n > 0:
-			arena.float_text(player.position + Vector2(0, -26), "RENVOI ×%d" % n, Color(0.8, 0.9, 1.0))
+			arena.float_text(player.position + Vector2(0, -26), Loc.t("RENVOI ×%d") % n, Color(0.8, 0.9, 1.0))
 	else:
 		special_t = 8.0
 		var mult := 1.0 + Run.kills * 0.004   # plus fort avec les ennemis tués dans la partie

@@ -3,7 +3,7 @@ extends RefCounted
 ## Transforme les dessins en statistiques. C'est ici qu'on équilibre (ou qu'on casse) le jeu.
 
 const EFFECTS := ["", "pulse", "shimmer", "rainbow"]
-const EFFECT_NAMES := {"": "Aucun", "pulse": "Pulse", "shimmer": "Scintille", "rainbow": "Arc-en-ciel"}
+static var EFFECT_NAMES := {"": "Aucun", "pulse": "Pulse", "shimmer": "Scintille", "rainbow": "Arc-en-ciel"}
 const EFFECT_UNLOCK := {"pulse": "fx_pulse", "shimmer": "fx_shimmer", "rainbow": "fx_rainbow"}
 const EFFECT_COST := 0.15
 ## Rareté des armes : une rare vaut presque 2 communes, une légendaire environ 6.
@@ -18,7 +18,7 @@ const RAR_PROC := [0.0, 0.1, 0.2, 0.3]        # chances d'effets élémentaires 
 ## FILL_REF fois plus de pixels que d'encre dépensée.
 const FILL_REF := 1.6
 
-const STAT_LABELS := [
+static var STAT_LABELS := [
 	["max_hp", "PV max", ""], ["regen", "Régénération", ""], ["armor", "Armure", ""],
 	["dodge", "Esquive", "%"], ["speed", "Vitesse", "%"], ["dmg", "Dégâts", "%"],
 	["atk_speed", "Vit. d'attaque", "%"], ["crit", "Critique", "%"], ["range", "Portée", "%"],
@@ -245,40 +245,40 @@ static func amulet_live(id: String) -> String:
 	var a: Dictionary = Run.char_a
 	match id:
 		"capital":
-			return "prix moyen de la vague : ● %d" % Run.avg_item_price()
+			return Loc.t("prix moyen de la vague : ● %d") % Run.avg_item_price()
 		"palette":
-			return "%d couleur(s) = +%d%% dégâts" % [int(a.get("elements", 0)), 8 * int(a.get("elements", 0))]
+			return Loc.t("%d couleur(s) = +%d%% dégâts") % [int(a.get("elements", 0)), 8 * int(a.get("elements", 0))]
 		"esquisse":
-			return "%d px, %s" % [int(a.get("pixels", 0)), "actif" if int(a.get("pixels", 0)) < 120 else "inactif (120 px ou plus)"]
+			return Loc.t("%d px, %s") % [int(a.get("pixels", 0)), "actif" if int(a.get("pixels", 0)) < 120 else Loc.t("inactif (120 px ou plus)")]
 		"poids":
-			return "+%d armure" % floori(float(a.get("pixels", 0)) / 60.0)
+			return Loc.t("+%d armure") % floori(float(a.get("pixels", 0)) / 60.0)
 		"signature":
-			return "+%d%% dégâts" % (3 * Run.signature)
+			return Loc.t("+%d%% dégâts") % (3 * Run.signature)
 		"cadre_dore":
-			return "+%d%% dégâts" % mini(40, floori(Run.gold / 5.0))
+			return Loc.t("+%d%% dégâts") % mini(40, floori(Run.gold / 5.0))
 		"collage":
 			var kinds := {}
 			for w in Run.weapons:
 				kinds[w.type] = true
-			return "%d type(s) = +%d%% dégâts" % [kinds.size(), 8 * kinds.size()]
+			return Loc.t("%d type(s) = +%d%% dégâts") % [kinds.size(), 8 * kinds.size()]
 		"joconde":
-			return "+%d%% dégâts" % (15 * Run.joconde)
+			return Loc.t("+%d%% dégâts") % (15 * Run.joconde)
 		"fresque":
 			var g := (Meta.data.get("gallery", []) as Array).size()
-			return "%d dessins = +%d%% dégâts" % [g, roundi(minf(60.0, 0.5 * g))]
+			return Loc.t("%d dessins = +%d%% dégâts") % [g, roundi(minf(60.0, 0.5 * g))]
 		"taille_douce":
-			return "+%d%% critique" % floori(maxf(0.0, s.get("armor", 0.0)) / 3.0)
+			return Loc.t("+%d%% critique") % floori(maxf(0.0, s.get("armor", 0.0)) / 3.0)
 		"echelle":
-			return "+%d%% dégâts" % (2 * Run.level)
+			return Loc.t("+%d%% dégâts") % (2 * Run.level)
 		"accordeon":
-			return "+%d%% vit. d'attaque" % roundi(0.5 * maxf(0.0, s.get("speed", 0.0)))
+			return Loc.t("+%d%% vit. d'attaque") % roundi(0.5 * maxf(0.0, s.get("speed", 0.0)))
 		"carapace":
-			return "+%d épines" % roundi(0.25 * maxf(0.0, s.get("armor", 0.0)))
+			return Loc.t("+%d épines") % roundi(0.25 * maxf(0.0, s.get("armor", 0.0)))
 		"cactus":
-			return "+%d épines" % floori(float(s.get("max_hp", 0.0)) / 10.0)
+			return Loc.t("+%d épines") % floori(float(s.get("max_hp", 0.0)) / 10.0)
 		"etiquette_prix":
 			var c := Run.amulet_count("etiquette_prix")
-			return "-%d%% sur les prix (%d/5)" % [roundi((1.0 - pow(0.92, c)) * 100.0), c]
+			return Loc.t("-%d%% sur les prix (%d/5)") % [roundi((1.0 - pow(0.92, c)) * 100.0), c]
 	return ""
 
 
@@ -294,27 +294,27 @@ static func scale_text(scale: String, rar := 0) -> String:
 	match scale:
 		"free_slots":
 			var free := maxi(0, Run.max_weapons() - Run.weapons.size())
-			return "Ratio : %d emplacement(s) libre(s) = ×%.1f" % [free, scaled_damage(b, scale, rar) / b]
+			return Loc.t("Ratio : %d emplacement(s) libre(s) = ×%.1f") % [free, scaled_damage(b, scale, rar) / b]
 		"max_hp":
-			return "Ratio : %d PV max = +%d dégâts" % [int(s.get("max_hp", 0)), roundi(scaled_damage(0.0, scale, rar))]
+			return Loc.t("Ratio : %d PV max = +%d dégâts") % [int(s.get("max_hp", 0)), roundi(scaled_damage(0.0, scale, rar))]
 		"armor":
-			return "Ratio : %d armure = +%d dégâts" % [int(s.get("armor", 0)), roundi(scaled_damage(0.0, scale, rar))]
+			return Loc.t("Ratio : %d armure = +%d dégâts") % [int(s.get("armor", 0)), roundi(scaled_damage(0.0, scale, rar))]
 		"speed":
-			return "Ratio : %+d%% vitesse = ×%.2f" % [int(s.get("speed", 0)), scaled_damage(b, scale, rar) / b]
+			return Loc.t("Ratio : %+d%% vitesse = ×%.2f") % [int(s.get("speed", 0)), scaled_damage(b, scale, rar) / b]
 		"crit":
-			return "Ratio : %d%% critique = critiques ×%.1f" % [int(s.get("crit", 0)), maxf(float(s.get("crit_mult", 2.0)), crit_ratio(float(s.get("crit", 0.0)), rar))]
+			return Loc.t("Ratio : %d%% critique = critiques ×%.1f") % [int(s.get("crit", 0)), maxf(float(s.get("crit_mult", 2.0)), crit_ratio(float(s.get("crit", 0.0)), rar))]
 		"luck":
-			return "Ratio : %d chance = +%d dégâts" % [int(s.get("luck", 0)), roundi(scaled_damage(0.0, scale, rar))]
+			return Loc.t("Ratio : %d chance = +%d dégâts") % [int(s.get("luck", 0)), roundi(scaled_damage(0.0, scale, rar))]
 		"gold":
-			return "Ratio : %d or = +%d dégâts" % [Run.gold, roundi(scaled_damage(0.0, scale, rar))]
+			return Loc.t("Ratio : %d or = +%d dégâts") % [Run.gold, roundi(scaled_damage(0.0, scale, rar))]
 		"range":
-			return "Ratio : %+d%% portée = ×%.2f" % [int(s.get("range", 0)), scaled_damage(b, scale, rar) / b]
+			return Loc.t("Ratio : %+d%% portée = ×%.2f") % [int(s.get("range", 0)), scaled_damage(b, scale, rar) / b]
 		"colors":
-			return "Ratio : %d couleur(s) sur ton perso = ×%.2f" % [int(Run.char_a.get("elements", 0)), scaled_damage(b, scale, rar) / b]
+			return Loc.t("Ratio : %d couleur(s) sur ton perso = ×%.2f") % [int(Run.char_a.get("elements", 0)), scaled_damage(b, scale, rar) / b]
 		"pixels":
-			return "Ratio : %d pixels = ×%.2f" % [int(Run.char_a.get("pixels", 0)), scaled_damage(b, scale, rar) / b]
+			return Loc.t("Ratio : %d pixels = ×%.2f") % [int(Run.char_a.get("pixels", 0)), scaled_damage(b, scale, rar) / b]
 		"lifesteal":
-			return "Ratio : %d%% vol de vie = %d%% sur ses coups" % [int(s.get("lifesteal", 0)), roundi(lifesteal_of("lifesteal", rar))]
+			return Loc.t("Ratio : %d%% vol de vie = %d%% sur ses coups") % [int(s.get("lifesteal", 0)), roundi(lifesteal_of("lifesteal", rar))]
 	return ""
 
 
@@ -426,7 +426,7 @@ static func _small_crit(fill: float, amount: float) -> float:
 ## Ce que fait une encre à effet (Pulse, Scintille, Arc-en-ciel) selon ce qu'on dessine.
 ## kind = cfg.kind de la toile. Les mêmes chiffres que character_part, _apply_effect et enemy_art :
 ## à tenir à jour ensemble.
-const EFFECT_WHAT := {
+static var EFFECT_WHAT := {
 	"character": {"pulse": "+10% vit. d'attaque", "shimmer": "+5% critique, +5% esquive", "rainbow": "+30% puissance élém., +5% résistances"},
 	"weapon": {"pulse": "recharge 10% plus vite", "shimmer": "+8% critique sur l'arme", "rainbow": "+10% à chaque effet élémentaire"},
 	"enemy": {"pulse": "aucun bonus pour lui", "shimmer": "ATTENTION : +2,5% d'esquive pour lui", "rainbow": "ATTENTION : +2,5% de résistances pour lui"},
@@ -438,15 +438,15 @@ static func effect_short(effect: String, kind: String) -> String:
 	if effect == "":
 		return ""
 	var group := "character" if kind == "character" else ("weapon" if kind in ["melee", "ranged", "bullet"] else ("enemy" if kind in ["enemy", "boss"] else ""))
-	var what: String = EFFECT_WHAT[group][effect] if group != "" else "seulement l'animation, aucun bonus"
+	var what: String = EFFECT_WHAT[group][effect] if group != "" else Loc.t("seulement l'animation, aucun bonus")
 	return "%s : %s" % [EFFECT_NAMES[effect], what]
 
 
 ## Version complète, pour l'infobulle du bouton.
 static func effect_text(effect: String, kind: String) -> String:
 	if effect == "":
-		return "Aucun effet : toute ton encre sert au dessin."
-	return effect_short(effect, kind) + ". Coûte 15% de l'encre du dessin."
+		return Loc.t("Aucun effet : toute ton encre sert au dessin.")
+	return effect_short(effect, kind) + Loc.t(". Coûte 15% de l'encre du dessin.")
 
 
 static func _apply_effect(st: Dictionary, effect: String) -> void:
@@ -522,105 +522,105 @@ static func preview(cfg: Dictionary, img: Image, effect: String) -> String:
 	match cfg.kind:
 		"character":
 			var s := character_part(a, effect)
-			L.append("PV : %d" % roundi(s.max_hp))
-			L.append("Vitesse : %d" % roundi(s.speed_base))
-			L.append("Taille : %d" % roundi(s.radius))
-			_line(L, "Esquive", s.dodge, "%")
-			_line(L, "Armure", s.armor, "")
-			_line(L, "Critique", s.crit, "%")
-			_line(L, "Chance", s.luck, "")
-			_line(L, "Portée", s.range, "%")
-			_line(L, "Dégâts", s.dmg, "%")
-			_line(L, "Vit. attaque", s.atk_speed, "%")
-			_line(L, "Régén.", s.regen, "")
-			_line(L, "Vol de vie", s.lifesteal, "%")
+			L.append(Loc.t("PV : %d") % roundi(s.max_hp))
+			L.append(Loc.t("Vitesse : %d") % roundi(s.speed_base))
+			L.append(Loc.t("Taille : %d") % roundi(s.radius))
+			_line(L, Loc.t("Esquive"), s.dodge, "%")
+			_line(L, Loc.t("Armure"), s.armor, "")
+			_line(L, Loc.t("Critique"), s.crit, "%")
+			_line(L, Loc.t("Chance"), s.luck, "")
+			_line(L, Loc.t("Portée"), s.range, "%")
+			_line(L, Loc.t("Dégâts"), s.dmg, "%")
+			_line(L, Loc.t("Vit. attaque"), s.atk_speed, "%")
+			_line(L, Loc.t("Régén."), s.regen, "")
+			_line(L, Loc.t("Vol de vie"), s.lifesteal, "%")
 			_res_lines(L, s.res)
 		"familiar":
 			if a.pixels > 0:
 				var sm := FamiliarDB.size_mult(cfg.def, a.pixels)
-				L.append("Taille : %d%% de l'encre" % roundi(sm.fill * 100.0))
-				L.append("Dégâts : ×%.2f" % sm.dmg)
-				L.append("Vitesse : ×%.2f" % sm.spd)
+				L.append(Loc.t("Taille : %d%% de l'encre") % roundi(sm.fill * 100.0))
+				L.append(Loc.t("Dégâts : ×%.2f") % sm.dmg)
+				L.append(Loc.t("Vitesse : ×%.2f") % sm.spd)
 				L.append("")
-				L.append("Gros dessin = frappe fort mais lent.")
-				L.append("Petit dessin = rapide, agit plus souvent.")
+				L.append(Loc.t("Gros dessin = frappe fort mais lent."))
+				L.append(Loc.t("Petit dessin = rapide, agit plus souvent."))
 		"melee":
 			if a.pixels > 0:
 				var def := WeaponDB.get_def(cfg.wtype)
 				var st := melee({"type": cfg.wtype, "a": a, "rar": 0, "effect": effect}, def)
 				# (dégâts et critique en icônes sur la 1re ligne ; la recharge à part, sinon elle déborde)
-				L.append("Dégâts : %.1f" % st.damage)
-				L.append("Critique : %d%%" % roundi(st.crit))
-				L.append("Recharge : %.2fs" % st.cooldown)
-				L.append("Dégâts/s : %.1f" % (st.damage / st.cooldown))
-				L.append("Allonge : %d" % roundi(st.reach))
+				L.append(Loc.t("Dégâts : %.1f") % st.damage)
+				L.append(Loc.t("Critique : %d%%") % roundi(st.crit))
+				L.append(Loc.t("Recharge : %.2fs") % st.cooldown)
+				L.append(Loc.t("Dégâts/s : %.1f") % (st.damage / st.cooldown))
+				L.append(Loc.t("Allonge : %d") % roundi(st.reach))
 				_el_lines(L, st.frac, a.frac)
 		"ranged":
 			if a.pixels > 0:
 				var def := WeaponDB.get_def(cfg.wtype)
 				var fill := clampf(a.pixels / (def.ink * FILL_REF), 0.05, 1.5)
-				L.append("Cadence : %s" % ("très rapide" if fill < 0.35 else ("rapide" if fill < 0.7 else ("normale" if fill < 1.05 else "lente"))))
-				L.append("Puissance : x%.2f" % (def.dmg * (0.4 + 0.85 * fill)))
-				L.append("Critique bonus : +%d%%" % roundi(_small_crit(fill, 15.0)))
-				L.append("Portée : %d" % roundi(150.0 + a.diag * 3.0))
-				L.append("Précision : %d%%" % roundi(a.sym * 100.0))
+				L.append(Loc.t("Cadence : %s") % (Loc.t("très rapide") if fill < 0.35 else (Loc.t("rapide") if fill < 0.7 else (Loc.t("normale") if fill < 1.05 else Loc.t("lente")))))
+				L.append(Loc.t("Puissance : x%.2f") % (def.dmg * (0.4 + 0.85 * fill)))
+				L.append(Loc.t("Critique bonus : +%d%%") % roundi(_small_crit(fill, 15.0)))
+				L.append(Loc.t("Portée : %d") % roundi(150.0 + a.diag * 3.0))
+				L.append(Loc.t("Précision : %d%%") % roundi(a.sym * 100.0))
 				_el_lines(L, a.frac)
 				L.append("")
-				L.append("Ensuite : ses balles !")
+				L.append(Loc.t("Ensuite : ses balles !"))
 		"bullet":
 			if a.pixels > 0:
 				var w := {"type": cfg.wtype, "a": cfg.weapon_a, "ba": a, "bullet": img, "rar": 0, "effect": cfg.get("weapon_effect", ""), "beffect": effect}
 				var st := ranged(w, WeaponDB.get_def(cfg.wtype))
 				var bl: Array = st.bullets
-				L.append("Projectiles : %d" % (bl.size() * st.pellets))
+				L.append(Loc.t("Projectiles : %d") % (bl.size() * st.pellets))
 				var tot := 0.0
 				for b in bl:
 					tot += b.damage
-				L.append("Dégâts/tir : %.1f" % (tot * st.pellets))
-				L.append("Dégâts/s : %.1f" % (tot * st.pellets / st.cooldown))
-				L.append("Vitesse : %d" % roundi(bl[0].speed))
-				L.append("Perforation : %d" % bl[0].pierce)
-				L.append("Recharge : %.2fs" % st.cooldown)
+				L.append(Loc.t("Dégâts/tir : %.1f") % (tot * st.pellets))
+				L.append(Loc.t("Dégâts/s : %.1f") % (tot * st.pellets / st.cooldown))
+				L.append(Loc.t("Vitesse : %d") % roundi(bl[0].speed))
+				L.append(Loc.t("Perforation : %d") % bl[0].pierce)
+				L.append(Loc.t("Recharge : %.2fs") % st.cooldown)
 				var drawn: Array = (a.frac as Array).duplicate()
 				for e in drawn.size():
 					drawn[e] = maxf(drawn[e], cfg.weapon_a.frac[e])
 				_el_lines(L, st.frac, drawn)
 		"enemy", "boss":
 			var e := enemy_art(a, cfg.ink, effect)
-			L.append("PV : x%.2f" % e.hp)
-			L.append("Vitesse : x%.2f" % e.speed)
+			L.append(Loc.t("PV : x%.2f") % e.hp)
+			L.append(Loc.t("Vitesse : x%.2f") % e.speed)
 			if e.dodge >= 0.5:
-				L.append("Esquive : %d%%" % roundi(e.dodge))
+				L.append(Loc.t("Esquive : %d%%") % roundi(e.dodge))
 			if e.armor >= 0.5:
-				L.append("Armure : -%d%% dégâts" % roundi(e.armor))
+				L.append(Loc.t("Armure : -%d%% dégâts") % roundi(e.armor))
 			if e.dmg >= 0.5:
-				L.append("Dégâts : +%d%%" % roundi(e.dmg))
+				L.append(Loc.t("Dégâts : +%d%%") % roundi(e.dmg))
 			var rl := []
 			for el in range(1, Pal.COUNT):
 				if e.res[el] >= 0.5:
 					rl.append("%s %d%%" % [Pal.NAMES[el], roundi(e.res[el])])
 			if not rl.is_empty():
-				L.append("Rés. " + " · ".join(rl))
-			L.append("Butin : x%.2f" % e.loot)
-			L.append("Élément : %s" % Pal.NAMES[e.element])
+				L.append(Loc.t("Rés. ") + " · ".join(rl))
+			L.append(Loc.t("Butin : x%.2f") % e.loot)
+			L.append(Loc.t("Élément : %s") % Pal.NAMES[e.element])
 		"eproj":
 			var e := eproj_art(a)
-			L.append("Vitesse : x%.2f" % e.speed)
-			L.append("Taille : %d" % roundi(e.radius))
-			L.append("Élément : %s" % Pal.NAMES[e.element])
+			L.append(Loc.t("Vitesse : x%.2f") % e.speed)
+			L.append(Loc.t("Taille : %d") % roundi(e.radius))
+			L.append(Loc.t("Élément : %s") % Pal.NAMES[e.element])
 		"mark":
-			L.append("Bonus : " + String(cfg.upgrade.text))
-			L.append("Ne compte pas dans ta taille.")
+			L.append(Loc.t("Bonus : ") + String(cfg.upgrade.text))
+			L.append(Loc.t("Ne compte pas dans ta taille."))
 			for e in range(1, Pal.COUNT):
 				if a.frac[e] > 0.0:
-					L.append("Résist. %s +%d%%" % [Pal.NAMES[e], roundi(a.frac[e] * 10.0)])
+					L.append(Loc.t("Résist. %s +%d%%") % [Pal.NAMES[e], roundi(a.frac[e] * 10.0)])
 		"amulet":
 			var def: Dictionary = cfg.def
 			L.append(AmuletDB.describe(def))
-			L.append("(La taille du dessin ne change pas l'effet.)")
+			L.append(Loc.t("(La taille du dessin ne change pas l'effet.)"))
 			for e in range(1, Pal.COUNT):
 				if a.frac[e] > 0.0:
-					L.append("Résist. %s +%d%%" % [Pal.NAMES[e], roundi(a.frac[e] * 20.0)])
+					L.append(Loc.t("Résist. %s +%d%%") % [Pal.NAMES[e], roundi(a.frac[e] * 20.0)])
 	return "\n".join(L)
 
 
@@ -636,7 +636,7 @@ static func _res_lines(L: Array, res: Array) -> void:
 			parts.append("%s %d%%" % [Pal.NAMES[e], roundi(res[e])])
 	# Deux résistances par ligne pour rester compact
 	for i in range(0, parts.size(), 2):
-		L.append("Rés. " + " · ".join(parts.slice(i, i + 2)))
+		L.append(Loc.t("Rés. ") + " · ".join(parts.slice(i, i + 2)))
 
 
 ## Les effets élémentaires d'une arme. drawn = les parts de couleur réellement DESSINÉES : les
@@ -651,7 +651,7 @@ static func _el_lines(L: Array, frac: Array, drawn: Array = []) -> void:
 			continue
 		L.append("%s : %d%%" % [Pal.WEAPON_EFFECT[e], roundi(minf(frac[e], 1.0) * 100.0)])
 	if others > 0.0:
-		L.append("Les autres : %d%%" % roundi(minf(others, 1.0) * 100.0))
+		L.append(Loc.t("Les autres : %d%%") % roundi(minf(others, 1.0) * 100.0))
 
 
 static func describe_player(s: Dictionary) -> String:

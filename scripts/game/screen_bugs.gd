@@ -11,7 +11,7 @@ extends Node
 const LIGHT := {"freeze": 0.5, "invert": 4.0, "shift": 4.0, "trail": 5.0}
 ## Gros bugs (boss) : durée (s)
 const HEAVY := {"controls": 4.0, "flip": 4.0, "rewind": 0.1, "fakehp": 5.0}
-const NAMES := {"freeze": "IMAGE FIGÉE", "invert": "COULEURS INVERSÉES", "shift": "IMAGE DÉCALÉE", "trail": "TRAÎNÉE",
+static var NAMES := {"freeze": "IMAGE FIGÉE", "invert": "COULEURS INVERSÉES", "shift": "IMAGE DÉCALÉE", "trail": "TRAÎNÉE",
 	"controls": "COMMANDES INVERSÉES", "flip": "ÉCRAN À L'ENVERS", "rewind": "RETOUR EN ARRIÈRE", "fakehp": "BARRE DE VIE FOLLE"}
 const WARN_LIGHT := 0.5    # grésillement avant un bug léger
 const WARN_HEAVY := 1.0    # annonce avant un gros bug
@@ -66,7 +66,7 @@ func launch(kind: String, warn: float) -> bool:
 	Sfx.play("zap")
 	arena.shake(2.0)
 	if HEAVY.has(kind):
-		arena.hud.announce("BUG : " + String(NAMES[kind]), Pal.BAD)
+		arena.hud.announce(Loc.t("BUG : ") + String(NAMES[kind]), Pal.BAD)
 	return true
 
 
@@ -124,7 +124,7 @@ func tick(delta: float) -> void:
 func _start(kind: String) -> void:
 	active[kind] = float(LIGHT.get(kind, HEAVY.get(kind, 1.0)))
 	if LIGHT.has(kind):
-		arena.float_text(arena.player.position + Vector2(0, -34), "BUG : " + String(NAMES[kind]), Pal.DIM)
+		arena.float_text(arena.player.position + Vector2(0, -34), Loc.t("BUG : ") + String(NAMES[kind]), Pal.DIM)
 	match kind:
 		"invert":
 			mat.set_shader_parameter("invert", 1.0)

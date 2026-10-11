@@ -7,7 +7,7 @@ extends RefCounted
 ## scale : arme à RATIO, ses dégâts grandissent avec une stat (voir Stats.scaled_damage).
 ## card : description courte pour la fiche de la boutique (le ratio y est déjà écrit à part).
 
-const TYPES := {
+static var TYPES := {
 	# --- Mêlée
 	"dague": {"name": "Dague", "kind": "melee", "style": "thrust", "ink": 45, "canvas": 24,
 		"dmg": 0.55, "cd": 0.45, "reach": 0.75, "crit": 15.0,

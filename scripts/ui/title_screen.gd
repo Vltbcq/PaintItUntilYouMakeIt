@@ -9,7 +9,7 @@ extends Control
 signal done(result)
 
 const FRAME_KINDS := ["character", "boss", "enemy", "melee", "ranged", "amulet"]
-const KIND_NAMES := {"character": "Personnage", "boss": "Boss", "enemy": "Ennemi", "melee": "Arme",
+static var KIND_NAMES := {"character": "Personnage", "boss": "Boss", "enemy": "Ennemi", "melee": "Arme",
 	"ranged": "Arme", "amulet": "Amulette", "mark": "Marque", "bullet": "Projectile"}
 const WALKER_KINDS := ["character", "enemy", "enemy", "boss"]
 const FRAME_SPOTS := [Vector2(16, 64), Vector2(16, 186), Vector2(524, 64), Vector2(524, 186)]
@@ -74,35 +74,35 @@ func _ready() -> void:
 	# Menu au centre, dans un panneau
 	var mp := UI.panel(Color(Pal.BG, 0.92), Pal.BORDER, 2)
 	UI.put(self, mp, Vector2(208, 74), Vector2(224, 232))
-	var sb := UI.hotkey(UI.button("Sauvegarde %d  ·  changer" % Meta.slot, func(): done.emit("slots")), [KEY_S, KEY_ESCAPE])
+	var sb := UI.hotkey(UI.button(Loc.t("Sauvegarde %d  ·  changer") % Meta.slot, func(): done.emit("slots")), [KEY_S, KEY_ESCAPE])
 	UI.put(mp, sb, Vector2(22, 6), Vector2(180, 16))
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 6)
 	UI.put(mp, vb, Vector2(22, 30), Vector2(180, 150))
 	var run := Meta.read_run() if Meta.has_run() else {}
 	if not run.is_empty():
-		var rb := UI.button("Reprendre", func(): done.emit("resume"), 20)
-		rb.tooltip_text = "Vague %d · %s" % [int(run.wave), Meta.DIFFICULTIES[int(run.difficulty)].name]
+		var rb := UI.button(Loc.t("Reprendre"), func(): done.emit("resume"), 20)
+		rb.tooltip_text = Loc.t("Vague %d · %s") % [int(run.wave), Meta.DIFFICULTIES[int(run.difficulty)].name]
 		vb.add_child(UI.hotkey(rb, [KEY_ENTER, KEY_KP_ENTER, KEY_C]))
-		vb.add_child(UI.hotkey(UI.button("Nouvelle partie", func(): done.emit("play")), [KEY_N]))
+		vb.add_child(UI.hotkey(UI.button(Loc.t("Nouvelle partie"), func(): done.emit("play")), [KEY_N]))
 	else:
-		vb.add_child(UI.hotkey(UI.button("Nouvelle partie", func(): done.emit("play"), 20), [KEY_ENTER, KEY_KP_ENTER, KEY_N]))
-	vb.add_child(UI.hotkey(UI.button("Atelier  ◆ %d" % Meta.pigments(), func(): done.emit("atelier")), [KEY_A]))
-	vb.add_child(UI.hotkey(UI.button("Galerie", func(): done.emit("gallery")), [KEY_G]))
+		vb.add_child(UI.hotkey(UI.button(Loc.t("Nouvelle partie"), func(): done.emit("play"), 20), [KEY_ENTER, KEY_KP_ENTER, KEY_N]))
+	vb.add_child(UI.hotkey(UI.button(Loc.t("Atelier  ◆ %d") % Meta.pigments(), func(): done.emit("atelier")), [KEY_A]))
+	vb.add_child(UI.hotkey(UI.button(Loc.t("Galerie"), func(): done.emit("gallery")), [KEY_G]))
 	# Codex et Statistiques sur la même ligne (le menu tient dans son panneau)
 	var cs := HBoxContainer.new()
 	cs.add_theme_constant_override("separation", 4)
-	var cb := UI.hotkey(UI.button("Codex", func(): done.emit("codex")), [KEY_B])
+	var cb := UI.hotkey(UI.button(Loc.t("Codex"), func(): done.emit("codex")), [KEY_B])
 	cb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cs.add_child(cb)
-	var stb := UI.hotkey(UI.button("Stats", func(): done.emit("stats")), [KEY_T])
+	var stb := UI.hotkey(UI.button(Loc.t("Stats"), func(): done.emit("stats")), [KEY_T])
 	stb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cs.add_child(stb)
 	vb.add_child(cs)
-	vb.add_child(UI.hotkey(UI.button("Options", func(): done.emit("options")), [KEY_O]))
-	vb.add_child(UI.button("Quitter", func(): done.emit("quit")))
+	vb.add_child(UI.hotkey(UI.button(Loc.t("Options"), func(): done.emit("options")), [KEY_O]))
+	vb.add_child(UI.button(Loc.t("Quitter"), func(): done.emit("quit")))
 	var d := Meta.data
-	var info := "Record : vague %d\nParties : %d  ·  Victoires : %d" % [int(d.best_wave), int(d.runs), int(d.wins)]
+	var info := Loc.t("Record : vague %d\nParties : %d  ·  Victoires : %d") % [int(d.best_wave), int(d.runs), int(d.wins)]
 	UI.put(mp, UI.label(info, 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 198), Vector2(224, 30))
 
 	for i in 3:
@@ -178,11 +178,11 @@ func _fill_frame(i: int, animate: bool) -> void:
 		tw.tween_property(pic, "modulate:a", 0.0, 0.35)
 		tw.tween_callback(func():
 			pic.texture = tex
-			label.text = KIND_NAMES.get(kind, "À dessiner !"))
+			label.text = KIND_NAMES.get(kind, Loc.t("À dessiner !")))
 		tw.tween_property(pic, "modulate:a", 1.0, 0.35)
 	else:
 		pic.texture = tex
-		label.text = KIND_NAMES.get(kind, "À dessiner !")
+		label.text = KIND_NAMES.get(kind, Loc.t("À dessiner !"))
 
 
 # ------------------------------------------------------------------ Défilé

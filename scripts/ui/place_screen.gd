@@ -66,11 +66,11 @@ func _ready() -> void:
 		var wo: bool = Run.art_of(w).get("outline", false)
 		weapon_ghosts.append([_disp_tex(wi, wo), cc + w.anchor, Vector2(wi.get_size()), wo])
 
-	var what: String = {"amulet": "ton amulette : %s", "weapon": "ton arme : %s", "mark": "ta marque : %s"}[mode] % def.name
-	UI.put(self, UI.label("Pose " + what, 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(640, 24))
-	var hint := "Clique pour poser (clic droit pour reprendre).  R : tourner · M : miroir"
+	var what: String = {"amulet": Loc.t("ton amulette : %s"), "weapon": Loc.t("ton arme : %s"), "mark": Loc.t("ta marque : %s")}[mode] % def.name
+	UI.put(self, UI.label(Loc.t("Pose ") + what, 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(640, 24))
+	var hint := Loc.t("Clique pour poser (clic droit pour reprendre).  R : tourner · M : miroir")
 	if mode == "amulet" and not olds.is_empty():
-		hint = "Clique pour poser · une fois posée, clique une ancienne amulette pour la décaler · R : tourner · M : miroir"
+		hint = Loc.t("Clique pour poser · une fois posée, clique une ancienne amulette pour la décaler · R : tourner · M : miroir")
 	UI.put(self, UI.label(hint, 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 32), Vector2(640, 14))
 
 	var s := base.get_size()
@@ -85,8 +85,8 @@ func _ready() -> void:
 
 	var y := 60.0
 	if mode == "amulet":
-		UI.put(self, UI.label("Pose-la où tu veux sur ton perso.", 10, Pal.TEXT), Vector2(370, y), Vector2(260, 14))
-		UI.put(self, UI.label("EFFET", 10, Pal.DIM), Vector2(370, y + 94))
+		UI.put(self, UI.label(Loc.t("Pose-la où tu veux sur ton perso."), 10, Pal.TEXT), Vector2(370, y), Vector2(260, 14))
+		UI.put(self, UI.label(Loc.t("EFFET"), 10, Pal.DIM), Vector2(370, y + 94))
 		var am_a: Dictionary = Run.amulet_art[def.id].a
 		var eff := UI.label(AmuletDB.describe(def, Stats.amulet_mag(am_a, def)), 10, Pal.TEXT)
 		eff.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -94,27 +94,27 @@ func _ready() -> void:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 4)
 		UI.put(self, row, Vector2(370, y + 156), Vector2(260, 18))
-		row.add_child(UI.button("Tourner (R)", _rotate))
-		row.add_child(UI.button("Miroir (M)", _mirror))
+		row.add_child(UI.button(Loc.t("Tourner (R)"), _rotate))
+		row.add_child(UI.button(Loc.t("Miroir (M)"), _mirror))
 	elif mode == "mark":
-		var info := UI.label(def.desc + "\n\nPose ta marque où tu veux : elle décore ton perso sans le rendre plus gros ni plus lent.", 10, Pal.TEXT)
+		var info := UI.label(def.desc + Loc.t("\n\nPose ta marque où tu veux : elle décore ton perso sans le rendre plus gros ni plus lent."), 10, Pal.TEXT)
 		info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		UI.put(self, info, Vector2(370, y), Vector2(260, 80))
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 4)
 		UI.put(self, row, Vector2(370, y + 90), Vector2(260, 18))
-		row.add_child(UI.button("Tourner (R)", _rotate))
-		row.add_child(UI.button("Miroir (M)", _mirror))
+		row.add_child(UI.button(Loc.t("Tourner (R)"), _rotate))
+		row.add_child(UI.button(Loc.t("Miroir (M)"), _mirror))
 	else:
-		var info := UI.label(def.desc + "\n\nPlace-la sur une main, sur la tête, dans le dos... Elle attaque l'ennemi le plus proche depuis là où tu l'as posée.\n\nTourne-la pour choisir sa position au repos : c'est le côté droit du dessin qui vise.", 10, Pal.TEXT)
+		var info := UI.label(def.desc + Loc.t("\n\nPlace-la sur une main, sur la tête, dans le dos... Elle attaque l'ennemi le plus proche depuis là où tu l'as posée.\n\nTourne-la pour choisir sa position au repos : c'est le côté droit du dessin qui vise."), 10, Pal.TEXT)
 		info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		UI.put(self, info, Vector2(370, y), Vector2(260, 130))
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 4)
 		UI.put(self, row, Vector2(370, y + 140), Vector2(260, 18))
-		row.add_child(UI.button("Tourner (R)", _rotate))
-		row.add_child(UI.button("Miroir (M)", _mirror))
-	ok_btn = UI.hotkey(UI.button("VALIDER →", _validate), [KEY_ENTER, KEY_KP_ENTER])
+		row.add_child(UI.button(Loc.t("Tourner (R)"), _rotate))
+		row.add_child(UI.button(Loc.t("Miroir (M)"), _mirror))
+	ok_btn = UI.hotkey(UI.button(Loc.t("VALIDER →"), _validate), [KEY_ENTER, KEY_KP_ENTER])
 	ok_btn.disabled = true
 	UI.put(self, ok_btn, Vector2(496, 330), Vector2(136, 18))
 
@@ -234,7 +234,7 @@ func _amulet_input(ev: InputEvent) -> bool:
 
 func _update() -> void:
 	if zone_label:
-		zone_label.text = "Zone : %s" % Run.zone_at(cell, item.get_size())
+		zone_label.text = Loc.t("Zone : %s") % Run.zone_at(cell, item.get_size())
 	view.queue_redraw()
 
 
