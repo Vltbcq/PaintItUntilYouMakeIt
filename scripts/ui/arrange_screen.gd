@@ -28,6 +28,7 @@ func _init(type := "", rar := 0) -> void:
 
 
 func _ready() -> void:
+	add_to_group("pad_turn")   # manette : ici LB tourne (R) et RB retourne en miroir (M)
 	set_anchors_preset(PRESET_FULL_RECT)
 	UI.fill_bg(self)
 	var comp := Run.build_player_image(false)   # sans les amulettes : elles se déplacent aussi

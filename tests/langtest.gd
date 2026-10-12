@@ -130,6 +130,16 @@ func _ready() -> void:
 			_untranslated((load(row[0]) as Script).get(row[1]), seen)
 		print("SANS TRADUCTION : ", " | ".join(seen.keys()))
 
+	# --- Icônes de stats dans les textes : au moins autant en anglais qu'en français, phrase par phrase
+	# (l'anglais en a parfois plus : « +3% damage » là où le français écrit « +3% de dégâts »)
+	var fr_icons := {}
+	for d in AmuletDB.LIST:
+		fr_icons["a:" + String(d.id)] = UI.stat_bbcode(AmuletDB.describe(d)).count("[img")
+	for t in WeaponDB.TYPES:
+		fr_icons["w:" + t] = UI.stat_bbcode(String(WeaponDB.get_def(t).desc)).count("[img")
+	for k in Run.UPGRADES.size():
+		fr_icons["u:%d" % k] = UI.stat_bbcode(String(Run.UPGRADES[k][2])).count("[img")
+
 	# --- En anglais : les tables de données
 	Loc.apply("en")
 	_check(Loc.t("Retour") == "Back", "Loc.t traduit")
@@ -138,6 +148,25 @@ func _ready() -> void:
 	for row in LangTables.LIST:
 		_scan((load(row[0]) as Script).get(row[1]), "%s.%s" % [String(row[0]).get_file().get_basename(), row[1]], found)
 	_report(found, "tables de données")
+
+	var lost := 0
+	for d in AmuletDB.LIST:
+		var n := UI.stat_bbcode(AmuletDB.describe(d)).count("[img")
+		if n < int(fr_icons["a:" + String(d.id)]) and String(d.id) != "pitcoin":   # (Pitcoin : « 1 chance sur 8 » n'est pas la stat Chance)
+			lost += 1
+			print("   icônes %d (fr %d) : %s" % [n, fr_icons["a:" + String(d.id)], AmuletDB.describe(d).replace("
+", " ⏎ ").left(150)])
+	for t in WeaponDB.TYPES:
+		var n := UI.stat_bbcode(String(WeaponDB.get_def(t).desc)).count("[img")
+		if n < int(fr_icons["w:" + t]):
+			lost += 1
+			print("   icônes %d (fr %d) : %s" % [n, fr_icons["w:" + t], String(WeaponDB.get_def(t).desc).left(150)])
+	for k in Run.UPGRADES.size():
+		var n := UI.stat_bbcode(String(Run.UPGRADES[k][2])).count("[img")
+		if n < int(fr_icons["u:%d" % k]):
+			lost += 1
+			print("   icônes %d (fr %d) : %s" % [n, fr_icons["u:%d" % k], Run.UPGRADES[k][2]])
+	_check(lost == 0, "icônes de stats : %d texte(s) ont moins d'icônes qu'en français" % lost)
 
 	# --- Les textes assemblés par le code
 	found = []

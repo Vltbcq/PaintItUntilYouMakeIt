@@ -24,6 +24,27 @@ func _init(s: DrawScreen, scale_px: int) -> void:
 		queue_redraw())
 
 
+func _enter_tree() -> void:
+	Pad.canvas = self   # manette : la croix avance d'une case sur cette toile
+
+
+func _exit_tree() -> void:
+	if Pad.canvas == self:
+		Pad.canvas = null
+
+
+## Manette : depuis la position d'écran `at`, la case voisine dans la direction d (son centre, en
+## coordonnées d'écran). null si le curseur n'est pas sur la toile.
+func pad_step(at: Vector2, d: Vector2i):
+	var xf := get_global_transform()
+	var c := cell_at(xf.affine_inverse() * at)
+	var s := screen.img.get_size()
+	if c.x < 0 or c.y < 0 or c.x >= s.x or c.y >= s.y:
+		return null
+	c = (c + d).clamp(Vector2i.ZERO, s - Vector2i.ONE)
+	return xf * ((Vector2(c) + Vector2(0.5, 0.5)) * px)
+
+
 ## Recalcule les pixels de contour (appelé à chaque modification du dessin).
 func refresh_edges() -> void:
 	edges.clear()

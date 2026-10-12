@@ -225,8 +225,8 @@ func _draw_hud() -> void:
 		var col := Pal.BAD if tl < 5.0 else Pal.TEXT
 		_text(Vector2(0, 36), "%d" % ceili(tl), col, 10, 640, HORIZONTAL_ALIGNMENT_CENTER)
 	_text(Vector2(0, 12), Meta.DIFFICULTIES[Run.difficulty].name, Pal.DIM, 10, 632, HORIZONTAL_ALIGNMENT_RIGHT)
-	_text(Vector2(0, 24), Loc.t("Échap : pause"), Pal.DIM, 10, 632, HORIZONTAL_ALIGNMENT_RIGHT)
-	_text(Vector2(0, 36), Loc.t("Molette / + - : zoom"), Pal.DIM, 10, 632, HORIZONTAL_ALIGNMENT_RIGHT)
+	_text(Vector2(0, 24), Pad.txt(Loc.t("Échap : pause")), Pal.DIM, 10, 632, HORIZONTAL_ALIGNMENT_RIGHT)
+	_text(Vector2(0, 36), Pad.txt(Loc.t("Molette / + - : zoom")), Pal.DIM, 10, 632, HORIZONTAL_ALIGNMENT_RIGHT)
 
 	var b := arena.boss
 	if b and is_instance_valid(b) and not b.dead:
@@ -442,7 +442,7 @@ func _draw_desk(d: Control) -> void:
 	var blink := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 110.0)
 	d.draw_rect(Rect2(38, 338, 94, 22), Color(Pal.ACCENT, blink), false, 2.0)
 	d.draw_string(UI.font, Vector2(0, 150), Loc.t("Le Curseur a réduit la fenêtre !"), HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(16), Color.WHITE)
-	d.draw_string(UI.font, Vector2(0, 176), Loc.t("Clique « PaintIt » dans la barre des tâches (manette : un bouton)"), HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(10), Color(1, 1, 1, 0.85))
+	d.draw_string(UI.font, Vector2(0, 176), Pad.txt(Loc.t("Clique « PaintIt » dans la barre des tâches (manette : un bouton)")), HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(10), Color(1, 1, 1, 0.85))
 	d.draw_string(UI.font, Vector2(0, 196), Loc.t("Ton perso se bat toujours derrière..."), HORIZONTAL_ALIGNMENT_CENTER, 640, UI.fs(10), Color(1, 1, 1, 0.6))
 
 

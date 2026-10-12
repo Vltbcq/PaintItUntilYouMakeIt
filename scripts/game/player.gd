@@ -106,6 +106,9 @@ func input_dir() -> Vector2:
 	var joy := Vector2(Input.get_joy_axis(0, JOY_AXIS_LEFT_X), Input.get_joy_axis(0, JOY_AXIS_LEFT_Y))
 	if joy.length() > 0.25:
 		d += joy
+	# (la croix de la manette aussi)
+	d.x += int(Input.is_joy_button_pressed(0, JOY_BUTTON_DPAD_RIGHT)) - int(Input.is_joy_button_pressed(0, JOY_BUTTON_DPAD_LEFT))
+	d.y += int(Input.is_joy_button_pressed(0, JOY_BUTTON_DPAD_DOWN)) - int(Input.is_joy_button_pressed(0, JOY_BUTTON_DPAD_UP))
 	if arena and arena.stream and arena.stream.flip_t > 0.0:
 		d = -d   # Le Stream : « !flip », commandes inversées
 	if arena and arena.cam and not arena.cam.ignore_rotation:

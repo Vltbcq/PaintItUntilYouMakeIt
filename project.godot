@@ -26,6 +26,7 @@ UI="*res://scripts/autoload/ui.gd"
 Meta="*res://scripts/autoload/meta.gd"
 Run="*res://scripts/autoload/run.gd"
 Sfx="*res://scripts/autoload/sfx.gd"
+Pad="*res://scripts/autoload/pad.gd"
 
 [display]
 

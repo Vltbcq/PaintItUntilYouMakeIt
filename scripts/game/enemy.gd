@@ -1494,7 +1494,7 @@ func _boss_cursor(delta: float, dirp: Vector2, dist: float) -> Vector2:
 					grabbed = true
 					struggle = 0
 					shake_dir = Vector2.ZERO
-					arena.float_text(p.position + Vector2(0, -30), Loc.t("ATTRAPÉ ! SECOUE LES TOUCHES !"), Pal.BAD)
+					arena.float_text(p.position + Vector2(0, -30), Pad.txt(Loc.t("ATTRAPÉ ! SECOUE LES TOUCHES !")), Pal.BAD)
 				else:
 					state = "walk"
 					st_t = 1.2

@@ -385,18 +385,31 @@ func cercle(parent: Node, pos: Vector2, mini := false) -> TextureRect:
 
 
 ## Icônes de stats dans un texte : « +4 PV max » -> « +4 » + l'icône du cœur (BBCode). Voir stat_bbcode.
-static var STAT_WORDS := [["vit. d'attaque", "atk_speed"], ["vitesse d'attaque", "atk_speed"], ["PV max", "max_hp"],
+## (Ces mots ne passent PAS par le catalogue de traduction : « critique » y est aussi l'identifiant
+## d'un boss. Chaque langue a donc sa liste ici.)
+const STAT_WORDS := [["vit. d'attaque", "atk_speed"], ["vitesse d'attaque", "atk_speed"], ["PV max", "max_hp"],
 	["régénération", "regen"], ["armure", "armor"], ["esquive", "dodge"], ["vitesse", "move"], ["dégâts", "dmg"],
 	["dégât", "dmg"], ["critique", "crit"], ["portée", "range"], ["vol de vie", "lifesteal"], ["chance", "luck"],
 	["pourboire", "harvest"], ["épines", "thorns"], ["épine", "thorns"], ["Épines", "thorns"], ["Épine", "thorns"], ["puissance élémentaire", "el_power"],
 	["effets élémentaires", "el_power"]]
+const STAT_WORDS_EN := [["atk speed", "atk_speed"], ["attack speed", "atk_speed"], ["max HP", "max_hp"],
+	["regen", "regen"], ["armor", "armor"], ["dodge", "dodge"], ["speed", "move"], ["damage", "dmg"],
+	["crit", "crit"], ["range", "range"], ["lifesteal", "lifesteal"], ["luck", "luck"], ["tip", "harvest"],
+	["thorns", "thorns"], ["thorn", "thorns"], ["elemental power", "el_power"], ["elem. power", "el_power"],
+	["elemental effects", "el_power"]]
 var _stat_re: RegEx
+var _stat_re_lang := ""   # (les mots changent avec la langue : l'expression est refaite)
+
+
+func stat_words() -> Array:
+	return STAT_WORDS if Loc.lang == "fr" else STAT_WORDS_EN
 
 
 func stat_bbcode(text: String, px := 12) -> String:
-	if _stat_re == null:
+	if _stat_re == null or _stat_re_lang != Loc.lang:
+		_stat_re_lang = Loc.lang
 		var alt := []
-		for w in STAT_WORDS:
+		for w in stat_words():
 			alt.append(String(w[0]).replace(".", "\\."))
 		# Le mot de la stat devient son icône quand il désigne TA stat :
 		# - après un nombre (« +4 PV max ») ;
@@ -413,7 +426,7 @@ func stat_bbcode(text: String, px := 12) -> String:
 		out += text.substr(pos, m.get_start() - pos)
 		var w := m.get_string(3).to_lower()
 		var key := ""
-		for sw in STAT_WORDS:
+		for sw in stat_words():
 			if String(sw[0]).to_lower() == w:
 				key = sw[1]
 				break

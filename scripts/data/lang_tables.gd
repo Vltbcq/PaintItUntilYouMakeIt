@@ -11,7 +11,6 @@ const LIST := [
 	["res://scripts/autoload/run.gd", "SYNERGY_DESC"],
 	["res://scripts/autoload/run.gd", "UPGRADES"],
 	["res://scripts/autoload/ui.gd", "CERCLE_TEXT"],
-	["res://scripts/autoload/ui.gd", "STAT_WORDS"],
 	["res://scripts/core/pal.gd", "CHAR_BONUS"],
 	["res://scripts/core/pal.gd", "COLOR_NAMES"],
 	["res://scripts/core/pal.gd", "NAMES"],

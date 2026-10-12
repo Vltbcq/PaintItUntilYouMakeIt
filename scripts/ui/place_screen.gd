@@ -46,6 +46,7 @@ func _disp_tex(img: Image, with_outline: bool) -> ImageTexture:
 
 
 func _ready() -> void:
+	add_to_group("pad_turn")   # manette : ici LB tourne (R) et RB retourne en miroir (M)
 	set_anchors_preset(PRESET_FULL_RECT)
 	UI.fill_bg(self)
 	base = Run.build_player_image(mode != "amulet")

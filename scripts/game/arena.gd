@@ -142,6 +142,7 @@ var air: _Marks
 
 
 func _ready() -> void:
+	add_to_group("arena")   # (manette : tant qu'une vague tourne, pas de curseur)
 	_build_floor()
 	loot_layer = Node2D.new()
 	loot_layer.z_index = -1
