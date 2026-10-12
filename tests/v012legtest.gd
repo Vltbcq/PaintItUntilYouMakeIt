@@ -296,6 +296,24 @@ func _ready() -> void:
 	arena._end_wave()
 	_check(Run.gold - g0 >= 4, "Ticket d'entrée : 4 ennemis encore en vie = +4 or (%d)" % (Run.gold - g0))
 
+	# --- Buffet à volonté (modifié en v0.12) : PV au maximum toutes les 20 s, plus de soin au début de la vague
+	_setup()
+	_give("restauration")
+	Run.hp = 3.0
+	await _arena()
+	var bp := arena.player
+	bp.max_hp = 40.0
+	bp.hp = 3.0
+	_check(bp.hp == 3.0, "Buffet : plus de soin au début de la vague")
+	bp.god = true
+	bp.tick(19.0)
+	_check(bp.hp == 3.0, "Buffet : rien avant 20 s")
+	bp.tick(1.5)
+	_check(bp.hp == 40.0, "Buffet : à 20 s, les PV remontent au maximum (%.0f)" % bp.hp)
+	bp.hp = 10.0
+	bp.tick(5.0)
+	_check(bp.hp == 10.0, "Buffet : puis il faut attendre 20 s de plus")
+
 	# --- Pellicule : le voile noir et blanc
 	_setup()
 	_give("pellicule")

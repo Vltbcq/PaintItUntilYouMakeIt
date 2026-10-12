@@ -1,8 +1,9 @@
 """Visuel du cercle des faiblesses (pixel art, couleurs du jeu).
 Chaque couleur bat la suivante (sens des flèches) : Feu → Foudre → Poison → Glace → Arcane → Feu ;
 Lumière et Ombre se battent l'un l'autre.
-Écrit assets/ui/cercle.png (avec les noms), assets/ui/cercle_mini.png (sans les noms, petit)
-et docs/cercle_elements_x4.png (aperçu agrandi). Usage : python docs/cercle_elements.py"""
+Écrit assets/ui/cercle.png (avec les noms en français), assets/ui/cercle_en.png (en anglais),
+assets/ui/cercle_mini.png (sans les noms, petit) et docs/cercle_elements_x4.png (aperçu agrandi).
+Une langue de plus = une entrée dans NAMES_BY_LANG. Usage : python docs/cercle_elements.py"""
 import math
 import os
 from PIL import Image, ImageDraw, ImageFont
@@ -30,20 +31,32 @@ ICON = {   # 7×7 : '#' = blanc (ou encre sur fond clair), 'o' = teinte claire
 	'lumiere': ["#..#..#", ".#...#.", "...#...", "#.###.#", "...#...", ".#...#.", "#..#..#"],
 	'noir': [".#####.", "##...##", "#.....#", "#..#..#", "#.....#", "##...##", ".#####."],
 }
-NAMES = {'feu': 'Feu', 'foudre': 'Foudre', 'poison': 'Poison', 'glace': 'Glace', 'arcane': 'Arcane',
-	'lumiere': 'Lumière', 'noir': 'Ombre'}
+NAMES_BY_LANG = {
+	'fr': {'feu': 'Feu', 'foudre': 'Foudre', 'poison': 'Poison', 'glace': 'Glace', 'arcane': 'Arcane',
+		'lumiere': 'Lumière', 'noir': 'Ombre'},
+	'en': {'feu': 'Fire', 'foudre': 'Lightning', 'poison': 'Poison', 'glace': 'Ice', 'arcane': 'Arcane',
+		'lumiere': 'Light', 'noir': 'Shadow'},
+}
 CYCLE = ['feu', 'foudre', 'poison', 'glace', 'arcane']
 
 
-def build(with_names: bool):
+def build(with_names: bool, lang: str = 'fr'):
+	NAMES = NAMES_BY_LANG[lang]
 	"""Arcs d'épaisseur constante (anneau exact) et pointes pleines symétriques, au pixel près."""
 	R, r = (44, 10) if with_names else (31, 7)
 	W, H = (236, 168) if with_names else (84, 98)
 	cx, cy = W // 2, (72 if with_names else 40)
+	font = ImageFont.truetype(os.path.join(ROOT, 'assets', 'fonts', 'YosterIsland.ttf'), 12)
+	if with_names:
+		# Un nom long à droite (« Lightning ») : l'image s'élargit vers la droite, le cercle ne bouge pas
+		probe = ImageDraw.Draw(Image.new('RGBA', (4, 4)))
+		for k, el in enumerate(CYCLE):
+			ang = -math.pi / 2 + k * 2 * math.pi / 5
+			if math.cos(ang) > 0.3 and math.sin(ang) <= 0.5:
+				W = max(W, math.ceil(cx + R * math.cos(ang) + r + 5 + probe.textlength(NAMES[el], font=font) + 3))
 	img = Image.new('RGBA', (W, H), (0, 0, 0, 0))
 	px = img.load()
 	d = ImageDraw.Draw(img)
-	font = ImageFont.truetype(os.path.join(ROOT, 'assets', 'fonts', 'YosterIsland.ttf'), 12)
 
 	def put(x, y, c):
 		if 0 <= x < W and 0 <= y < H:
@@ -148,7 +161,7 @@ def build(with_names: bool):
 	disc(lx, y, rr, SH['lumiere']); icon(lx, y, 'lumiere')
 	disc(nx, y, rr, SH['noir']); icon(nx, y, 'noir')
 	if with_names:
-		for text, x, col, right in (("Lumière", lx - rr - 5, SH['lumiere'][1], True), ("Ombre", nx + rr + 5, SH['noir'][2], False)):
+		for text, x, col, right in ((NAMES['lumiere'], lx - rr - 5, SH['lumiere'][1], True), (NAMES['noir'], nx + rr + 5, SH['noir'][2], False)):
 			tw = d.textlength(text, font=font)
 			tx = x - tw if right else x
 			d.text((round(tx) + 1, y - 6), text, font=font, fill=INK)
@@ -159,6 +172,9 @@ def build(with_names: bool):
 os.makedirs(os.path.join(ROOT, 'assets', 'ui'), exist_ok=True)
 full = build(True)
 full.save(os.path.join(ROOT, 'assets', 'ui', 'cercle.png'))
+for lang in NAMES_BY_LANG:
+	if lang != 'fr':
+		build(True, lang).save(os.path.join(ROOT, 'assets', 'ui', 'cercle_%s.png' % lang))
 build(False).save(os.path.join(ROOT, 'assets', 'ui', 'cercle_mini.png'))
 bg = Image.new('RGBA', full.size, (0x2a, 0x10, 0x15, 255))
 bg.alpha_composite(full)

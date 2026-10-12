@@ -195,6 +195,11 @@ func _ready() -> void:
 	cond = ItemUnlockDB.text(ItemUnlockDB.CONDS["f:pavel"])
 	_check(cond == "Win a run on The Blackboard at Sketch or harder.", "défi de victoire : " + cond)
 
+	# --- Le cercle des faiblesses : les noms sont dans l'image, il en faut une en anglais
+	var wheel := UI.cercle(self, Vector2.ZERO)
+	_check(wheel.texture.resource_path.ends_with("cercle_en.png"), "cercle des faiblesses : image anglaise (%s)" % wheel.texture.resource_path.get_file())
+	wheel.queue_free()
+
 	# --- Les écrans
 	Run.start(0, 1)
 	var img := Image.create_empty(24, 24, false, Image.FORMAT_RGBA8)

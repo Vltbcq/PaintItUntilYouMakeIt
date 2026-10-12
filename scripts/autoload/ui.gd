@@ -374,8 +374,12 @@ static var CERCLE_TEXT := "Chaque couleur fait ×1,5 de dégâts à celle que vi
 
 
 ## Image du cercle (assets/ui/cercle.png, ou la petite version sans les noms).
+## Les noms des éléments sont dessinés DANS l'image : une image par langue (cercle_en.png...).
 func cercle(parent: Node, pos: Vector2, mini := false) -> TextureRect:
-	var tex: Texture2D = load("res://assets/ui/cercle_mini.png" if mini else "res://assets/ui/cercle.png")
+	var named := "res://assets/ui/cercle_%s.png" % Loc.lang
+	if Loc.lang == "fr" or not ResourceLoader.exists(named):
+		named = "res://assets/ui/cercle.png"
+	var tex: Texture2D = load("res://assets/ui/cercle_mini.png" if mini else named)
 	var tr := TextureRect.new()
 	tr.texture = tex
 	tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST

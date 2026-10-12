@@ -75,6 +75,7 @@ func _ready() -> void:
 	Run.wave = 5
 	var a := _arena()
 	await get_tree().process_frame
+	seed(8)   # (la vitesse d'un ennemi est tirée au hasard : même tirage pour les deux boss comparés)
 	var b0: Enemy = a.spawn_enemy_now("rature", Vector2(100, 100), false)
 	var spd0 := b0.speed
 	a.spawn_enemy_bullet(b0, Vector2(50, 50), Vector2.RIGHT)
@@ -84,11 +85,12 @@ func _ready() -> void:
 	_give("colle_forte")
 	a = _arena()
 	await get_tree().process_frame
+	seed(8)
 	var b1: Enemy = a.spawn_enemy_now("rature", Vector2(100, 100), false)
 	a.spawn_enemy_bullet(b1, Vector2(50, 50), Vector2.RIGHT)
 	var d1: float = a.bullets[a.bullets.size() - 1].dmg
 	_check(absf(d1 - d0 * 0.75) < 0.01, "Bâche : projectiles de boss -25 %% (%.1f → %.1f)" % [d0, d1])
-	_check(b1.speed < spd0 * 0.9, "Colle forte : boss plus lent (%.0f → %.0f)" % [spd0, b1.speed])
+	_check(absf(b1.speed - spd0 * 0.8) < 0.5, "Colle forte : boss plus lent (%.0f → %.0f)" % [spd0, b1.speed])
 	a.queue_free()
 
 	# --- Grattoir et Monocle (armure, esquive)

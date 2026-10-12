@@ -163,7 +163,7 @@ static var LIST := [
 	{"id": "double_expo", "ink": 70, "name": "Roulette russe", "rar": 3, "flag": true, "desc": "Chaque attaque a 25% de chances de se relancer aussitôt · {m}% critique", "malus": ["crit", -6.0]},
 	{"id": "musee", "ink": 80, "name": "Bras robotique", "rar": 3, "flag": true, "desc": "+1 emplacement d'arme · {m}% dégâts", "malus": ["dmg", -8.0]},
 	{"id": "trompe_oeil", "ink": 66, "name": "Trompe-l'œil", "rar": 3, "flag": true, "desc": "30% des tirs ennemis sont déviés · {m} armure", "malus": ["armor", -4.0]},
-	{"id": "restauration", "ink": 76, "name": "Buffet à volonté", "rar": 3, "flag": true, "desc": "Soigne 30% de tes PV au début de chaque vague, mais -15% d'or ramassé"},
+	{"id": "restauration", "ink": 76, "name": "Buffet à volonté", "rar": 3, "flag": true, "desc": "Toutes les 20 s, tes PV remontent au MAXIMUM, mais -15% d'or ramassé"},
 	{"id": "renaissance", "ink": 84, "name": "Renaissance", "rar": 3, "flag": true, "desc": "Une fois par partie, à 0 PV tu reviens avec 50% de tes PV · {m}% vitesse", "malus": ["speed", -10.0]},
 	{"id": "mise_abyme", "ink": 80, "name": "Mise en abyme", "rar": 3, "flag": true, "desc": "Tes projectiles qui touchent se DIVISENT en 2 petits projectiles · {m}% critique", "malus": ["crit", -6.0]},
 	{"id": "midas", "ink": 74, "name": "Pinceau de Midas", "rar": 3, "flag": true, "desc": "Chaque ennemi tué donne +1 or, mais -20% PV max"},

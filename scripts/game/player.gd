@@ -38,6 +38,8 @@ var hits_taken := 0         # Piñata : coups reçus pendant la vague
 var itch_t := 0.0           # Poil à gratter : vitesse en plus après un coup reçu (s)
 var airbag_used := false    # Airbag : une fois par vague
 var punch_n := 0            # Punching-ball : coups reçus pendant la vague
+var buffet_t := 0.0         # Buffet à volonté : temps depuis le dernier repas
+const BUFFET_EVERY := 20.0
 var grow := 1.0             # Biscuit pour gorille : le perso est dessiné plus gros
 var sand_t := 0.0           # Lag (L'Écran) : dans son aura, on avance au ralenti
 var root_t := 0.0           # Lasso (L'Écran) : coincé sur place
@@ -53,9 +55,6 @@ func setup(a: Arena) -> void:
 	max_hp = st.max_hp
 	hp = clampf(Run.hp, 1.0, max_hp)   # les PV ne remontent pas entre les vagues
 	paper = Run.amulet_count("bouclier_papier")
-	var rest := Run.amulet_count("restauration")
-	if rest > 0:
-		hp = minf(max_hp, hp + max_hp * 0.3 * rest)
 	radius = st.radius * pow(0.92, Run.amulet_count("regime"))   # Régime : zone de touche plus petite
 	hp = minf(max_hp, hp + 3.0 * Run.amulet_count("soda"))        # Soda : 3 PV au début de la vague
 	if Run.amulet_count("pouce") > 0:
@@ -208,6 +207,15 @@ func tick(delta: float) -> void:
 		queue_redraw()
 	inv -= delta
 	invis_t -= delta
+	# Buffet à volonté : toutes les 20 s, les PV remontent au maximum
+	if Run.amulet_count("restauration") > 0:
+		buffet_t += delta
+		if buffet_t >= BUFFET_EVERY:
+			buffet_t = 0.0
+			if hp < max_hp:
+				arena.float_text(position + Vector2(0, -22), Loc.t("BUFFET ! +%d") % int(max_hp - hp), Pal.GOOD)
+				hp = max_hp
+				Sfx.play("level")
 	if flash > 0.0:
 		flash = maxf(0.0, flash - delta * 6.0)
 		mat.set_shader_parameter("flash", flash)
