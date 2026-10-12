@@ -34,6 +34,11 @@ var poop_t := 0.0           # Pigeon : une fiente sur la tête, on avance moins 
 var size_k := 1.0           # Le Curseur : perso redimensionné (1,8 = énorme, 0,55 = minuscule)
 var size_t := 0.0
 var size_base := 0.0        # son rayon d'origine
+var hits_taken := 0         # Piñata : coups reçus pendant la vague
+var itch_t := 0.0           # Poil à gratter : vitesse en plus après un coup reçu (s)
+var airbag_used := false    # Airbag : une fois par vague
+var punch_n := 0            # Punching-ball : coups reçus pendant la vague
+var grow := 1.0             # Biscuit pour gorille : le perso est dessiné plus gros
 var sand_t := 0.0           # Lag (L'Écran) : dans son aura, on avance au ralenti
 var root_t := 0.0           # Lasso (L'Écran) : coincé sur place
 var lasso_safe_t := 0.0     # ... puis à l'abri des lassos un moment (pas de prise en boucle)
@@ -51,13 +56,18 @@ func setup(a: Arena) -> void:
 	var rest := Run.amulet_count("restauration")
 	if rest > 0:
 		hp = minf(max_hp, hp + max_hp * 0.3 * rest)
-	radius = st.radius
+	radius = st.radius * pow(0.92, Run.amulet_count("regime"))   # Régime : zone de touche plus petite
+	hp = minf(max_hp, hp + 3.0 * Run.amulet_count("soda"))        # Soda : 3 PV au début de la vague
+	if Run.amulet_count("pouce") > 0:
+		inv = maxf(inv, 5.0)                                       # Pouce : 5 s sans pouvoir perdre de PV
 	body = Node2D.new()
 	add_child(body)
 	mat = Gfx.material(Run.char_effect, Run.char_outline)
-	pimg = Gfx.padded(Run.build_player_image(bool(Meta.setting("show_amulets"))))
+	pimg = Gfx.padded(Run.build_player_image(Run.show_amulets()))
 	ptex = ImageTexture.create_from_image(pimg)
 	sprite = Gfx.sprite(ptex, mat)
+	grow = minf(2.0, 1.0 + 0.03 * Run.gorilla)
+	sprite.scale = Vector2(grow, grow)
 	sprite.centered = false
 	# Le centre du dessin (hors amulettes) est l'origine du joueur.
 	var r: Rect2i = Run.char_a.rect
@@ -153,6 +163,9 @@ func tick(delta: float) -> void:
 	if yuki_t > 0.0:
 		yuki_t -= delta
 		boost *= 1.3   # Yuki
+	if itch_t > 0.0:
+		itch_t -= delta
+		boost *= 1.0 + 0.15 * Run.amulet_count("poil_gratter")   # Poil à gratter
 	if arena.theme == "rapide":
 		boost *= 1.3   # Salle thématique : tout va plus vite
 	var want: Vector2 = d * st.move * hz[0] * boost
@@ -242,16 +255,24 @@ func take_hit(dmg: float, element: int, src: Node) -> void:
 		inv = 0.25
 		if Run.amulet_count("ombre_portee") > 0:
 			shadow_ready = true
+		if Run.amulet_count("matador") > 0:
+			for wn in weapons:
+				if wn.st.kind == "melee":
+					wn.cd = 0.0   # Matador : l'esquive déclenche les armes de mêlée
 		return
 	arena.on_player_hit()   # (Rires en boîte : un vrai coup reçu)
 	var d := dmg
-	if st.armor >= 0.0:
-		d /= 1.0 + st.armor / 15.0
+	# Sardines : +2 armure par exemplaire quand 5 ennemis ou plus sont proches
+	var armor: float = st.armor + (2.0 * Run.amulet_count("sardines") if arena.crowd >= 5 else 0.0)
+	if armor >= 0.0:
+		d /= 1.0 + armor / 15.0
 	else:
-		d *= 1.0 - st.armor / 15.0
+		d *= 1.0 - armor / 15.0
 	if element > 0:
 		d *= 1.0 - st.res[element] / 100.0
 	d = maxf(1.0, roundf(d))
+	if Run.amulet_count("ceinture") > 0:
+		d = minf(d, maxf(1.0, ceilf(max_hp * 0.2)))   # Ceinture de sécurité
 	# Encre carmin : le bouclier d'encre absorbe d'abord
 	if shield > 0.0:
 		var ab := minf(shield, d)
@@ -268,6 +289,22 @@ func take_hit(dmg: float, element: int, src: Node) -> void:
 			return
 	hp -= d
 	was_hurt = true
+	# Piñata : 1 or tous les 2 coups reçus, par exemplaire
+	hits_taken += 1
+	if Run.amulet_count("punching_ball") > 0:
+		punch_n += 1
+	if hits_taken % 2 == 0:
+		Run.gold += Run.amulet_count("pinata")
+	if Run.amulet_count("poil_gratter") > 0:
+		itch_t = 2.0
+	# Airbag : une fois par vague, sous 30 % des PV, repousse les ennemis proches
+	if not airbag_used and hp > 0.0 and hp < max_hp * 0.3 and Run.amulet_count("airbag") > 0:
+		airbag_used = true
+		arena.explosion(position, 70.0, Color(Pal.TEXT, 0.7))
+		for o in arena.near(position, 70.0):
+			if not o.is_boss:
+				o.knock += (o.position - position).normalized() * 420.0
+		arena.float_text(position + Vector2(0, -26), Loc.t("AIRBAG !"), Pal.TEXT)
 	if arena.stream:
 		arena.stream.on_hurt()
 	# Statistiques : qui t'a effacé (le dernier coup avant la fin)
@@ -348,11 +385,11 @@ func resize(k: float, dur: float) -> void:
 	size_k = k
 	size_t = dur
 	radius = size_base * k
-	sprite.scale = Vector2(k, k)
+	sprite.scale = Vector2(k, k) * grow
 
 
 func refresh_image() -> void:
-	pimg = Gfx.padded(Run.build_player_image(bool(Meta.setting("show_amulets"))))
+	pimg = Gfx.padded(Run.build_player_image(Run.show_amulets()))
 	ptex = ImageTexture.create_from_image(pimg)
 	sprite.texture = ptex
 

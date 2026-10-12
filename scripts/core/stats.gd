@@ -124,7 +124,6 @@ static func player(run: Node) -> Dictionary:
 	n = run.amulet_count("poids")
 	if n > 0:
 		s.armor += floorf(a.pixels / 60.0) * n
-	s.dmg += 3.0 * run.signature
 	n = run.amulet_count("pinceau_fou")
 	s.atk_speed += 40.0 * n
 	n = run.amulet_count("encrier")
@@ -165,6 +164,30 @@ static func player(run: Node) -> Dictionary:
 	# Épines : Carapace (+25 % de l'armure), Cactus (+1 par 10 PV max)
 	s.thorns += 0.25 * maxf(0.0, s.armor) * run.amulet_count("carapace")
 	s.thorns += floorf(s.max_hp / 10.0) * run.amulet_count("cactus")
+	# --- Légendaires de la v0.12
+	s.dmg += 3.0 * run.gorilla                                  # Biscuit pour gorille
+	s.max_hp += 3.0 * run.gorilla
+	s.radius *= minf(2.0, 1.0 + 0.03 * run.gorilla)
+	if run.amulet_count("investisseur") > 0:
+		s.dmg += minf(80.0, floorf(maxf(0.0, run.spent) / 100.0))
+	if run.amulet_count("galerie_musee") > 0:
+		var lc: int = run.legend_count()
+		s.dmg += 4.0 * lc
+		s.max_hp += 2.0 * lc
+	if run.amulet_count("pellicule") > 0:
+		s.dmg += 30.0
+		s.speed += 15.0
+	if run.amulet_count("carte_credit") > 0 and run.gold < 0:
+		s.dmg -= 20.0
+	if run.amulet_count("canon_verre") > 0:
+		s.dmg += 50.0
+	if run.amulet_count("constellation") > 0 and run.constel.size() == 2:
+		for k in 2:
+			var cs: String = run.constel[k]
+			if cs == "max_hp":
+				s.max_hp *= 1.4 if k == 0 else 0.8
+			else:
+				s[cs] += 40.0 if k == 0 else -20.0
 	# Pacte de sang : vol de vie doublé, plus de régénération
 	if run.amulet_count("pacte_sang") > 0:
 		s.lifesteal *= 2.0
@@ -173,6 +196,9 @@ static func player(run: Node) -> Dictionary:
 	s.max_hp = maxf(1.0, roundf(s.max_hp))
 	s.move = s.speed_base * maxf(0.25, 1.0 + s.speed / 100.0)
 	s.dodge = minf(s.dodge, 60.0)
+	if run.amulet_count("canon_verre") > 0:
+		s.dodge = 0.0                      # Slip (id canon_verre) : ni armure ni esquive
+		s.armor = minf(s.armor, 0.0)
 	for e in Pal.COUNT:
 		s.res[e] = minf(s.res[e], 80.0)
 	s.pickup += 50.0   # rayon de ramassage fixe (plus une stat : les gouttes sont aspirées en fin de vague)
@@ -252,8 +278,14 @@ static func amulet_live(id: String) -> String:
 			return Loc.t("%d px, %s") % [int(a.get("pixels", 0)), "actif" if int(a.get("pixels", 0)) < 120 else Loc.t("inactif (120 px ou plus)")]
 		"poids":
 			return Loc.t("+%d armure") % floori(float(a.get("pixels", 0)) / 60.0)
-		"signature":
-			return Loc.t("+%d%% dégâts") % (3 * Run.signature)
+		"biscuit_gorille":
+			return Loc.t("+%d%% dégâts, +%d PV max") % [3 * Run.gorilla, 3 * Run.gorilla]
+		"investisseur":
+			return Loc.t("+%d%% dégâts") % int(minf(80.0, floorf(maxf(0.0, Run.spent) / 100.0)))
+		"galerie_musee":
+			return Loc.t("+%d%% dégâts, +%d PV max") % [4 * Run.legend_count(), 2 * Run.legend_count()]
+		"constellation":
+			return "" if Run.constel.size() != 2 else Run.constellation_text()
 		"cadre_dore":
 			return Loc.t("+%d%% dégâts") % mini(40, floori(Run.gold / 5.0))
 		"collage":

@@ -386,20 +386,22 @@ func _restore_tips(n: Node = null) -> void:
 		_restore_tips(c)
 
 
-## La flèche du curseur, dessinée pixel par pixel (# : bord d'encre, continu tout autour ; o : doré).
-## La pointe dorée est en (1, 1) : c'est elle qui clique.
+## La flèche du curseur, dessinée pixel par pixel (# : bord d'encre, o : doré) : la flèche classique
+## d'un pointeur, bord gauche droit et queue en biais. La pointe est en (0, 0) : c'est elle qui clique.
 const CURSOR_ART := [
-	"###.....",
-	"#o##....",
-	"#oo##...",
-	"#ooo##..",
-	"#oooo##.",
-	"#ooooo##",
+	"#.......",
+	"##......",
+	"#o#.....",
+	"#oo#....",
+	"#ooo#...",
+	"#oooo#..",
+	"#ooooo#.",
 	"#oooooo#",
-	"#ooo####",
-	"#o#oo##.",
-	"####oo#.",
-	"...####.",
+	"#oooo###",
+	"#oo#oo#.",
+	"#o#.#oo#",
+	"##..#oo#",
+	".....##.",
 ]
 
 
@@ -426,8 +428,8 @@ func _mouse_cursor() -> void:
 	img.resize(img.get_width() * k, img.get_height() * k, Image.INTERPOLATE_NEAREST)
 	var tex := ImageTexture.create_from_image(img)
 	for shape in [Input.CURSOR_ARROW, Input.CURSOR_POINTING_HAND, Input.CURSOR_CROSS, Input.CURSOR_IBEAM]:
-		Input.set_custom_mouse_cursor(tex, shape, Vector2(k, k))
+		Input.set_custom_mouse_cursor(tex, shape, Vector2.ZERO)
 
 
 func _draw_cursor() -> void:
-	_cursor.draw_texture(_cursor_tex, pos.round() - Vector2.ONE)
+	_cursor.draw_texture(_cursor_tex, pos.round())

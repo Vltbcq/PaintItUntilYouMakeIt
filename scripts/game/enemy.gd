@@ -583,6 +583,10 @@ func _update_tint() -> void:
 func hurt(amount: float, crit := false, kb := Vector2.ZERO, el := 0) -> void:
 	if dead or boss_inv > 0.0:
 		return
+	# Catalyseur : un effet élémentaire (brûlure, poison, éclair...) peut faire un critique
+	if el > 0 and not crit and Run.amulet_count("catalyseur") > 0 and arena.player and randf() * 100.0 < arena.player.st.crit:
+		amount *= float(arena.player.st.crit_mult)
+		crit = true
 	if reflet_of != null:
 		# Reflet de Rorschach : les coups vont à l'Encrier (PV partagés)
 		if is_instance_valid(reflet_of) and not reflet_of.dead:

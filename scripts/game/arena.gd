@@ -137,12 +137,23 @@ var star_kills := 0       # Nuit étoilée
 var bat_log: Array = []   # Chauve-souris : [temps, PV soignés]
 var bat_sum := 0.0
 var chain_log: Array = [] # Dynamo : temps des chaînes d'éclairs
+var kill_log: Array = []  # Combo : temps des dernières éliminations
+# Légendaires de la v0.12
+var domino_cd := 0.0      # Chargeur grande capacité : au plus une fois par seconde
+var touch_log := {}       # Satellite / Bulldozer : dernier contact par ennemi (id -> temps)
+var sat_a := 0.0          # Satellite : angle de la ronde
+var sat_nodes: Array = [] # ... et les amulettes qui tournent
+var trail_acc := 0.0      # Talons aiguilles
+var legend_said := false  # Constellation : annonce de début de vague
+var gray_layer: CanvasLayer   # Pellicule : le jeu en noir et blanc
 var clock_cd := 12.0
 var air: _Marks
 
 
 func _ready() -> void:
 	add_to_group("arena")   # (manette : tant qu'une vague tourne, pas de curseur)
+	if Run.amulet_count("constellation") > 0:
+		Run.roll_constellation()   # (avant que le perso lise ses stats)
 	_build_floor()
 	loot_layer = Node2D.new()
 	loot_layer.z_index = -1
@@ -357,6 +368,7 @@ func _process(delta: float) -> void:
 	_rebuild_grid()
 	stop_t -= delta
 	_tick_amulets(delta)
+	_tick_legends(delta)
 	if Run.amulet_count("horloge") > 0:
 		clock_cd -= delta
 		if clock_cd <= 0.0:
@@ -621,7 +633,9 @@ const POLY_PIERCE := 9999   # Polygunnus : perforation « infinie »
 func spawn_bullet(pos: Vector2, vel: Vector2, b: Dictionary, wst: Dictionary, tex: Texture2D, effect: String, life: float, outline := false) -> Projectile:
 	var p := Projectile.new()
 	p.position = pos
-	p.vel = vel
+	# Lance-pierre : +15 % de vitesse par exemplaire (même portée : le projectile vit moins longtemps)
+	var quick := 1.0 + 0.15 * Run.amulet_count("lance_pierre")
+	p.vel = vel * quick
 	p.radius = b.radius
 	p.dmg = b.damage
 	p.pierce = b.pierce + Run.amulet_count("calque")
@@ -630,7 +644,7 @@ func spawn_bullet(pos: Vector2, vel: Vector2, b: Dictionary, wst: Dictionary, te
 	p.tex = tex
 	p.fx = effect
 	p.outline_on = outline
-	p.life = life
+	p.life = life / quick
 	p.wst = wst
 	p.knock = 25.0
 	bullet_layer.add_child(p)
@@ -794,6 +808,8 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 	if Run.amulet_count("estompe") > 0:
 		e.slow_t = maxf(e.slow_t, 0.8 * Run.amulet_count("estompe"))
 	e.hurt(dmg, crit, dir * knock)
+	if crit:
+		_on_crit(e, dmg, wst)
 	# Ciseaux : exécution sous 25 % des PV (pas les boss)
 	if wst.get("style", "") == "scissors" and not e.dead and not e.is_boss and e.hp < e.max_hp * 0.25:
 		_slash(e.position)
@@ -1058,6 +1074,10 @@ func kill_enemy(e: Enemy) -> void:
 			_bolt(e.position, nb.position)
 	# Pinceau de Midas : +1 or par ennemi tué
 	Run.gold += Run.amulet_count("midas")
+	if e.elite:
+		Run.gold += 2 * Run.amulet_count("avis_recherche")   # Avis de recherche
+	if Run.amulet_count("combo") > 0:
+		kill_log.append(elapsed)
 	# Bulle de soin : goutte qui soigne
 	if randf() < 0.04 * Run.amulet_count("bulle_soin"):
 		var hp := Pickup.new()
@@ -1090,6 +1110,9 @@ func kill_enemy(e: Enemy) -> void:
 	e.queue_free()
 	if e.is_boss:
 		Run.bosses += 1
+		if Run.amulet_count("trophee") > 0:
+			Run.gold += 15   # Trophée
+			float_text(e.position + Vector2(0, -20), Loc.t("+%d OR") % 15, Pal.ACCENT)
 		boss = null
 		if hud.popups:
 			hud.popups.close_all()   # Le Virus vaincu : ses fenêtres se ferment
@@ -1146,6 +1169,12 @@ func _end_wave() -> void:
 		else:
 			hud.announce(Loc.t("COMMANDE RATÉE"), Pal.DIM)
 	Run.order = {}
+	# Ticket d'entrée : 1 or par ennemi encore en vie
+	if Run.amulet_count("ticket_entree") > 0:
+		var alive := enemies.filter(func(o): return not o.dead and not o.is_boss).size()
+		if alive > 0:
+			Run.gold += alive
+			numbers.add(player.position + Vector2(0, -46), Loc.t("TICKETS  +● %d") % alive, Pal.ACCENT, 2.0, true)
 	# Pitcoin : le cours du jour
 	if Run.amulet_count("pitcoin") > 0:
 		var g := Run.pitcoin_roll()
@@ -1664,8 +1693,10 @@ func _tick_amulets(delta: float) -> void:
 		fly_n = 0
 	squid_cd -= delta
 	lure_t -= delta
-	if Run.amulet_count("papier_verre") > 0:
+	if Run.amulet_count("papier_verre") > 0 or Run.amulet_count("sardines") > 0:
 		crowd = near(player.position, 70.0).size()
+	if not kill_log.is_empty():
+		kill_log = kill_log.filter(func(t): return elapsed - t < 3.0)   # Combo
 	if Run.amulet_count("lanterne") > 0:
 		lure_cd -= delta
 		if lure_cd <= 0.0:
@@ -1689,6 +1720,98 @@ func _tick_amulets(delta: float) -> void:
 func bat_heal(amount: float) -> void:
 	if Run.amulet_count("chauve_souris") > 0 and amount > 0.0:
 		bat_log.append([elapsed, amount])
+
+
+## Un critique : Grenade à fragmentation (rebond) et Chargeur grande capacité (les autres armes tirent).
+func _on_crit(e: Enemy, dmg: float, wst: Dictionary) -> void:
+	if Run.amulet_count("grenade") > 0:
+		var best: Enemy = null
+		var bd := 70.0
+		for o in near(e.position, 70.0):
+			if o != e and not o.dead and o.position.distance_to(e.position) < bd:
+				bd = o.position.distance_to(e.position)
+				best = o
+		if best:
+			_bolt(e.position, best.position)
+			best.hurt(dmg * 0.5, false, (best.position - e.position).normalized() * 40.0)
+	if Run.amulet_count("chargeur") > 0 and domino_cd <= 0.0:
+		domino_cd = 1.0
+		for wn in player.weapons:
+			if not is_same(wn.st, wst):
+				wn.cd = 0.0
+
+
+## Un contact (Satellite, Bulldozer) : vrai si cet ennemi n'a pas été touché depuis `every` secondes.
+func _touch(e: Enemy, tag: String, every: float) -> bool:
+	var k := "%s%d" % [tag, e.get_instance_id()]
+	if elapsed - float(touch_log.get(k, -99.0)) < every:
+		return false
+	touch_log[k] = elapsed
+	return true
+
+
+## Légendaires qui agissent à chaque image : Satellite, Talons aiguilles, Bulldozer, Pellicule...
+func _tick_legends(delta: float) -> void:
+	domino_cd -= delta
+	if not legend_said:
+		legend_said = true
+		if Run.amulet_count("constellation") > 0 and Run.constel.size() == 2:
+			# (après l'annonce de la vague, sinon elle la remplacerait)
+			_after(2.2, func(): hud.announce(Run.constellation_text(), Pal.ACCENT))
+		if Run.amulet_count("pellicule") > 0 and gray_layer == null:
+			gray_layer = CanvasLayer.new()
+			gray_layer.layer = 1   # (sous le HUD, qui reste en couleur)
+			hud.layer = 2
+			add_child(gray_layer)
+			var cr := ColorRect.new()
+			cr.set_anchors_preset(Control.PRESET_FULL_RECT)
+			cr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var sm := ShaderMaterial.new()
+			sm.shader = load("res://shaders/gray.gdshader")
+			cr.material = sm
+			gray_layer.add_child(cr)
+	if touch_log.size() > 400:
+		touch_log.clear()
+	var s: Dictionary = player.st
+	var power: float = (1.0 + Run.wave * 0.2) * (1.0 + maxf(-50.0, s.dmg) / 100.0)
+	# Satellite : chaque amulette tourne autour du perso et blesse ce qu'elle touche
+	if Run.amulet_count("satellite") > 0:
+		if sat_nodes.size() != Run.amulets.size():
+			for sn in sat_nodes:
+				sn.queue_free()
+			sat_nodes.clear()
+			for am in Run.amulets:
+				var sp := Sprite2D.new()
+				sp.texture = ImageTexture.create_from_image(am.image)
+				sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+				sp.set_meta("rar", int(AmuletDB.get_def(am.id).rar))
+				fx.add_child(sp)
+				sat_nodes.append(sp)
+		sat_a += delta * 2.4
+		var ring := minf(52.0, 26.0 + 2.5 * sat_nodes.size())
+		for k in sat_nodes.size():
+			var sp: Sprite2D = sat_nodes[k]
+			sp.position = player.position + Vector2.from_angle(sat_a + TAU * k / sat_nodes.size()) * ring
+			for o in near(sp.position, 9.0):
+				if not o.dead and o.position.distance_to(sp.position) < 9.0 + o.radius and _touch(o, "s", 0.5):
+					o.hurt((4.0 + 3.0 * int(sp.get_meta("rar"))) * power, false, (o.position - player.position).normalized() * 60.0)
+	# Talons aiguilles : une traînée d'encre qui brûle derrière le perso
+	if Run.amulet_count("talons_aiguilles") > 0 and player.moving:
+		trail_acc += delta
+		if trail_acc >= 0.1:
+			trail_acc = 0.0
+			clouds.append({"pos": player.position, "r": 9.0, "t": 2.0, "acc": 0.25, "dps": 8.0 * power, "el": 0, "col": Pal.INK})
+	# Bulldozer : les ennemis touchés sont repoussés et prennent les épines ×2
+	if Run.amulet_count("bulldozer") > 0:
+		for o in near(player.position, player.radius + 16.0):
+			if not o.dead and not o.is_boss and o.position.distance_to(player.position) <= player.radius + o.radius + 3.0 and _touch(o, "b", 0.5):
+				o.knock += (o.position - player.position).normalized() * 320.0
+				o.hurt(maxf(3.0, s.thorns * 2.0), false, Vector2.ZERO)
+
+
+## Combo : +1 % de vitesse d'attaque par ennemi tué ces 3 dernières secondes (max +10 %), par exemplaire.
+func combo_bonus() -> float:
+	return minf(0.10, 0.01 * kill_log.size()) * Run.amulet_count("combo")
 
 
 ## Dynamo : bonus de vitesse d'attaque (0 à 0,4).
@@ -1763,6 +1886,16 @@ func _amulet_dmg_mult(e: Enemy, wst: Dictionary) -> float:
 	elif kind == "ranged":
 		m *= (1.0 + 0.12 * vi) * pow(0.92, sp)
 	m *= 1.0 + laugh_bonus()   # Rires en boîte
+	if Run.amulet_count("boisson") > 0:
+		m *= 0.5                                   # Boisson énergisante : 2× plus vite, moitié des dégâts
+	m *= 1.0 + 0.02 * player.punch_n              # Punching-ball
+	# Red light / Green light : selon que le perso bouge ou non
+	m *= 1.0 + (0.08 * Run.amulet_count("green_light") if player.moving else 0.10 * Run.amulet_count("red_light"))
+	# Cigarette : l'ennemi a encore tous ses PV ; Bière : il est sous 30 %
+	if e.hp >= e.max_hp:
+		m *= 1.0 + 0.25 * Run.amulet_count("cigarette")
+	elif e.hp < e.max_hp * 0.3:
+		m *= 1.0 + 0.25 * Run.amulet_count("biere")
 	var ca := Run.amulet_count("cadran_solaire")
 	if ca > 0:
 		var late := elapsed > (wave_len * 0.5 if wave_len > 0.0 else 30.0)

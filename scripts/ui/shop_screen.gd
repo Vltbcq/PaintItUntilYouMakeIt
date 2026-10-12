@@ -185,7 +185,7 @@ func _build() -> void:
 	# --- Ton portrait + cartel de stats
 	var pf := _frame_panel(FRAME[3], 5)
 	UI.put(self, pf, Vector2(322, 218), Vector2(64, 76))
-	UI.put(pf, UI.thumb(Run.build_player_image(bool(Meta.setting("show_amulets"))), Vector2(52, 64)), Vector2(6, 6), Vector2(52, 64))
+	UI.put(pf, UI.thumb(Run.build_player_image(Run.show_amulets()), Vector2(52, 64)), Vector2(6, 6), Vector2(52, 64))
 	pf.tooltip_text = Loc.t("Ton perso\n") + Pal.color_line(Run.char_a.get("frac", []))
 	# Sous l'autoportrait : taille du perso (pixels dessinés) et couleurs, utiles pour Silhouette / Nuancier
 	var npx := int(Run.char_a.get("pixels", 0))
@@ -205,7 +205,7 @@ func _build() -> void:
 	var rp := Run.reroll_price()
 	var rb := UI.hotkey(UI.button(Loc.t("Actualiser la galerie (%s)") % (Loc.t("gratuit") if rp == 0 else "● %d" % rp), _reroll), [KEY_R])
 	_style_museum(rb)
-	rb.disabled = Run.gold < rp
+	rb.disabled = Run.cash() < rp
 	var odds := Run.rarity_odds()
 	rb.tooltip_text = Loc.t("Relancer : de nouvelles œuvres (de plus en plus cher)\nChances par œuvre : rare %d%% · épique %d%% · légendaire %d%%") % [roundi(odds[0]), roundi(odds[1]), roundi(odds[2])]
 	UI.put(self, rb, Vector2(12, 336), Vector2(192, 18))
@@ -414,7 +414,7 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 	var btxt: String = {"roulette": Loc.t("Miser"), "auction": Loc.t("Enchérir"), "restorer": Loc.t("Choisir"), "patron": Loc.t("Écouter")}.get(o.type, "● %d" % o.price)
 	var b := UI.button(btxt, func(): _buy(i))
 	_style_price(b)
-	b.disabled = Run.gold < o.price or full or (o.type == "roulette" and Run.gold < 1)
+	b.disabled = Run.cash() < o.price or full or (o.type == "roulette" and Run.gold < 1)
 	if o.type == "auction":
 		b.disabled = Run.gold <= int(o.bid)
 	elif o.type == "restorer":
@@ -895,14 +895,14 @@ func _buy(i: int) -> void:
 	if o.id == "encre":
 		done.emit({"a": "ink", "i": i})   # retouche du perso : géré par le Main
 		return
-	if Run.gold < o.price:
+	if Run.cash() < o.price:
 		return
 	Run.spend(o.price)
 	Run.log_event("buy", Loc.t("Achat : %s (● %d)") % [Run.HEALS[o.id].name, o.price])
 	if Run.HEALS[o.id].has("regen"):
 		Run.regen_boost = float(Run.HEALS[o.id].regen)   # Élixir de sève : vague suivante
 	else:
-		Run.heal(Run.stats.max_hp * Run.HEALS[o.id].heal)
+		Run.heal(Run.stats.max_hp * Run.HEALS[o.id].heal * (1.0 + 0.2 * Run.amulet_count("paille")))   # (Paille)
 	o.sold = true
 	Sfx.play("level")
 	_build()
@@ -922,7 +922,7 @@ func _weapon_tip(w: Dictionary) -> String:
 
 
 func _refund(w: Dictionary) -> int:
-	return maxi(3, roundi(w.price * 0.4))
+	return maxi(3, roundi(w.price * 0.4 * (1.0 + 0.15 * Run.amulet_count("merchandising"))))   # (Merchandising)
 
 
 func _sell(i: int) -> void:
@@ -935,7 +935,7 @@ func _sell(i: int) -> void:
 
 func _reroll() -> void:
 	var p := Run.reroll_price()
-	if Run.gold < p:
+	if Run.cash() < p:
 		return
 	Run.spend(p)
 	Run.rerolls += 1
@@ -1254,7 +1254,7 @@ const SCRATCH_SYMS := ["or", "etoile", "diamant"]
 
 func _open_scratch(i: int) -> void:
 	var o: Dictionary = Run.shop_offers[i]
-	if Run.gold < o.price or ev_layer:
+	if Run.cash() < o.price or ev_layer:
 		return
 	Run.spend(o.price)
 	o.sold = true
@@ -1444,7 +1444,7 @@ func _open_auction(i: int) -> void:
 		for b in btns:
 			var add: int = b.get_meta("add", 0)
 			if add > 0:
-				b.disabled = st.busy or st.mine or blocked != "" or st.n >= AUCTION_BIDS or Run.gold < st.bid + add
+				b.disabled = st.busy or st.mine or blocked != "" or st.n >= AUCTION_BIDS or Run.cash() < st.bid + add
 	for k in 3:
 		var add: int = [5, 10, 20][k]
 		var b := _ev_button(inner, "+%d" % add, Vector2(44 + k * 80, 200), Vector2(70, 20), func():
@@ -1529,7 +1529,7 @@ func _open_restorer(i: int) -> void:
 		b.add_theme_stylebox_override("normal", UI.sb(Pal.PAPER, Pal.RARITY[int(d.rar)], 2))
 		b.add_theme_stylebox_override("hover", UI.sb(Color.WHITE, Pal.ACCENT, 2))
 		b.add_theme_stylebox_override("disabled", UI.sb(Color("8a8070"), Color("5a5040"), 1))
-		b.disabled = Run.gold < cost
+		b.disabled = Run.cash() < cost
 		b.tooltip_text = Loc.t("%s (%s) → une amulette %s au hasard\nPrix : ● %d") % [d.name, Pal.RARITY_NAMES_F[int(d.rar)].to_lower(), Pal.RARITY_NAMES_F[int(d.rar) + 1].to_lower(), cost]
 		var th := UI.thumb(am.image, Vector2(36, 36))
 		th.position = Vector2(8, 4)
@@ -1596,7 +1596,7 @@ func _case_icon(tier: int, kind: String) -> Image:
 
 func _open_case(i: int) -> void:
 	var o: Dictionary = Run.shop_offers[i]
-	if ev_layer or Run.gold < o.price:
+	if ev_layer or Run.cash() < o.price:
 		return
 	var won := Run.roll_case_item(int(o.tier), String(o.kind))
 	if won.is_empty():

@@ -60,7 +60,8 @@ func _toggle_amulets() -> void:
 
 
 func _refresh_amulet_btn() -> void:
-	_amulet_btn.text = Loc.t("Amulettes : ") + (Loc.t("oui") if bool(Meta.setting("show_amulets")) else Loc.t("non"))
+	_amulet_btn.text = Loc.t("Amulettes : ") + (Loc.t("en orbite") if Run.amulet_count("satellite") > 0 else (Loc.t("oui") if bool(Meta.setting("show_amulets")) else Loc.t("non")))
+	_amulet_btn.disabled = Run.amulet_count("satellite") > 0   # (Satellite : elles tournent autour du perso)
 
 
 func _process(delta: float) -> void:

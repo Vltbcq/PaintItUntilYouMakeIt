@@ -41,6 +41,26 @@ static var LIST := [
 	{"id": "capital", "ink": 36, "name": "Le Capital", "rar": 2, "flag": true, "limit": 1, "desc": "Toutes les armes et amulettes de la boutique coûtent le PRIX MOYEN de la vague · achat unique"},
 	{"id": "case_opening", "ink": 34, "name": "Case opening", "rar": 2, "flag": true, "limit": 1, "desc": "La boutique ne vend plus que des CAISSES (Bois, Argent, Or ; armes ou amulettes), 20% moins chères que leur contenu · achat unique"},
 	{"id": "fusain", "ink": 22, "name": "Fusain", "rar": 0, "stat": "atk_speed", "v": 8.0, "plus": [["crit", 2.0]], "desc": "+{v}% vit. d'attaque, +2% critique · {m} PV max", "malus": ["max_hp", -3.0]},
+	# Communes de la v0.12 : petits effets à condition (pas de simple bonus de stat)
+	{"id": "red_light", "ink": 22, "name": "Red light", "rar": 0, "flag": true, "desc": "+10% dégâts tant que tu ne bouges pas · {m}% vitesse", "malus": ["speed", -3.0]},
+	{"id": "green_light", "ink": 22, "name": "Green light", "rar": 0, "flag": true, "desc": "+8% dégâts tant que tu bouges · {m} armure", "malus": ["armor", -1.0]},
+	{"id": "cigarette", "ink": 18, "name": "Cigarette", "rar": 0, "flag": true, "desc": "+25% dégâts contre un ennemi qui a encore tous ses PV · {m}% critique", "malus": ["crit", -2.0]},
+	{"id": "biere", "ink": 24, "name": "Bière", "rar": 0, "flag": true, "desc": "+25% dégâts contre un ennemi sous 30% de ses PV · {m}% portée", "malus": ["range", -3.0]},
+	{"id": "soda", "ink": 24, "name": "Soda", "rar": 0, "flag": true, "desc": "Soigne 3 PV au début de chaque vague · {m}% dégâts", "malus": ["dmg", -3.0]},
+	{"id": "pinata", "ink": 28, "name": "Piñata", "rar": 0, "flag": true, "desc": "+1 or tous les 2 coups reçus · {m} PV max", "malus": ["max_hp", -2.0]},
+	{"id": "avis_recherche", "ink": 20, "name": "Avis de recherche", "rar": 0, "flag": true, "desc": "+2 or par élite tuée · {m} chance", "malus": ["luck", -2.0]},
+	{"id": "sardines", "ink": 26, "name": "Sardines", "rar": 0, "flag": true, "desc": "+2 armure quand 5 ennemis ou plus sont proches de toi · {m}% vitesse", "malus": ["speed", -3.0]},
+	{"id": "poil_gratter", "ink": 18, "name": "Poil à gratter", "rar": 0, "flag": true, "desc": "Après un coup reçu : +15% vitesse pendant 2 s · {m} PV max", "malus": ["max_hp", -2.0]},
+	{"id": "combo", "ink": 22, "name": "Combo", "rar": 0, "flag": true, "desc": "+1% vit. d'attaque par ennemi tué ces 3 dernières secondes (max +10%) · {m}% dégâts", "malus": ["dmg", -3.0]},
+	{"id": "merchandising", "ink": 24, "name": "Merchandising", "rar": 0, "flag": true, "limit": 3, "desc": "Tes armes se revendent 15% plus cher (3 max) · {m}% dégâts", "malus": ["dmg", -3.0]},
+	{"id": "coupon", "ink": 16, "name": "Code promo", "rar": 0, "flag": true, "limit": 3, "desc": "Les relances de la boutique coûtent 10% moins cher (3 max) · {m} chance", "malus": ["luck", -2.0]},
+	{"id": "regime", "ink": 20, "name": "Régime", "rar": 0, "flag": true, "limit": 3, "desc": "Ta zone de touche est 8% plus petite (3 max) · {m} PV max", "malus": ["max_hp", -3.0]},
+	{"id": "perche_selfie", "ink": 26, "name": "Perche à selfie", "rar": 0, "flag": true, "limit": 3, "desc": "Armes de mêlée : +10% d'allonge (3 max) · {m}% vit. d'attaque", "malus": ["atk_speed", -4.0]},
+	{"id": "lance_pierre", "ink": 22, "name": "Lance-pierre", "rar": 0, "flag": true, "limit": 3, "desc": "Tes projectiles vont 15% plus vite (3 max) · {m}% dégâts", "malus": ["dmg", -3.0]},
+	{"id": "paille", "ink": 16, "name": "Paille", "rar": 0, "flag": true, "limit": 2, "desc": "Les potions de la boutique soignent 20% de plus (2 max) · {m}% esquive", "malus": ["dodge", -2.0]},
+	{"id": "airbag", "ink": 30, "name": "Airbag", "rar": 0, "flag": true, "limit": 1, "desc": "Une fois par vague, quand tu passes sous 30% de tes PV, les ennemis proches sont repoussés · {m} PV max", "malus": ["max_hp", -3.0]},
+	{"id": "trophee", "ink": 28, "name": "Trophée", "rar": 0, "flag": true, "limit": 1, "desc": "Chaque boss vaincu donne 15 or de plus · {m}% dégâts", "malus": ["dmg", -5.0]},
+	{"id": "pouce", "ink": 20, "name": "Pouce", "rar": 0, "flag": true, "limit": 1, "desc": "Les 5 premières secondes de chaque vague, tu ne peux pas perdre de PV · {m}% vitesse", "malus": ["speed", -4.0]},
 	# Rares
 	{"id": "sangsue", "ink": 30, "name": "Sangsue", "rar": 1, "stat": "lifesteal", "v": 9.0, "desc": "+{v}% vol de vie · {m} régénération", "malus": ["regen", -1.0]},
 	{"id": "trefle", "ink": 24, "name": "Trèfle", "rar": 1, "stat": "luck", "v": 12.0, "plus": [["harvest", 3.0]], "desc": "+{v} chance, +3 pourboire · {m}% dégâts", "malus": ["dmg", -4.0]},
@@ -83,7 +103,6 @@ static var LIST := [
 	{"id": "poids", "ink": 80, "name": "Poids", "rar": 2, "flag": true, "desc": "+1 armure par 60 pixels de ton perso · {m}% vitesse", "malus": ["speed", -10.0]},
 	{"id": "miroir", "ink": 44, "name": "Miroir", "rar": 2, "flag": true, "desc": "Tes armes à distance tirent une rafale de plus · {m}% dégâts", "malus": ["dmg", -12.0]},
 	{"id": "rature", "ink": 36, "name": "Rature", "rar": 2, "flag": true, "desc": "8% de chances qu'un ennemi tué explose · {m} PV max", "malus": ["max_hp", -4.0]},
-	{"id": "signature", "ink": 28, "name": "Signature", "rar": 2, "flag": true, "desc": "+3% dégâts par vague survécue après l'achat · {m}% vit. d'attaque", "malus": ["atk_speed", -10.0]},
 	{"id": "pinceau_fou", "ink": 40, "name": "Pinceau fou", "rar": 2, "flag": true, "limit": 1, "desc": "+40% vit. d'attaque, mais tes armes visent au hasard"},
 	{"id": "vernis", "ink": 50, "name": "Vernis", "rar": 2, "flag": true, "desc": "+35% dégâts contre boss et élites, mais -15% contre les autres"},
 	{"id": "cadre_dore", "ink": 60, "name": "Cadre doré", "rar": 2, "flag": true, "desc": "+1% dégâts par tranche de 5 or dans ta bourse (max +40%) · {m}% vitesse", "malus": ["speed", -8.0]},
@@ -117,6 +136,25 @@ static var LIST := [
 	{"id": "extasie", "ink": 40, "name": "Extasie", "rar": 2, "stat": "atk_speed", "v": 40.0, "plus": [["speed", 15.0]], "flag": true, "limit": 1, "desc": "+{v}% vit. d'attaque, +15% vitesse · ta vision se trouble : l'écran ondule et les couleurs dérivent"},
 	{"id": "sceau", "ink": 58, "name": "Sceau d'encre", "rar": 2, "stat": "dmg", "v": 25.0, "plus": [["atk_speed", 5.0]], "minus": [["max_hp", -5.0], ["armor", -1.0]], "desc": "+{v}% dégâts, +5% vit. d'attaque · {m} régénération, -5 PV max, -1 armure", "malus": ["regen", -3.0]},
 	# Légendaires
+	# (v0.12 : 19 légendaires qui changent la façon de jouer)
+	{"id": "satellite", "ink": 60, "name": "Satellite", "rar": 3, "flag": true, "desc": "Tes amulettes TOURNENT autour de toi et blessent les ennemis qu'elles touchent (plus elles sont rares, plus elles frappent fort) · {m}% vitesse", "malus": ["speed", -10.0]},
+	{"id": "talons_aiguilles", "ink": 50, "name": "Talons aiguilles", "rar": 3, "flag": true, "desc": "Tu laisses derrière toi une traînée d'encre qui brûle les ennemis qui marchent dessus · {m}% vit. d'attaque", "malus": ["atk_speed", -10.0]},
+	{"id": "biscuit_gorille", "ink": 70, "name": "Biscuit pour gorille", "rar": 3, "flag": true, "desc": "Tu GROSSIS à chaque vague finie : +3% dégâts et +3 PV max par vague, mais ta zone de touche grandit aussi"},
+	{"id": "chargeur", "ink": 60, "name": "Chargeur grande capacité", "rar": 3, "flag": true, "desc": "Quand une de tes armes fait un critique, toutes les autres attaquent aussitôt (au plus 1 fois par seconde) · {m}% dégâts", "malus": ["dmg", -8.0]},
+	{"id": "ceinture", "ink": 60, "name": "Ceinture de sécurité", "rar": 3, "flag": true, "desc": "Aucun coup ne peut t'enlever plus de 20% de tes PV max · {m}% dégâts", "malus": ["dmg", -10.0]},
+	{"id": "canon_verre", "ink": 50, "name": "Slip", "rar": 3, "flag": true, "desc": "+50% dégâts, mais tu n'as plus ni armure ni esquive"},
+	{"id": "grenade", "ink": 55, "name": "Grenade à fragmentation", "rar": 3, "flag": true, "desc": "Tes critiques rebondissent sur un 2e ennemi proche (50% des dégâts) · {m}% critique", "malus": ["crit", -5.0]},
+	{"id": "catalyseur", "ink": 55, "name": "Catalyseur", "rar": 3, "flag": true, "desc": "Tes effets élémentaires (brûlure, poison, éclairs...) peuvent faire des critiques · {m}% dégâts", "malus": ["dmg", -10.0]},
+	{"id": "matador", "ink": 55, "name": "Matador", "rar": 3, "flag": true, "desc": "Chaque esquive déclenche aussitôt toutes tes armes de mêlée · {m} armure", "malus": ["armor", -2.0]},
+	{"id": "bulldozer", "ink": 70, "name": "Bulldozer", "rar": 3, "flag": true, "desc": "Tu BOUSCULES les ennemis que tu touches : ils sont repoussés et prennent tes épines ×2 (au moins 3 dégâts) · {m}% vitesse", "malus": ["speed", -10.0]},
+	{"id": "carte_credit", "ink": 40, "name": "Carte de crédit", "rar": 3, "flag": true, "desc": "Tu peux descendre jusqu'à -100 or, mais -20% dégâts tant que tu es dans le rouge"},
+	{"id": "investisseur", "ink": 50, "name": "Investisseur", "rar": 3, "flag": true, "desc": "+1% dégâts par tranche de 100 or dépensé dans la partie (max +80%) · {m} PV max", "malus": ["max_hp", -5.0]},
+	{"id": "ticket_entree", "ink": 40, "name": "Ticket d'entrée", "rar": 3, "flag": true, "desc": "À la fin de chaque vague, chaque ennemi encore en vie te donne 1 or · {m}% dégâts", "malus": ["dmg", -10.0]},
+	{"id": "pellicule", "ink": 50, "name": "Pellicule", "rar": 3, "flag": true, "desc": "+30% dégâts, +15% vitesse · tout le jeu passe en NOIR ET BLANC : tu ne vois plus la couleur des ennemis"},
+	{"id": "boisson", "ink": 45, "name": "Boisson énergisante", "rar": 3, "flag": true, "desc": "Tes armes attaquent 2× plus vite, mais leurs dégâts sont divisés par 2"},
+	{"id": "punching_ball", "ink": 60, "name": "Punching-ball", "rar": 3, "flag": true, "desc": "Chaque coup reçu : +2% dégâts jusqu'à la fin de la vague (sans limite) · {m} armure", "malus": ["armor", -2.0]},
+	{"id": "galerie_musee", "ink": 70, "name": "Musée", "rar": 3, "flag": true, "desc": "+4% dégâts et +2 PV max par objet LÉGENDAIRE que tu possèdes (armes et amulettes, celle-ci comprise) · {m}% vitesse", "malus": ["speed", -10.0]},
+	{"id": "constellation", "ink": 50, "name": "Constellation", "rar": 3, "flag": true, "desc": "À chaque vague, une stat au hasard gagne +40% et une autre perd 20% (dégâts, vit. d'attaque, vitesse, portée ou PV max)"},
 	{"id": "chef_oeuvre", "ink": 100, "name": "Chef-d'œuvre", "rar": 3, "flag": true, "desc": "Les stats du dessin de ton perso ×1.5 · {m}% vitesse", "malus": ["speed", -10.0]},
 	{"id": "double_trait", "ink": 64, "name": "Rocket launcher", "rar": 3, "flag": true, "desc": "Tes armes de mêlée lancent aussi leur dessin · {m} armure", "malus": ["armor", -3.0]},
 	{"id": "arc_en_ciel", "ink": 72, "name": "Prisme", "rar": 3, "flag": true, "desc": "+15% de chaque effet élémentaire sur tes armes · {m}% critique", "malus": ["crit", -8.0]},
@@ -245,7 +283,7 @@ static func describe(def: Dictionary, mag := 1.0) -> String:
 	if def.has("v"):
 		var v := snappedf(def.v * mag, 0.1)
 		s = s.replace("{v}", str(int(v)) if is_equal_approx(v, roundf(v)) else str(v))
-	if int(def.rar) == 3:
+	if int(def.rar) == 3 or int(def.get("limit", 0)) == 1:
 		s += Loc.t(" · UNIQUE")
 	# Valeur ACTUELLE des amulettes dont l'effet varie (pendant une partie)
 	if Run.active:

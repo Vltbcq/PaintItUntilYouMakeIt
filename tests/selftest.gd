@@ -57,7 +57,7 @@ func _ready() -> void:
 		print("arme %s : cd %.2f, %s" % [w.type, st.cooldown, ("dmg %.1f reach %d" % [st.damage, st.reach]) if st.kind == "melee" else ("%d balles x%d, range %d" % [st.bullets.size(), st.pellets, st.range])])
 	# Retouche d'un type : toutes les copies suivent
 	Run.set_weapon_art("dague", 1, _blob(24, 60, [2]), "pulse", null, "")
-	for id in ["rature", "miroir", "double_trait", "arc_en_ciel", "coeur", "poids", "signature", "sangsue"]:
+	for id in ["rature", "miroir", "double_trait", "arc_en_ciel", "coeur", "poids", "sangsue"]:
 		Run.set_amulet_art(id, _blob(AmuletDB.canvas(AmuletDB.get_def(id)), 20, [1]), "")
 		var img: Image = Run.amulet_art[id].image.duplicate()
 		img.rotate_90(CLOCKWISE)

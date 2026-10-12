@@ -493,7 +493,7 @@ func _shop() -> bool:
 
 func _buy(i: int) -> void:
 	var o: Dictionary = Run.shop_offers[i]
-	if o.sold or Run.gold < o.price:
+	if o.sold or Run.cash() < o.price:
 		return
 	Run.spend(o.price)
 	var ok := false
@@ -539,7 +539,7 @@ func _buy(i: int) -> void:
 ## Pot d'encre : on retouche le perso avec de l'encre en plus, puis on range armes et amulettes.
 func _ink_pot(i: int) -> void:
 	var o: Dictionary = Run.shop_offers[i]
-	if o.sold or Run.gold < o.price:
+	if o.sold or Run.cash() < o.price:
 		return
 	var add := int(Run.HEALS[o.id].ink)
 	var cfg := DrawCfg.character()

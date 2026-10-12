@@ -12,6 +12,7 @@ extends RefCounted
 ## l'élément el active à la vague v ou plus), "syn2" (v synergies actives en même temps),
 ## "legends" (v armes légendaires à la fois), "clean" (vague >= v finie sans perdre de PV), "gallery",
 ## "only" (vague v finie avec uniquement des armes wkind : "melee" ou "ranged").
+## v0.12 : "amulets" (v amulettes possédées en même temps), "bare" (vague v finie avec 0 d'armure ou moins).
 ## "wave", "win" et "clean" acceptent "map" : la condition ne vaut que sur cette carte.
 ##
 ## RÈGLE : deux objets n'ont jamais la même condition (ni la même qu'un défi de l'Atelier), et
@@ -127,6 +128,33 @@ const CONDS := {
 	"a:salle_thematique": {"kind": "maps", "v": 3},
 	"a:speed_painting": {"kind": "fast_win", "v": 25},
 	"a:vernissage": {"kind": "legend_buys", "v": 3},
+	# --- v0.12 : les 18 légendaires, et 8 des 19 communes (les 11 autres sont libres dès le début)
+	"a:satellite": {"kind": "amulets", "v": 25},
+	"a:talons_aiguilles": {"kind": "stat", "stat": "speed", "v": 60},
+	"a:biscuit_gorille": {"kind": "pixels", "v": 600},
+	"a:chargeur": {"kind": "stat", "stat": "crit", "v": 60},
+	"a:grenade": {"kind": "wave_kills", "v": 200},
+	"a:catalyseur": {"kind": "syn2", "v": 3},
+	"a:matador": {"kind": "stat", "stat": "dodge", "v": 45},
+	"a:bulldozer": {"kind": "stat", "stat": "thorns", "v": 30},
+	"a:canon_verre": {"kind": "bare", "v": 8},
+	"a:ceinture": {"kind": "clean", "v": 12, "map": 2},
+	"a:punching_ball": {"kind": "stat", "stat": "max_hp", "v": 150},
+	"a:boisson": {"kind": "stat", "stat": "atk_speed", "v": 80},
+	"a:carte_credit": {"kind": "spent", "v": 5000},
+	"a:investisseur": {"kind": "gold", "v": 500},
+	"a:ticket_entree": {"kind": "runs", "v": 30},
+	"a:pellicule": {"kind": "mono_color", "v": 12},
+	"a:galerie_musee": {"kind": "legends", "v": 3},
+	"a:constellation": {"kind": "win", "v": 3},
+	"a:trophee": {"kind": "boss_total", "v": 25},
+	"a:avis_recherche": {"kind": "elites", "v": 80},
+	"a:combo": {"kind": "kills", "v": 5000},
+	"a:sardines": {"kind": "wave_kills", "v": 100},
+	"a:coupon": {"kind": "spent", "v": 2500},
+	"a:perche_selfie": {"kind": "stat", "stat": "range", "v": 70},
+	"a:pouce": {"kind": "clean", "v": 5, "map": 3},
+	"a:airbag": {"kind": "runs", "v": 10},
 	# --- Familiers : la moitié à débloquer
 	"f:pie": {"kind": "earned", "v": 3000},
 	"f:pigeon": {"kind": "wave", "v": 3, "map": 1},
@@ -178,7 +206,11 @@ static func _here(c: Dictionary, ctx: Dictionary) -> bool:
 static func text(c: Dictionary) -> String:
 	match String(c.kind):
 		"stat":
-			return Loc.t("Atteins %d %s dans une partie.") % [int(c.v), STAT_NAMES.get(c.stat, c.stat)]
+			# (« 40 % de vitesse », « 15 d'armure » ; en anglais « 40% speed », « 15 armor »)
+			var sn := String(STAT_NAMES.get(c.stat, c.stat))
+			if Loc.lang != "fr" and not sn.begins_with("%"):
+				sn = " " + sn
+			return Loc.t("Atteins %d %s dans une partie.") % [int(c.v), sn]
 		"gold":
 			return Loc.t("Aie %d or en poche.") % int(c.v)
 		"colors":
@@ -210,6 +242,10 @@ static func text(c: Dictionary) -> String:
 			return Loc.t("Aie %d synergies d'éléments actives en même temps.") % int(c.v)
 		"legends":
 			return Loc.t("Possède %d armes légendaires en même temps.") % int(c.v)
+		"amulets":
+			return Loc.t("Possède %d amulettes en même temps.") % int(c.v)
+		"bare":
+			return Loc.t("Termine la vague %d avec 0 d'armure ou moins.") % int(c.v)
 		"clean":
 			return Loc.t("Termine une vague %d ou plus%s sans perdre de PV.") % [int(c.v), _on(c)]
 		"gallery":
@@ -285,6 +321,10 @@ static func met(c: Dictionary, ctx: Dictionary) -> bool:
 			return (ctx.get("syn", {}) as Dictionary).size() >= int(c.v)
 		"legends":
 			return int(ctx.get("legends", 0)) >= int(c.v)
+		"amulets":
+			return int(ctx.get("amulets", 0)) >= int(c.v)
+		"bare":
+			return int(ctx.get("cleared", 0)) >= int(c.v) and ctx.has("stats") and float((ctx.stats as Dictionary).get("armor", 1.0)) <= 0.0
 		"clean":
 			return _here(c, ctx) and bool(ctx.get("clean", false)) and int(ctx.get("cleared", 0)) >= int(c.v)
 		"gallery":

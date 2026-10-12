@@ -138,6 +138,7 @@ func _atk_mult() -> float:
 		m += 0.6 * Run.amulet_count("croquis_rapide")
 	m += 0.03 * player.arena.fly_n * Run.amulet_count("papillon")   # Effet papillon
 	m += player.arena.dynamo_bonus()   # Dynamo
+	m += player.arena.combo_bonus()    # Combo
 	if player.arena.stream:
 		m += player.arena.stream.atk_bonus()   # Le Stream : HYPE TRAIN
 	return maxf(0.2, m)
@@ -147,12 +148,13 @@ func _range_mult() -> float:
 	var r: float = 1.0 + player.st.range / 100.0
 	if st.kind == "melee":
 		r += 0.3 * Run.amulet_count("ressort")   # Ressort
+		r += 0.1 * Run.amulet_count("perche_selfie")   # Perche à selfie
 	return r
 
 
 func tick(delta: float) -> void:
 	var arena := player.arena
-	cd -= delta * _atk_mult()
+	cd -= delta * _atk_mult() * (2.0 if Run.amulet_count("boisson") > 0 else 1.0)   # (Boisson énergisante)
 	_update_trail()
 	if st.style == "orbit":
 		_orbit_step(delta)

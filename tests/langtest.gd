@@ -190,6 +190,8 @@ func _ready() -> void:
 	_check(cond == "Reach 40% crit in a run.", "défi de stat : " + cond)
 	cond = ItemUnlockDB.text(ItemUnlockDB.CONDS["w:chevalet_bouclier"])
 	_check(cond == "Reach 15 armor in a run.", "défi de stat sans % : " + cond)
+	cond = ItemUnlockDB.text(ItemUnlockDB.CONDS["a:punching_ball"])
+	_check(cond == "Reach 150 max HP in a run.", "défi de PV max : " + cond)
 	cond = ItemUnlockDB.text(ItemUnlockDB.CONDS["f:pavel"])
 	_check(cond == "Win a run on The Blackboard at Sketch or harder.", "défi de victoire : " + cond)
 

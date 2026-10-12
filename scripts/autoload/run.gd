@@ -96,7 +96,10 @@ var level := 0
 var kills := 0
 var party_kills := 0       # Chapeau de fête : ennemis tués depuis la fin de la dernière fête
 var bosses := 0
-var signature := 0
+var gorilla := 0            # Biscuit pour gorille : vagues finies depuis l'achat
+var spent := 0              # or dépensé dans la partie (Investisseur)
+var constel: Array = []     # Constellation : [stat qui gagne 40 %, stat qui perd 20 %] pour la vague
+const CONSTEL_STATS := [["dmg", "Dégâts"], ["atk_speed", "Vit. d'attaque"], ["speed", "Vitesse"], ["range", "Portée"], ["max_hp", "PV max"]]
 var bonus := {}             # bonus de stats choisis en montant de niveau
 var marks: Array = []       # marques d'encre dessinées sur le perso {image, pos, a, outline}
 var pending_levels := 0     # niveaux gagnés pendant la vague, à choisir après
@@ -156,7 +159,9 @@ func start(d: int, map_id := 1, with_seed := -1) -> void:
 	kills = 0
 	party_kills = 0
 	bosses = 0
-	signature = 0
+	gorilla = 0
+	spent = 0
+	constel = []
 	bonus = {}
 	marks = []
 	pending_levels = 0
@@ -213,6 +218,40 @@ func recompute() -> void:
 
 func heal(amount: float) -> void:
 	hp = minf(stats.max_hp, hp + amount)
+
+
+## Ce qu'on peut dépenser : l'or en poche, plus 100 de découvert avec la Carte de crédit.
+func cash() -> int:
+	return gold + (100 if amulet_count("carte_credit") > 0 else 0)
+
+
+## Faut-il montrer les amulettes sur le perso ? (Satellite : non, elles tournent autour de lui.)
+func show_amulets() -> bool:
+	return bool(Meta.setting("show_amulets")) and amulet_count("satellite") == 0
+
+
+## Constellation : tire les deux stats de la vague (une qui gagne, une qui perd).
+func roll_constellation() -> void:
+	var pool := CONSTEL_STATS.map(func(r): return r[0])
+	pool.shuffle()
+	constel = [pool[0], pool[1]]
+
+
+func constellation_text() -> String:
+	var names := {}
+	for r in CONSTEL_STATS:
+		names[r[0]] = Loc.t(r[1])
+	return Loc.t("+40%% %s · -20%% %s") % [names[constel[0]], names[constel[1]]]
+
+
+## Nombre d'objets légendaires possédés (armes et amulettes) : Musée.
+func legend_count() -> int:
+	var n := 0
+	for w in weapons:
+		n += 1 if int(w.rar) == 3 else 0
+	for am in amulets:
+		n += 1 if int(AmuletDB.get_def(am.id).rar) == 3 else 0
+	return n
 
 
 ## Emplacements d'armes (Musée ambulant : +1).
@@ -559,7 +598,7 @@ func achievement_ctx(cleared := -1, clean := false, win := false) -> Dictionary:
 		"cleared": wave - 1 if cleared < 0 else cleared, "kills": kills, "level": level,
 		"legend": legend, "legends": legends, "melee": melee, "ranged": weapons.size() - melee, "clean": clean, "win": win, "diff": difficulty, "map": map,
 		"stats": stats, "gold": gold, "colors": int(char_a.get("elements", 0)), "pixels": int(char_a.get("pixels", 0)),
-		"weapons": weapons.size(), "pets": familiars.size(), "elites": elite_kills, "bosses": boss_ids, "syn": active_synergies()}
+		"weapons": weapons.size(), "amulets": amulets.size(), "pets": familiars.size(), "elites": elite_kills, "bosses": boss_ids, "syn": active_synergies()}
 
 
 # ------------------------------------------------------------------ Sauvegarde de la partie en cours
@@ -571,7 +610,7 @@ func to_save(stage: String) -> Dictionary:
 	var d := {"version": 1, "stage": stage, "map": map, "difficulty": difficulty, "wave": wave, "hp": hp,
 		"character": _png(character), "char_effect": char_effect, "char_outline": char_outline,
 		"boss_plan": boss_plan.duplicate(), "gold": gold, "xp": xp, "xp_rest": xp_rest, "level": level,
-		"kills": kills, "bosses": bosses, "signature": signature, "bonus": bonus.duplicate(),
+		"kills": kills, "bosses": bosses, "gorilla": gorilla, "spent": spent, "bonus": bonus.duplicate(),
 		"pending_levels": pending_levels, "shop_offers": shop_offers.duplicate(true), "rerolls": rerolls,
 		"joconde": joconde, "revived": revived, "levelup_choices": levelup_choices.duplicate(true),
 		"elite_kills": elite_kills, "boss_ids": boss_ids.duplicate(), "regen_boost": regen_boost,
@@ -651,7 +690,8 @@ func from_save(d: Dictionary) -> bool:
 	level = int(d.level)
 	kills = int(d.kills)
 	bosses = int(d.bosses)
-	signature = int(d.signature)
+	gorilla = int(d.get("gorilla", 0))
+	spent = int(d.get("spent", 0))
 	bonus = d.bonus
 	pending_levels = int(d.pending_levels)
 	shop_offers = (d.shop_offers as Array).filter(func(o): return o.type != "amulet" or not AmuletDB.get_def(o.id).is_empty())
@@ -823,7 +863,8 @@ func add_mark(img: Image, pos: Vector2i, outline := false) -> void:
 
 
 func end_wave() -> void:
-	signature += amulet_count("signature")
+	gorilla += amulet_count("biscuit_gorille")
+	constel = []
 	gold += roundi(stats.harvest)
 	recompute()
 
@@ -977,12 +1018,14 @@ func _new_order() -> void:
 ## Or dépensé (compté pour le succès du Carnet de commandes).
 func spend(n: int) -> void:
 	gold -= n
+	spent += n
 	Meta.count("gold_spent", n)
 
 
 ## Achat annulé : l'or revient (et n'est plus compté comme dépensé).
 func refund(n: int) -> void:
 	gold += n
+	spent -= n
 	Meta.count("gold_spent", -n)
 
 
@@ -1294,4 +1337,5 @@ func reroll_price() -> int:
 	var base := ceili(2.0 + eff_wave() * 0.6)
 	var step := ceili(1.0 + eff_wave() * 0.3)
 	var n := rerolls - (1 if Meta.has("free_reroll") else 0)
-	return base + maxi(0, n) * step
+	# Coupon : 10 % moins cher par exemplaire (jamais gratuit)
+	return maxi(1, roundi((base + maxi(0, n) * step) * pow(0.9, amulet_count("coupon"))))
