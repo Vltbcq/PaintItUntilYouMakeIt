@@ -1,6 +1,5 @@
 # Paint It Until You Make It
 
-![Paint It Until You Make It](docs/logo_petit.png)
 
 Logo de l'écran titre : `assets/logo.png` (réduit de `docs/logo_jeu_source.png`). Icône du jeu : `icon.png` (fenêtre) et `icon.ico` (l'exe), tirées de `docs/icon_source.png`.
 
