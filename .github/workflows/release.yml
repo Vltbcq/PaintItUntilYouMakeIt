@@ -111,10 +111,13 @@ jobs:
           cd builds
           # Test de démarrage : le jeu tourne 300 images sans écran, puis se ferme tout seul.
           # (dossier de sauvegarde à part, pour ne rien laisser traîner)
-          HOME="$RUNNER_TEMP/linux_home" XDG_DATA_HOME="$RUNNER_TEMP/linux_home/data" \
+          # (PAINTIT_NO_STEAM : cette machine n'a pas Steam, le jeu ne tente pas de s'y connecter)
+          PAINTIT_NO_STEAM=1 HOME="$RUNNER_TEMP/linux_home" XDG_DATA_HOME="$RUNNER_TEMP/linux_home/data" \
             timeout 120 ./PaintIt.x86_64 --headless --quit-after 300 > linux_run.log 2>&1 || { cat linux_run.log; echo "Le jeu Linux ne démarre pas."; exit 1; }
           cat linux_run.log
-          if grep -q "SCRIPT ERROR\|Parse Error\|Failed to load" linux_run.log; then
+          # (les messages de la bibliothèque Steam, « Failed to load module steamclient.so », sont normaux
+          #  sans Steam : seules les erreurs du jeu comptent)
+          if grep -v "S_API\|steamclient" linux_run.log | grep -q "SCRIPT ERROR\|Parse Error\|Failed to load"; then
             echo "Erreurs au démarrage du jeu Linux."
             exit 1
           fi

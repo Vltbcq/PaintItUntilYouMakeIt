@@ -32,7 +32,8 @@ var _dirty := false
 
 ## Appelé une fois au lancement du jeu (jamais par les tests).
 func start() -> void:
-	if on or not Engine.has_singleton("Steam"):
+	# (PAINTIT_NO_STEAM : le test de démarrage de la release tourne sur une machine sans Steam)
+	if on or not Engine.has_singleton("Steam") or OS.get_environment("PAINTIT_NO_STEAM") != "":
 		return
 	connect_api(Engine.get_singleton("Steam"))
 
