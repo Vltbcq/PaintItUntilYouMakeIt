@@ -41,6 +41,7 @@ var punch_n := 0            # Punching-ball : coups reçus pendant la vague
 var buffet_t := 0.0         # Buffet à volonté : temps depuis le dernier repas
 const BUFFET_EVERY := 20.0
 var grow := 1.0             # Biscuit pour gorille : le perso est dessiné plus gros
+var sprite_c := Vector2.ZERO  # centre du dessin dans son image (l'origine du joueur)
 var sand_t := 0.0           # Lag (L'Écran) : dans son aura, on avance au ralenti
 var root_t := 0.0           # Lasso (L'Écran) : coincé sur place
 var lasso_safe_t := 0.0     # ... puis à l'abri des lassos un moment (pas de prise en boucle)
@@ -66,12 +67,11 @@ func setup(a: Arena) -> void:
 	ptex = ImageTexture.create_from_image(pimg)
 	sprite = Gfx.sprite(ptex, mat)
 	grow = minf(2.0, 1.0 + 0.03 * Run.gorilla)
-	sprite.scale = Vector2(grow, grow)
 	sprite.centered = false
 	# Le centre du dessin (hors amulettes) est l'origine du joueur.
 	var r: Rect2i = Run.char_a.rect
-	var c := Vector2(r.position) + Vector2(r.size) / 2.0 + Vector2(Run.PAD + 1, Run.PAD + 1)
-	sprite.position = -c
+	sprite_c = Vector2(r.position) + Vector2(r.size) / 2.0 + Vector2(Run.PAD + 1, Run.PAD + 1)
+	_scale_sprite(grow)
 	body.add_child(sprite)
 	for w in Run.weapons:
 		var wn := WeaponNode.new()
@@ -387,13 +387,20 @@ func _ghost_tick(delta: float) -> void:
 ## Redessine le perso (après avoir ajouté / retiré des amulettes en cours de vague).
 ## Le Curseur te redimensionne : énorme (facile à toucher, lent) ou minuscule (tes coups font
 ## moins mal, voir Arena.hit_enemy). k = 1 : retour à la normale.
+## Agrandit ou rétrécit le dessin AUTOUR DE SON CENTRE (l'image n'est pas centrée sur son nœud : sans
+## recaler sa position, un perso agrandi se retrouvait décalé vers le bas et la droite).
+func _scale_sprite(k: float) -> void:
+	sprite.scale = Vector2(k, k)
+	sprite.position = -sprite_c * k
+
+
 func resize(k: float, dur: float) -> void:
 	if size_base <= 0.0:
 		size_base = radius
 	size_k = k
 	size_t = dur
 	radius = size_base * k
-	sprite.scale = Vector2(k, k) * grow
+	_scale_sprite(k * grow)
 
 
 func refresh_image() -> void:

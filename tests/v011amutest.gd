@@ -97,6 +97,19 @@ func _ready() -> void:
 	_check(not Run.amulet_usable(AmuletDB.get_def("diplome")), "Diplôme : pas proposé si toutes les armes sont légendaires")
 	var pool := Run.amulet_candidates(2).map(func(dd): return dd.id)
 	_check(not "diplome" in pool, "Diplôme : absent des amulettes proposables")
+	# (v0.13) il ne disparaît plus : il se dessine et se garde ; Pandore ne le fabrique jamais (sans achat, pas d'effet)
+	var dip := AmuletDB.get_def("diplome")
+	_check(dip.get("on_buy", false) and not dip.get("consume", false) and not AmuletDB.describe(dip).contains("disparaît"), "Diplôme : effet à l'achat, mais l'amulette se garde")
+	_check(AmuletDB.get_def("pandore").get("consume", false), "Pandore : elle disparaît toujours")
+	_setup()
+	_give("plume", Vector2i(10, 10))
+	var never := true
+	for n in 60:
+		Run.amulets[0].id = "plume"
+		Run.open_pandora()
+		never = never and Run.amulets[0].id != "diplome"
+		Run.amulets[0].id = "plume"
+	_check(never, "Pandore ne transforme jamais une amulette en Diplôme")
 
 	# --- Couleur imposée : il suffit qu'elle soit la couleur dominante (comme l'élément affiché)
 	var cfg := {"need_el": 4}

@@ -113,6 +113,37 @@ func _ready() -> void:
 		flew = flew or ammo.thrown_t > 0.0
 	_check(flew and (not is_instance_valid(ammo) or ammo.dead), "Le Curseur : il le lance, l'ennemi explose au bout de sa course")
 
+	# --- Phase 1 : une flèche de projectiles, en formation
+	_clear_enemies(boss)
+	for b0 in arena.bullets.duplicate():
+		arena.bullets.erase(b0)
+		b0.queue_free()
+	boss.toile_phase = 1
+	boss.position = p.position + Vector2(-160, 0)
+	boss.atk_bag = ["arrows"]
+	boss.state = "walk"
+	boss.st_t = 0.0
+	_steps(1)
+	var shots_now: Array = arena.bullets.filter(func(b): return b.hostile)
+	_check(shots_now.size() == Enemy.ARROW_SHAPE.size(), "Le Curseur : une flèche de %d projectiles (%d)" % [Enemy.ARROW_SHAPE.size(), shots_now.size()])
+	var same := true
+	for b1 in shots_now:
+		same = same and (b1.vel as Vector2).distance_to(shots_now[0].vel) < 0.01
+	_check(same and (shots_now[0].vel as Vector2).normalized().dot((p.position - boss.position).normalized()) > 0.95, "Le Curseur : la flèche part d'un bloc, droit vers le joueur")
+	for b2 in arena.bullets.duplicate():
+		arena.bullets.erase(b2)
+		b2.queue_free()
+	boss.toile_phase = 3
+	boss.atk_bag = ["arrows"]
+	boss.state = "walk"
+	boss.st_t = 0.0
+	_steps(1)
+	_check(arena.bullets.filter(func(b): return b.hostile).size() == 3 * Enemy.ARROW_SHAPE.size(), "Le Curseur, phase 3 : trois flèches en éventail")
+	for b3 in arena.bullets.duplicate():
+		arena.bullets.erase(b3)
+		b3.queue_free()
+	boss.toile_phase = 1
+
 	# --- Phase 1 : il attrape le joueur et le traîne à la Corbeille
 	_clear_enemies(boss)
 	boss.atk_bag = ["hunt"]
@@ -197,6 +228,8 @@ func _ready() -> void:
 	# --- Phase 2 : il redimensionne le joueur
 	var r0 := p.radius
 	p.resize(1.8, 6.0)
+	var mid: Vector2 = p.sprite.position + p.sprite_c * p.sprite.scale.x   # centre du dessin, vu depuis le joueur
+	_check(is_equal_approx(p.sprite.scale.x, 1.8) and mid.length() < 0.01, "Redimensionné : le dessin grossit autour de son centre, sans se décaler (%.1f, %.1f)" % [mid.x, mid.y])
 	_check(p.radius > r0 * 1.7 and p.size_k > 1.0, "Redimensionné : énorme (rayon %.0f → %.0f)" % [r0, p.radius])
 	p.resize(0.55, 6.0)
 	var dummy2 := arena.spawn_enemy_now("curseur", p.position + Vector2(40, 0), false)

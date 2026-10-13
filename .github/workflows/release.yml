@@ -99,7 +99,7 @@ jobs:
           mkdir -p builds
           timeout 600 "$RUNNER_TEMP/godot" --headless --path . --export-release "Windows Desktop" builds/PaintIt.exe
           test -s builds/PaintIt.exe
-          cd builds && zip -q PaintIt-windows.zip PaintIt.exe && ls -la
+          cd builds && zip -q PaintIt-windows.zip PaintIt.exe *.dll && ls -la   # (les .dll : GodotSteam et Steam)
 
       - name: Exporter le jeu (Linux / SteamOS) et vérifier qu'il démarre
         id: linux
@@ -119,7 +119,7 @@ jobs:
             exit 1
           fi
           # .tar.gz : garde le droit d'exécution (un zip le perd)
-          tar -czf PaintIt-linux.tar.gz PaintIt.x86_64
+          tar -czf PaintIt-linux.tar.gz PaintIt.x86_64 *.so   # (les .so : GodotSteam et Steam)
           ls -la
 
       - name: "Linux en échec : la Release sort avec Windows seul"

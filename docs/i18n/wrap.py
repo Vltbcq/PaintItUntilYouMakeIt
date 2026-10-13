@@ -14,7 +14,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from extract import ROOT, STR, displayable, files, strip_comment  # noqa: E402
 
-SKIP_FILES = {'scripts/core/loc.gd', 'scripts/data/lang_en.gd', 'scripts/data/lang_tables.gd'}
+# (steam_link.gd : que des noms d'API Steam et un message de journal, rien d'affiché au joueur)
+SKIP_FILES = {'scripts/core/loc.gd', 'scripts/data/lang_en.gd', 'scripts/data/lang_tables.gd', 'scripts/autoload/steam_link.gd'}
 SKIP_LINE = re.compile(r'\b(print|printerr|push_error|push_warning|assert|print_rich|prints)\(|^\s*(@|class_name|extends|signal|enum)\b')
 NOT_TABLES = {'BUS_MUSIC', 'BUS_SFX', 'SEED_DIGITS', 'STAT_WORDS', 'STAT_WORDS_EN'}   # (pas du texte affiché)
 CONST = re.compile(r'^(\s*)(static\s+)?const\s+(\w+)')

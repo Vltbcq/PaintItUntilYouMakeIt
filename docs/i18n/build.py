@@ -17,7 +17,8 @@ from extract import ROOT, STR, displayable, files, strip_comment  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 JSON = os.path.join(HERE, 'en.json')
-SKIP_FILES = {'scripts/core/loc.gd', 'scripts/data/lang_en.gd', 'scripts/data/lang_tables.gd'}
+# (steam_link.gd : que des noms d'API Steam et un message de journal, rien d'affiché au joueur)
+SKIP_FILES = {'scripts/core/loc.gd', 'scripts/data/lang_en.gd', 'scripts/data/lang_tables.gd', 'scripts/autoload/steam_link.gd'}
 
 
 def all_texts():

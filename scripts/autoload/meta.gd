@@ -523,6 +523,7 @@ func check_achievements(ctx: Dictionary) -> void:
 		Sfx.play("level")
 	if changed:
 		save()
+		SteamLink.sync()   # un défi vient d'être réussi : le succès Steam tombe tout de suite
 
 
 # ------------------------------------------------------------------ Galerie

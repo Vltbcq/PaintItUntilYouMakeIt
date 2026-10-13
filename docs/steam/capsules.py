@@ -221,13 +221,9 @@ def header_dessin():
 		d.line([x, cy0, x, cy1], fill=CANVAS_LINE)
 	for y in range(cy0 + 12, cy1, 12):
 		d.line([cx0, y, cx1, y], fill=CANVAS_LINE)
-	# tablette + palette de couleurs du jeu
+	# tablette du chevalet
 	d.rectangle([cx0 - 14, cy1 + 6, cx1 + 14, cy1 + 18], fill=WOOD_D)
 	d.rectangle([cx0 - 14, cy1 + 6, cx1 + 14, cy1 + 9], fill=WOOD)
-	for i, ch in enumerate('krybgvw'):
-		x = cx0 + 14 + i * 34
-		d.rectangle([x, cy1 + 24, x + 22, cy1 + 46], fill=INK)
-		d.rectangle([x + 3, cy1 + 27, x + 19, cy1 + 43], fill=PAL[ch])
 	# le perso, à moitié dessiné, et le crayon qui trace
 	hero = drawing('perso')
 	k = 10
@@ -249,38 +245,15 @@ def header_dessin():
 	ay = 50 + lh + 30
 	hb = big(hero, 5)
 	hxa, hya = 420, ay + 34
-	sword = big(drawing('arme_epee'), 3)
+	sword = big(drawing('arme_epee_arcane'), 3)
 	img.paste(hb, (hxa, hya), hb)
-	img.paste(sword, (hxa + hb.width - 18, hya + 10 - sword.height // 3), sword)
-	for name, x, y, kk, flip in (('gribouille', 640, ay + 6, 3, False), ('tache', 720, ay + 62, 3, False),
-			('crachoir', 790, ay - 4, 3, True), ('pate', 600, ay + 96, 2, False), ('scinde', 818, ay + 96, 2, True)):
+	img.paste(sword, (hxa + hb.width - 26, hya + 26 - sword.height // 2), sword)
+	for name, x, y, kk, flip in (('ennemi_sourire', 702, ay + 14, 2, False), ('ennemi_carte', 606, ay - 14, 3, False),
+			('ennemi_chien', 596, ay + 60, 3, True), ('ennemi_rouge', 590, ay + 126, 3, False), ('ennemi_eclats', 648, ay + 128, 3, False)):
 		e = big(drawing(name), kk)
 		if flip:
 			e = e.transpose(Image.FLIP_LEFT_RIGHT)
 		img.paste(e, (x, y), e)
-	splat(img, 694, ay + 140, 4, INK)
-	splat(img, 560, ay + 40, 3, INK)
-	splat(img, 860, ay + 70, 3, INK)
-
-	# --- La flèche en pointillés : de la toile au combat
-	pts = []
-	sx, sy, ex, ey, qx, qy = cx1 + 16, 170, hxa - 14, hya + 40, cx1 + 30, hya + 40   # arrive à l'horizontale
-	for i in range(0, 15):
-		t = i / 14.0
-		x = (1 - t) ** 2 * sx + 2 * (1 - t) * t * qx + t * t * ex
-		y = (1 - t) ** 2 * sy + 2 * (1 - t) * t * qy + t * t * ey
-		pts.append((x, y))
-	for i, (x, y) in enumerate(pts[:-1]):
-		if i % 2 == 0:
-			d.rectangle([x - 3, y - 3, x + 3, y + 3], fill=INK)
-	# pointe de flèche dans le sens du trait
-	ax, ay2 = pts[-1]
-	vx, vy = ax - pts[-3][0], ay2 - pts[-3][1]
-	n = (vx * vx + vy * vy) ** 0.5
-	vx, vy = vx / n, vy / n
-	d.polygon([(ax + vx * 16, ay2 + vy * 16), (ax - vx * 8 - vy * 12, ay2 - vy * 8 + vx * 12),
-		(ax - vx * 8 + vy * 12, ay2 - vy * 8 - vx * 12)], fill=INK)
-	splat(img, 50, 50, 3, INK)
 
 	img.save(os.path.join(OUT, 'capsule_entete_920x430_dessin.png'))
 	print('capsule_entete_920x430_dessin.png', img.size)

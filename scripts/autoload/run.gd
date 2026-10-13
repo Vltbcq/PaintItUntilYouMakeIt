@@ -1287,7 +1287,7 @@ func open_pandora() -> Array:
 			continue
 		var rar := mini(int(old.rar) + 1, 3)
 		var pool := AmuletDB.of_rarity(rar).filter(func(d):
-			if d.get("consume", false) or d.id == old.id or not Meta.item_open(ItemUnlockDB.key_amulet(d.id)):
+			if d.get("consume", false) or d.get("on_buy", false) or d.id == old.id or not Meta.item_open(ItemUnlockDB.key_amulet(d.id)):
 				return false
 			if d.get("pet", false) and familiars.is_empty():
 				return false

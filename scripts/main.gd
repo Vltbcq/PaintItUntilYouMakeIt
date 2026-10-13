@@ -7,6 +7,7 @@ var current: Node
 func _ready() -> void:
 	randomize()
 	Meta.ensure_settings_file()
+	SteamLink.start()   # (sans Steam : ne fait rien, le jeu marche pareil)
 	_choose_slot()
 
 
@@ -81,6 +82,7 @@ func _choose_slot() -> void:
 
 func _title() -> void:
 	Run.active = false
+	SteamLink.sync()   # (retour au menu, changement de sauvegarde : succès et compteurs à jour)
 	# Plus de partie en cours (nouvelle partie annulée avant la 1re vague) : rien ne doit rester en attente
 	if not Meta.has_run():
 		Meta.apply_pending_unlocks()
@@ -256,7 +258,8 @@ func _get_amulet(id: String) -> bool:
 	return true
 
 
-## Objets à effet immédiat (ni dessin ni pose : ils disparaissent aussitôt).
+## Effets à l'achat. Boîte de Pandore : ni dessin ni pose, elle disparaît aussitôt ("consume").
+## Le Diplôme : même effet immédiat, mais l'amulette reste ("on_buy", appelé après la pose).
 func _consume(id: String) -> bool:
 	match id:
 		"pandore":
@@ -512,6 +515,9 @@ func _buy(i: int) -> void:
 		ok = await _consume(o.id)
 	else:
 		ok = await _get_amulet(o.id)
+		# Le Diplôme : une fois dessiné et posé, son effet d'achat (si le joueur annule le dessin, rien ne se passe)
+		if ok and AmuletDB.get_def(o.id).get("on_buy", false):
+			await _consume(o.id)
 	if not ok:
 		Run.refund(o.price)
 		return

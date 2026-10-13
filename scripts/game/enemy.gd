@@ -1546,8 +1546,8 @@ func _boss_cursor(delta: float, dirp: Vector2, dist: float) -> Vector2:
 	if st_t <= 0.0:
 		st_t = [2.3, 2.0, 1.7][toile_phase - 1]
 		if atk_bag.is_empty():
-			atk_bag = [["throw", "throw", "hunt"], ["select", "resize", "throw", "select", "hunt"],
-				["minimize", "altf4", "dragwin", "select", "throw", "hunt", "resize"]][toile_phase - 1].duplicate()
+			atk_bag = [["throw", "arrows", "throw", "hunt"], ["select", "resize", "arrows", "throw", "select", "hunt", "arrows"],
+				["minimize", "altf4", "dragwin", "select", "arrows", "throw", "hunt", "resize", "arrows"]][toile_phase - 1].duplicate()
 			atk_bag.shuffle()
 		flash = 0.8
 		match String(atk_bag.pop_front()):
@@ -1569,6 +1569,20 @@ func _boss_cursor(delta: float, dirp: Vector2, dist: float) -> Vector2:
 					state = "lift"
 					st_t = 0.6
 					arena.add_ruler(position, p.position, 0.6)
+			"arrows":
+				# Des FLÈCHES de projectiles : une formation en forme de pointeur, qui file d'un bloc vers le joueur.
+				# Phase 1 : une flèche ; phase 2 : un « double-clic » (deux à la suite) ; phase 3 : trois en éventail.
+				var aim := (p.position - position).angle()
+				if toile_phase == 3:
+					for da in [-0.45, 0.0, 0.45]:
+						_arrow(aim + da)
+				else:
+					_arrow(aim)
+					if toile_phase == 2:
+						arena._after(0.4, func():
+							if is_instance_valid(self) and not dead and is_instance_valid(p):
+								_arrow((p.position - position).angle()))
+				Sfx.play("zap")
 			"hunt":
 				state = "hunt"
 				st_t = 1.5 if toile_phase == 3 else 1.9
@@ -1593,6 +1607,18 @@ func _boss_cursor(delta: float, dirp: Vector2, dist: float) -> Vector2:
 				st_t = ALTF4_SEC
 				cast_hp = hp
 	return dirp * speed * (1.0 if dist > 150.0 else -0.4) + dirp.orthogonal() * speed * 0.6
+
+
+## Le Curseur : une flèche de pointeur faite de projectiles (x vers l'avant), qui part d'un bloc dans la direction `a`.
+const ARROW_SHAPE := [Vector2(24, 0), Vector2(12, -12), Vector2(0, -24), Vector2(12, 12), Vector2(0, 24),
+	Vector2(8, 0), Vector2(-9, 0), Vector2(-26, 0), Vector2(-43, 0)]
+const ARROW_SPEED := 125.0
+
+
+func _arrow(a: float) -> void:
+	var v := Vector2.from_angle(a) * ARROW_SPEED * (1.2 if toile_phase == 3 else 1.0)
+	for o in ARROW_SHAPE:
+		arena.spawn_enemy_bullet(self, position + (o as Vector2).rotated(a), v)
 
 
 ## Le Curseur lâche ce qu'il tient (le joueur, un ennemi).

@@ -76,7 +76,7 @@ static var TYPES := {
 	"tableur": {"name": "Le Tableur", "beh": "b_sheet", "map": 3, "boss": 2, "hp": 6500.0, "dmg": 13.0, "spd": 36.0, "wave": 10, "canvas": 120, "ink": 400, "loot": 60,
 		"desc": "Boss (vague 10, parfois à la place du Bug). L'arène devient une GRILLE : des lignes et des colonnes entières s'allument puis explosent. Il applique une FORMULE à tes stats, et fait la SOMME des ennemis d'une colonne pour les fusionner."},
 	"curseur_boss": {"name": "Le Curseur", "beh": "b_cursor", "map": 3, "boss": 2, "hp": 18000.0, "dmg": 18.0, "spd": 45.0, "wave": 15, "canvas": 132, "ink": 540, "loot": 0, "shoots": true,
-		"desc": "Boss final (vague 15). Une main géante qui MANIPULE tout : il te lance ses ennemis, t'attrape pour te jeter à la CORBEILLE (secoue les touches !), sélectionne puis SUPPRIME, te redimensionne, réduit et traîne la fenêtre du jeu, tente un ALT+F4... À 60 % et 25 % de PV, le jeu PLANTE."},
+		"desc": "Boss final (vague 15). Une main géante qui MANIPULE tout : il te lance ses ennemis, te tire des FLÈCHES de projectiles, t'attrape pour te jeter à la CORBEILLE (secoue les touches !), sélectionne puis SUPPRIME, te redimensionne, réduit et traîne la fenêtre du jeu, tente un ALT+F4... À 60 % et 25 % de PV, le jeu PLANTE."},
 	"encrier": {"name": "L'Encrier renversé", "beh": "b_ink", "map": 2, "boss": 2, "hp": 18000.0, "dmg": 18.0, "spd": 45.0, "wave": 15, "canvas": 132, "ink": 540, "loot": 0, "shoots": true,
 		"desc": "Boss final (vague 15). 3 phases : il TACHE ton perso (tu passes à l'Ombre, ramasse les buvards !), puis tire des éclats de LUMIÈRE dans la nuit d'encre, puis se dédouble en taches de Rorschach."},
 }

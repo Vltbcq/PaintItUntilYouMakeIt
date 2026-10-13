@@ -38,18 +38,27 @@ static func empty_player() -> Dictionary:
 
 # ------------------------------------------------------------------ Personnage
 
+## Un gros perso est lent et facile à toucher : au-delà de 200 pixels, +1 armure par 100 pixels (5 au plus).
+const BIG_ARMOR_FROM := 200.0
+const BIG_ARMOR_MAX := 5.0
+
+
 ## Stats données par le dessin du perso seul.
 static func character_part(a: Dictionary, effect: String) -> Dictionary:
 	var s := empty_player()
 	var p := float(a.pixels)
 	# Peu d'encre = fragile mais rapide ; beaucoup d'encre = robuste mais lent.
 	s.max_hp = 6.0 + p * 0.05
-	s.speed_base = 150.0 * clampf(1.4 - p / 650.0, 0.5, 1.35)
+	# Vitesse : -10 points par 100 pixels, plancher à ×0,6 vers 700 pixels (avant la v0.13 : -15 points et
+	# plancher à ×0,5, les gros persos étaient injouables). Les petits persos gardent l'ancienne courbe,
+	# plus favorable sous ~190 pixels : personne n'y perd.
+	s.speed_base = 150.0 * clampf(maxf(1.4 - p / 650.0, 1.3 - p / 1000.0), 0.6, 1.35)
 	s.radius = clampf(sqrt(p) * 0.45, 3.0, 14.0)
 	if p <= 0.0:
 		return s
 	s.dodge = a.sym * 12.0                          # symétrique = esquive
 	s.armor = roundf(a.solidity * 4.0)              # dessin plein = armure
+	s.armor += minf(BIG_ARMOR_MAX, floorf(maxf(0.0, p - BIG_ARMOR_FROM) / 100.0))   # gros perso = un peu d'armure
 	s.crit = (1.0 - a.solidity) * 8.0               # traits fins = critique
 	s.luck = minf(25.0, (a.components - 1) * 5.0)   # morceaux séparés = chance
 	if a.bh > a.bw:
