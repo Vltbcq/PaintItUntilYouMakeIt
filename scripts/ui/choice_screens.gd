@@ -50,7 +50,7 @@ static func slots() -> Control:
 			if not sm.is_empty():
 				txt = Loc.t("◆ %d pigments\nParties : %d\nVictoires : %d\nRecord : vague %d\nGalerie : %d dessins") % [
 					sm.pigments, sm.runs, sm.wins, sm.best_wave, sm.drawings]
-				txt += Loc.t("\nEn cours : ") + String(sm.get("run", "aucune"))
+				txt += Loc.t("\nEn cours : ") + String(sm.get("run", Loc.t("aucune")))
 			var l := UI.label(txt, 10, Pal.TEXT if not sm.is_empty() else Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER)
 			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			UI.put(p, l, Vector2(8, 44), Vector2(160, 100))

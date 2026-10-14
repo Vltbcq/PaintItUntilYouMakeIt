@@ -180,7 +180,10 @@ func _draw_rarity(type: String, rar: int, cancel: bool) -> bool:
 	if not base.is_empty() and Meta.bestiary_get(key) == null:
 		return await _retouch_rarity(type, rar, base, cancel)
 	var def := WeaponDB.get_def(type)
-	var r = await _obtain(key, DrawCfg.weapon(type, rar, cancel), 0, Loc.t("TON ARME %s") % Pal.RARITY_NAMES_F[rar].to_upper())
+	var wcfg := DrawCfg.weapon(type, rar, cancel)
+	# (les balles se dessinent juste après seulement pour un type jamais dessiné de la partie)
+	wcfg.bullets_next = base.is_empty() and def.kind == "ranged" and not def.get("nobullet", false)
+	var r = await _obtain(key, wcfg, 0, Loc.t("TON ARME %s") % Pal.RARITY_NAMES_F[rar].to_upper())
 	if r == null:
 		return false
 	var bullet: Image = null

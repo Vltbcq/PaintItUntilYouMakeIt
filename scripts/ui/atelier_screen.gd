@@ -58,6 +58,7 @@ func _bench() -> void:
 	var sc := ScrollContainer.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	UI.put(self, sc, Vector2(12, 56), Vector2(300, 276))
+	UI.keep_scroll(sc, scroll_mem, "etabli")   # (un achat reconstruit l'écran : l'établi ne remonte pas)
 	var shelf := Control.new()
 	sc.add_child(shelf)
 	var y := 0.0

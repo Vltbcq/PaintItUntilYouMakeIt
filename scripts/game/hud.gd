@@ -4,6 +4,7 @@ extends CanvasLayer
 
 var arena: Arena
 var draw_layer: Control
+var dark_rect: ColorRect    # le noir (shaders/dark.gdshader), sous draw_layer
 var crash_t := 0.0          # L'Écran, boss Le Curseur : faux écran d'erreur (secondes restantes)
 var crash_dur := 1.0
 var crash_pct := false      # ... avec un faux pourcentage de récupération
@@ -25,6 +26,13 @@ var order_label: Label      # Carnet de commandes : la commande de la vague et o
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	dark_rect = ColorRect.new()
+	dark_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dark_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dark_rect.material = ShaderMaterial.new()
+	dark_rect.material.shader = preload("res://shaders/dark.gdshader")
+	dark_rect.visible = false
+	add_child(dark_rect)
 	draw_layer = Control.new()
 	draw_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	draw_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -147,34 +155,26 @@ func _draw_hud() -> void:
 			draw_layer.draw_rect(r, Pal.ACCENT if i == mine else Pal.BORDER, false, 2.0 if i == mine else 1.0)
 			_text(Vector2(r.position.x, 104), str(qz.answers[i]), Pal.TEXT, 10, r.size.x, HORIZONTAL_ALIGNMENT_CENTER)
 		_text(Vector2(160, 122), Loc.t("Va dans la colonne de la bonne réponse !"), Pal.ACCENT, 10, 320, HORIZONTAL_ALIGNMENT_CENTER)
-	# Nuit d'encre (Encrier renversé) : noir partout sauf autour du joueur
+	# Nuit d'encre (Encrier renversé) : noir partout sauf autour du joueur (et de la Luciole)
+	dark_rect.visible = false
 	if arena.dark_t > 0.0:
 		var a := clampf(arena.dark_t, 0.0, 1.0) * clampf((6.0 - arena.dark_t) * 2.0, 0.0, 1.0)
 		var sp: Vector2 = arena.get_viewport().get_canvas_transform() * arena.player.global_position
 		var r: float = arena.dark_r * arena.cam.zoom.x
-		var ink := Color(0.05, 0.04, 0.08, 0.95 * a)
-		# Bord doux du cercle de lumière
-		for k in 8:
-			draw_layer.draw_arc(sp, r + k * 4.0, 0.0, TAU, 48, Color(ink, ink.a * float(k + 1) / 9.0), 4.5)
-		# Anneau plein jusqu'aux coins du carré, puis le reste de l'écran
-		# Entre le cercle et un carré autour : des quadrilatères (une seule couche, pas de coutures)
-		var inner := r + 30.0
-		var half := inner * 1.6
-		var n := 64
-		for i in n:
-			var d0 := Vector2.from_angle(TAU * i / n)
-			var d1 := Vector2.from_angle(TAU * (i + 1) / n)
-			var q0 := d0 * (half / maxf(absf(d0.x), absf(d0.y)))
-			var q1 := d1 * (half / maxf(absf(d1.x), absf(d1.y)))
-			draw_layer.draw_colored_polygon(PackedVector2Array([sp + d0 * inner, sp + d1 * inner, sp + q1, sp + q0]), ink)
-		# Le reste de l'écran
-		draw_layer.draw_rect(Rect2(0, 0, 640, maxf(0.0, sp.y - half)), ink)
-		draw_layer.draw_rect(Rect2(0, sp.y + half, 640, maxf(0.0, 360 - sp.y - half)), ink)
-		draw_layer.draw_rect(Rect2(0, sp.y - half, maxf(0.0, sp.x - half), half * 2.0), ink)
-		draw_layer.draw_rect(Rect2(sp.x + half, sp.y - half, maxf(0.0, 640 - sp.x - half), half * 2.0), ink)
-		# Les éclats de LUMIÈRE de l'Encrier brillent dans le noir
 		var xf := arena.get_viewport().get_canvas_transform()
 		var z: float = arena.cam.zoom.x
+		# Le noir lui-même : un rectangle à shader (dark_rect), sous ce calque, troué par les lumières
+		var lights := PackedVector3Array([Vector3(sp.x, sp.y, r)])
+		for fm in arena.familiars:
+			# La Luciole (ou la Chimère qui en a pris la forme) éclaire autour d'elle
+			if is_instance_valid(fm) and fm.form == "luciole" and lights.size() < 8:
+				var lp: Vector2 = xf * fm.global_position
+				lights.append(Vector3(lp.x, lp.y, Familiar.LUCIOLE_R * z))
+		dark_rect.visible = true
+		dark_rect.material.set_shader_parameter("ink", Color(0.05, 0.04, 0.08, 0.95 * a))
+		dark_rect.material.set_shader_parameter("count", lights.size())
+		dark_rect.material.set_shader_parameter("lights", lights)
+		# Les éclats de LUMIÈRE de l'Encrier brillent dans le noir
 		for b in arena.bullets:
 			if is_instance_valid(b) and b.light:
 				var bp: Vector2 = xf * b.global_position
@@ -522,7 +522,8 @@ func _build_pause() -> void:
 	if Run.character:
 		UI.put(inner, UI.thumb(Run.build_player_image(), Vector2(116, 100)), Vector2(4, 4), Vector2(116, 100))
 	# faiblesses (en petit) et synergies sous le cadre
-	UI.cercle(pm, Vector2(228, 194), true)
+	if UI.has_elements():
+		UI.cercle(pm, Vector2(228, 194), true)
 	var syn_box := VBoxContainer.new()
 	syn_box.add_theme_constant_override("separation", 3)
 	UI.put(pm, syn_box, Vector2(318, 196), Vector2(100, 100))

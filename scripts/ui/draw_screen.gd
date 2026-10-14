@@ -253,7 +253,7 @@ func _build_ui() -> void:
 	UI.put(self, outline_btn, Vector2(550, 126), Vector2(82, 14))
 	UI.put(self, UI.label(Loc.t("APERÇU"), 10, Pal.DIM), Vector2(426, 144))
 	stats_label = StatText.new(2)   # icônes des stats (le nom au survol)
-	var with_color: bool = cfg.kind in ["character", "melee", "ranged", "bullet", "amulet", "familiar", "enemy", "boss"]
+	var with_color: bool = cfg.kind in ["character", "melee", "ranged", "bullet", "amulet", "familiar", "enemy", "boss"] and UI.has_elements()
 	UI.put(self, stats_label, Vector2(426, 161), Vector2(124 if with_color else 206, 147))
 	if with_color:
 		# Cercle des faiblesses à côté des stats, et la couleur principale du dessin en direct

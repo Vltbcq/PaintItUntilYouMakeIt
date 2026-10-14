@@ -203,17 +203,27 @@ func panel(color := Pal.PANEL, border := Pal.BORDER, bw := 2) -> Panel:
 ## elle est mémorisée dans store[key] et remise en place une fois la liste affichée.
 func keep_scroll(sc: ScrollContainer, store: Dictionary, key: String) -> void:
 	var v := int(store.get(key, 0))
-	_restore_scroll(sc, v, store, key)
-
-
-func _restore_scroll(sc: ScrollContainer, v: int, store: Dictionary, key: String) -> void:
-	# Attendre que la liste ait sa taille (sinon le défilement est ramené à 0)
-	await get_tree().process_frame
-	await get_tree().process_frame
-	if not is_instance_valid(sc):
+	var bar := sc.get_v_scroll_bar()
+	bar.value_changed.connect(func(x: float): store[key] = int(x))
+	if v <= 0:
 		return
-	sc.scroll_vertical = v
-	sc.get_v_scroll_bar().value_changed.connect(func(x: float): store[key] = int(x))
+	# Remis en place dès que la liste a sa taille (pendant la mise en page, AVANT le premier
+	# affichage : la liste ne remonte pas en haut pour redescendre ensuite)
+	var placed := [false]
+	bar.changed.connect(func():
+		if not placed[0] and bar.max_value - bar.page >= v:
+			placed[0] = true
+			sc.scroll_vertical = v)
+	_restore_scroll(sc, v, placed)
+
+
+## Filet de sécurité : la liste est plus courte qu'avant (on va au plus bas possible).
+func _restore_scroll(sc: ScrollContainer, v: int, placed: Array) -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if is_instance_valid(sc) and not placed[0]:
+		placed[0] = true
+		sc.scroll_vertical = v
 
 
 ## Cartel de musée (papier crème, texte encre) : pour les textes posés sur le mur.
@@ -375,6 +385,11 @@ static var CERCLE_TEXT := "Chaque couleur fait ×1,5 de dégâts à celle que vi
 
 ## Image du cercle (assets/ui/cercle.png, ou la petite version sans les noms).
 ## Les noms des éléments sont dessinés DANS l'image : une image par langue (cercle_en.png...).
+## A-t-on débloqué au moins une couleur (élément) ? Sinon, pas de cercle des faiblesses.
+func has_elements() -> bool:
+	return Meta.elements().size() > 1
+
+
 func cercle(parent: Node, pos: Vector2, mini := false) -> TextureRect:
 	var named := "res://assets/ui/cercle_%s.png" % Loc.lang
 	if Loc.lang == "fr" or not ResourceLoader.exists(named):

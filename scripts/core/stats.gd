@@ -606,8 +606,9 @@ static func preview(cfg: Dictionary, img: Image, effect: String) -> String:
 				L.append(Loc.t("Portée : %d") % roundi(150.0 + a.diag * 3.0))
 				L.append(Loc.t("Précision : %d%%") % roundi(a.sym * 100.0))
 				_el_lines(L, a.frac)
-				L.append("")
-				L.append(Loc.t("Ensuite : ses balles !"))
+				if cfg.get("bullets_next", false):
+					L.append("")
+					L.append(Loc.t("Ensuite : ses balles !"))
 		"bullet":
 			if a.pixels > 0:
 				var w := {"type": cfg.wtype, "a": cfg.weapon_a, "ba": a, "bullet": img, "rar": 0, "effect": cfg.get("weapon_effect", ""), "beffect": effect}

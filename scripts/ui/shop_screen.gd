@@ -46,6 +46,7 @@ func _ready() -> void:
 func _build() -> void:
 	for c in get_children():
 		c.queue_free()
+	hover_card = null
 	spots = []
 	var wall := _Wall.new()
 	wall.shop = self
@@ -96,7 +97,7 @@ func _build() -> void:
 		var f := _frame_panel(FRAME[w.rar], 3)
 		UI.put(self, f, Vector2(x, 230), Vector2(46, 40))
 		UI.put(f, UI.thumb(Run.weapon_image(w), Vector2(36, 30)), Vector2(5, 5), Vector2(36, 30))
-		f.tooltip_text = _weapon_tip(w)
+		_hover(f, func(): return _owned_weapon_card(w))
 		var wart := Run.art_of(w)
 		var wc := Pal.color_of(w.st.get("frac", []), 0.3)
 		if wc != 0:
@@ -155,10 +156,9 @@ func _build() -> void:
 		var def := AmuletDB.get_def(aid)
 		var th := UI.thumb(am.image, Vector2(16, 16))
 		th.mouse_filter = Control.MOUSE_FILTER_STOP
-		var zones := []
-		for x in ams:
-			zones.append(String(x.zone))
-		th.tooltip_text = "%s%s (%s)\n%s" % [def.name, " ×%d" % ams.size() if ams.size() > 1 else "", ", ".join(zones), AmuletDB.describe(def, am.mag)]
+		var nb_am := ams.size()
+		_hover(th, func(): return {"name": def.name + (" ×%d" % nb_am if nb_am > 1 else ""), "kind": Pal.RARITY_NAMES_F[int(def.rar)],
+			"lines": [], "desc": AmuletDB.describe(def, am.mag), "bullet": false})
 		UI.put(shelf, th, Vector2(ax, 2), Vector2(16, 16))
 		if ams.size() > 1:
 			var nl := UI.label("×%d" % ams.size(), 10, Pal.TEXT)
@@ -174,7 +174,7 @@ func _build() -> void:
 		var fdef := FamiliarDB.get_def(fid)
 		var fr := UI.panel(Color(0.55, 0.35, 0.17, 0.25), Pal.RARITY[int(fdef.rar)], 1)
 		fr.mouse_filter = Control.MOUSE_FILTER_STOP
-		fr.tooltip_text = Loc.t("Familier : %s (%s)\n%s") % [fdef.name, Pal.RARITY_NAMES[int(fdef.rar)].to_lower(), fdef.desc]
+		_hover(fr, func(): return {"name": fdef.name, "kind": Pal.RARITY_NAMES[int(fdef.rar)], "lines": [], "desc": String(fdef.desc), "bullet": false})
 		UI.put(shelf, fr, Vector2(ax - 1, 1), Vector2(18, 18))
 		var fth := UI.thumb(Run.familiar_art[fid].image if Run.familiar_art.has(fid) else _kind_icon("familiar"), Vector2(16, 16))
 		fth.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -528,14 +528,35 @@ func _weapon_card(ct: Control, o: Dictionary, fw: float) -> void:
 	var known := not _offer_weapon(o.wtype, o.rar, near).is_empty()
 	var st := Stats.weapon(_offer_weapon(o.wtype, o.rar, near, true))
 	var approx := "" if known else "≈"
-	var scale: String = def.get("scale", "")
 	var nl := UI.label(def.name, 10, Pal.INK)
 	nl.clip_text = true
 	UI.put(ct, nl, Vector2(4, 2), Vector2(fw - 4, 12))
-	var tag := "%s · %s" % [Loc.t("Mêlée") if def.kind == "melee" else Loc.t("Distance"), Pal.RARITY_NAMES_F[o.rar].to_lower()]
-	var kl := UI.label(tag, 10, CARTEL_DIM)
+	var kl := UI.label(_weapon_tag(def, o.rar), 10, CARTEL_DIM)
 	kl.clip_text = true
 	UI.put(ct, kl, Vector2(4, 14), Vector2(fw - 4, 12))
+	# Stats + description dans une zone qui défile (barre de défilement si ça déborde du cadre)
+	var lines := _weapon_lines(def, st, o.rar, approx)
+	var desc := _weapon_desc(def)
+	var foot := ""
+	var foot_col := CARTEL_DIM
+	if Run.weapons.size() >= Run.max_weapons() and Run.fusion_match(o.wtype, o.rar) >= 0:
+		foot = Loc.t("→ fusionne !")
+		foot_col = CARD_RATIO
+	elif Run.has_art(o.wtype, o.rar):
+		foot = Loc.t("✓ dessinée")
+	elif not known:
+		foot = Loc.t("à dessiner")
+	_scroll_box(ct, fw, lines, desc, foot, foot_col)
+
+
+## « Mêlée · commune » : la 2e ligne de la fiche d'une arme.
+func _weapon_tag(def: Dictionary, rar: int) -> String:
+	return "%s · %s" % [Loc.t("Mêlée") if def.kind == "melee" else Loc.t("Distance"), Pal.RARITY_NAMES_F[rar].to_lower()]
+
+
+## Lignes de stats de la fiche d'une arme : Dégâts (ratio), Critique, Recharge, Portée / Allonge.
+func _weapon_lines(def: Dictionary, st: Dictionary, rar: int, approx := "") -> Array:
+	var scale: String = def.get("scale", "")
 	# Dégâts d'un coup (ratio compris, comme en jeu) ; à distance : tous les projectiles d'un tir
 	var dmg := 0.0
 	var shots := ""
@@ -547,7 +568,7 @@ func _weapon_card(ct: Control, o: Dictionary, fw: float) -> void:
 		if int(st.pellets) > 1:
 			shots = " ×%d" % int(st.pellets)
 	if scale != "" and scale != "crit" and scale != "lifesteal":
-		dmg = Stats.scaled_damage(dmg, scale, o.rar)
+		dmg = Stats.scaled_damage(dmg, scale, rar)
 	var ratio := ""
 	if SCALE_SHORT.has(scale):
 		ratio = "(%s)" % SCALE_SHORT[scale]
@@ -559,20 +580,66 @@ func _weapon_card(ct: Control, o: Dictionary, fw: float) -> void:
 		lines.append([Loc.t("Allonge"), "%s%d" % [approx, roundi(st.reach)], ""])
 	else:
 		lines.append([Loc.t("Portée"), "%s%d" % [approx, roundi(st.range)], ""])
-	# Stats + description dans une zone qui défile (barre de défilement si ça déborde du cadre)
+	return lines
+
+
+func _weapon_desc(def: Dictionary) -> String:
 	var desc := String(def.get("card", def.desc))   # le ratio est déjà sur la ligne des dégâts
 	for pre in [Loc.t("Épique+. "), Loc.t("Légendaire. ")]:
 		desc = desc.trim_prefix(pre)
-	var foot := ""
-	var foot_col := CARTEL_DIM
-	if Run.weapons.size() >= Run.max_weapons() and Run.fusion_match(o.wtype, o.rar) >= 0:
-		foot = Loc.t("→ fusionne !")
-		foot_col = CARD_RATIO
-	elif Run.has_art(o.wtype, o.rar):
-		foot = Loc.t("✓ dessinée")
-	elif not known:
-		foot = Loc.t("à dessiner")
-	_scroll_box(ct, fw, lines, desc, foot, foot_col)
+	return desc
+
+
+# ------------------------------------------------------------------ Fiche au survol
+
+const HOVER_W := 150.0
+var hover_card: Control
+
+
+## Au survol de `target`, la fiche de l'objet (la même que celle de la boutique), juste au-dessus.
+## info() rend {name, kind, lines, desc, bullet} (lines : comme _weapon_lines).
+func _hover(target: Control, info: Callable) -> void:
+	target.mouse_filter = Control.MOUSE_FILTER_STOP
+	target.tooltip_text = ""
+	target.mouse_entered.connect(func(): _show_card(info.call(), target))
+	target.mouse_exited.connect(_hide_card)
+
+
+func _owned_weapon_card(w: Dictionary) -> Dictionary:
+	var def := WeaponDB.get_def(w.type)
+	return {"name": def.name, "kind": _weapon_tag(def, w.rar), "lines": _weapon_lines(def, w.st, w.rar), "desc": _weapon_desc(def), "bullet": true}
+
+
+func _show_card(info: Dictionary, target: Control) -> void:
+	_hide_card()
+	var w := HOVER_W
+	var nh := UI.font.get_multiline_string_size(info.name, HORIZONTAL_ALIGNMENT_LEFT, w - 8, UI.fs(10)).y
+	var content := _card_content(info.lines, info.desc, w - 4, "", CARTEL_DIM, info.bullet)
+	var h := 4.0 + nh + 12.0 + 2.0 + float(content.get_meta("h", 0.0)) + 4.0
+	var card := UI.panel(CARTEL, GOLD_DARK, 1)
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.z_index = 20
+	var nl := UI.label(info.name, 10, Pal.INK)
+	nl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # un nom long passe à la ligne (jamais coupé)
+	UI.put(card, nl, Vector2(4, 3), Vector2(w - 8, nh))
+	var kl := UI.label(info.kind, 10, CARTEL_DIM)
+	UI.put(card, kl, Vector2(4, 3 + nh), Vector2(w - 8, 12))
+	UI.put(card, content, Vector2(2, 5 + nh + 12), Vector2(w - 4, h - nh - 21))
+	# Juste au-dessus de l'objet survolé (ils sont en bas de l'écran ; à la manette aussi), sans sortir de l'écran
+	var r := target.get_global_rect()
+	var pos := Vector2(r.position.x, r.position.y - h - 3.0)
+	if pos.y < 2.0:
+		pos.y = r.end.y + 3.0
+	pos.x = clampf(pos.x, 2.0, 638.0 - w)
+	pos.y = clampf(pos.y, 2.0, maxf(2.0, 358.0 - h))
+	UI.put(self, card, pos, Vector2(w, h))
+	hover_card = card
+
+
+func _hide_card() -> void:
+	if hover_card and is_instance_valid(hover_card):
+		hover_card.queue_free()
+	hover_card = null
 
 
 ## Zone du cartel sous le nom : lignes de stats, mention, puis description. Elle défile
@@ -906,19 +973,6 @@ func _buy(i: int) -> void:
 	o.sold = true
 	Sfx.play("level")
 	_build()
-
-
-func _weapon_tip(w: Dictionary) -> String:
-	var st: Dictionary = w.st
-	var nm: String = WeaponDB.get_def(w.type).name
-	var ratio := ("\n" + Stats.scale_text(st.scale, w.rar)) if String(st.get("scale", "")) != "" else ""
-	ratio += "\n" + Pal.color_line(st.get("frac", []), 0.3)
-	if st.kind == "melee":
-		return Loc.t("%s %s\nDégâts %.1f · Recharge %.2fs\nAllonge %d%s") % [nm, Pal.RARITY_NAMES_F[w.rar].to_lower(), st.damage, st.cooldown, roundi(st.reach), ratio]
-	var tot := 0.0
-	for b in st.bullets:
-		tot += b.damage
-	return Loc.t("%s %s\n%d projectile(s) · %.1f dégâts/tir\nRecharge %.2fs · Portée %d%s") % [nm, Pal.RARITY_NAMES_F[w.rar].to_lower(), st.bullets.size() * st.pellets, tot * st.pellets, st.cooldown, roundi(st.range), ratio]
 
 
 func _refund(w: Dictionary) -> int:

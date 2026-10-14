@@ -12,12 +12,14 @@ static var TABS := [["armes", "Armes"], ["amulettes", "Amulettes"], ["familiers"
 var tab := "armes"
 var sel := ""
 var picker: Control
-var scroll_mem := {}         # position de défilement de la liste, par onglet
+static var scroll_mem := {}  # position de défilement de la liste, par onglet (gardée quand on revient d'un dessin)
 
 
 func _init(start_tab := "armes", start_sel := "") -> void:
 	tab = start_tab
 	sel = start_sel
+	if start_sel == "":
+		scroll_mem = {}   # ouvert depuis le titre : la liste repart du haut
 
 
 func _ready() -> void:
@@ -195,9 +197,10 @@ func _build() -> void:
 	cl.tooltip_text = Loc.t("Dessiné : cases du Codex qui ont un dessin par défaut (chaque rareté d'arme compte)\nDébloqué : armes, amulettes et ennemis disponibles")
 	UI.put(self, cl, Vector2(270, 36), Vector2(358, 12))
 
-	var cb := UI.button(Loc.t("Cercle des faiblesses"), func(): UI.cercle_popup(self, "", false))
-	cb.tooltip_text = Loc.t("Les faiblesses entre couleurs (éléments)")
-	UI.put(self, cb, Vector2(100, 334), Vector2(130, 18))   # (aligné sur « Retour »)
+	if UI.has_elements():
+		var cb := UI.button(Loc.t("Cercle des faiblesses"), func(): UI.cercle_popup(self, "", false))
+		cb.tooltip_text = Loc.t("Les faiblesses entre couleurs (éléments)")
+		UI.put(self, cb, Vector2(100, 334), Vector2(130, 18))   # (aligné sur « Retour »)
 
 	var items := _items()
 	if sel == "" or not sel in items:
