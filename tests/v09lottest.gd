@@ -58,6 +58,8 @@ func _ready() -> void:
 
 	# --- Couleur imposée (Aquarelle et plus)
 	_setup(2, -1)
+	for e in range(1, Pal.COUNT):
+		Meta.data.unlocks[Pal.UNLOCK[e]] = 1   # (les couleurs débloquées, quelle que soit la vraie sauvegarde)
 	var el := Run.enemy_color("tache")
 	_check(el >= 1 and el < Pal.COUNT, "Aquarelle : une couleur imposée à la Tache (%s)" % (Pal.NAMES[el] if el >= 1 else "?"))
 	var cfg := DrawCfg.enemy("tache")

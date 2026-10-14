@@ -340,7 +340,7 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 		"restorer":
 			oname = Loc.t("Le Restaurateur")
 			kind = Loc.t("Visiteur")
-			desc = Loc.t("Améliore une de tes amulettes : rareté au-dessus, au hasard.")
+			desc = Loc.t("Échange une de tes amulettes contre une autre, au hasard, d'une rareté au-dessus.")
 			frame_cols = FRAME_EVENT
 			icon = _event_icon("restorer")
 		"patron":
@@ -597,7 +597,7 @@ var hover_card: Control
 
 
 ## Au survol de `target`, la fiche de l'objet (la même que celle de la boutique), juste au-dessus.
-## info() rend {name, kind, lines, desc, bullet} (lines : comme _weapon_lines).
+## info() rend {name, kind, lines, desc, bullet} (lines : comme _weapon_lines), et en option {foot, foot_col}.
 func _hover(target: Control, info: Callable) -> void:
 	target.mouse_filter = Control.MOUSE_FILTER_STOP
 	target.tooltip_text = ""
@@ -614,7 +614,7 @@ func _show_card(info: Dictionary, target: Control) -> void:
 	_hide_card()
 	var w := HOVER_W
 	var nh := UI.font.get_multiline_string_size(info.name, HORIZONTAL_ALIGNMENT_LEFT, w - 8, UI.fs(10)).y
-	var content := _card_content(info.lines, info.desc, w - 4, "", CARTEL_DIM, info.bullet)
+	var content := _card_content(info.lines, info.desc, w - 4, info.get("foot", ""), info.get("foot_col", CARTEL_DIM), info.bullet)
 	var h := 4.0 + nh + 12.0 + 2.0 + float(content.get_meta("h", 0.0)) + 4.0
 	var card := UI.panel(CARTEL, GOLD_DARK, 1)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -628,7 +628,9 @@ func _show_card(info: Dictionary, target: Control) -> void:
 	# Juste au-dessus de l'objet survolé (ils sont en bas de l'écran ; à la manette aussi), sans sortir de l'écran
 	var r := target.get_global_rect()
 	var pos := Vector2(r.position.x, r.position.y - h - 3.0)
-	if pos.y < 2.0:
+	if pos.y < 2.0 and r.end.x + 3.0 + w <= 638.0:
+		pos = Vector2(r.end.x + 3.0, r.position.y)   # pas la place au-dessus : à droite (fenêtre du Restaurateur)
+	elif pos.y < 2.0:
 		pos.y = r.end.y + 3.0
 	pos.x = clampf(pos.x, 2.0, 638.0 - w)
 	pos.y = clampf(pos.y, 2.0, maxf(2.0, 358.0 - h))
@@ -687,7 +689,7 @@ func _card_content(lines: Array, desc: String, w: float, foot := "", foot_col :=
 		mc.mouse_filter = Control.MOUSE_FILTER_PASS
 		mc.add_child(rl)
 		box.add_child(mc)
-		h += UI.font.get_multiline_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, w - 4, UI.fs(10)).y   # (estimation)
+		h += _text_h(txt, w - 4)
 	box.set_meta("h", h + 3.0)
 	return box
 
@@ -767,13 +769,18 @@ func _card_line(ct: Control, pos: Vector2, w: float, lab: String, val: String, r
 func _card_rich(ct: Control, pos: Vector2, t: String, w: float) -> float:
 	var rl := UI.rich(t, 10, CARD_RATIO, 11)
 	rl.custom_minimum_size.x = w
-	# hauteur : le texte avec chaque icône comptée comme une lettre large (pas le mot qu'elle remplace)
+	var h := _text_h(t, w)
+	UI.put(ct, rl, pos + Vector2(0, -1), Vector2(w, h))
+	return h
+
+
+## Hauteur d'un texte riche (largeur w) : chaque icône de stat comptée comme une lettre large
+## (pas comme le mot qu'elle remplace).
+func _text_h(t: String, w: float) -> float:
 	var est := UI.stat_bbcode(t)
 	var re := RegEx.create_from_string(Loc.t("\\[img[^\\]]*\\][^\\[]*\\[/img\\]"))
 	est = re.sub(est, "M", true)
-	var h := UI.font.get_multiline_string_size(est, HORIZONTAL_ALIGNMENT_LEFT, w, UI.fs(10)).y
-	UI.put(ct, rl, pos + Vector2(0, -1), Vector2(w, h))
-	return h
+	return UI.font.get_multiline_string_size(est, HORIZONTAL_ALIGNMENT_LEFT, w, UI.fs(10)).y
 
 
 func _text_w(t: String) -> float:
@@ -1191,6 +1198,7 @@ func _ev_window(title: String, cols: Array, h := 300.0) -> Panel:
 
 
 func _ev_close() -> void:
+	_hide_card()   # (la case survolée disparaît avec la fenêtre : pas de « souris sortie »)
 	if ev_layer:
 		ev_layer.queue_free()
 		ev_layer = null
@@ -1214,6 +1222,7 @@ func _grant(item: Dictionary, price: int, extra := {}) -> void:
 		o.id = item.id
 	o.merge(extra)
 	Run.shop_offers.append(o)
+	_hide_card()
 	if ev_layer:
 		ev_layer.queue_free()
 		ev_layer = null
@@ -1566,7 +1575,7 @@ func _open_restorer(i: int) -> void:
 	if ev_layer:
 		return
 	var inner := _ev_window(Loc.t("LE RESTAURATEUR"), FRAME_EVENT, 250.0)
-	var tl := UI.label(Loc.t("« Confiez-moi une amulette : je la rends plus précieuse...\nmais je ne promets pas laquelle. »"), 10, CARTEL, HORIZONTAL_ALIGNMENT_CENTER)
+	var tl := UI.label(Loc.t("« Confiez-moi une amulette : je vous en rends une plus précieuse. »"), 10, CARTEL, HORIZONTAL_ALIGNMENT_CENTER)
 	UI.put(inner, tl, Vector2(0, 34), Vector2(388, 26))
 	var grid := GridContainer.new()
 	grid.columns = 6
@@ -1584,7 +1593,15 @@ func _open_restorer(i: int) -> void:
 		b.add_theme_stylebox_override("hover", UI.sb(Color.WHITE, Pal.ACCENT, 2))
 		b.add_theme_stylebox_override("disabled", UI.sb(Color("8a8070"), Color("5a5040"), 1))
 		b.disabled = Run.cash() < cost
-		b.tooltip_text = Loc.t("%s (%s) → une amulette %s au hasard\nPrix : ● %d") % [d.name, Pal.RARITY_NAMES_F[int(d.rar)].to_lower(), Pal.RARITY_NAMES_F[int(d.rar) + 1].to_lower(), cost]
+		# Au survol : sa fiche (comme en boutique), ce qu'elle deviendrait et le prix (ou pourquoi c'est grisé)
+		var foot := Loc.t("→ une amulette %s au hasard · ● %d") % [Pal.RARITY_NAMES_F[int(d.rar) + 1].to_lower(), cost]
+		if b.disabled:
+			foot = Loc.t("Pas assez d'or (● %d)") % cost
+		foot = foot.replace("● ", "●\u00a0")   # (le prix ne se coupe jamais en deux lignes)
+		var poor := b.disabled
+		var mag = am.get("mag", 1.0)
+		_hover(b, func(): return {"name": d.name, "kind": Pal.RARITY_NAMES_F[int(d.rar)], "lines": [], "desc": AmuletDB.describe(d, mag),
+			"bullet": false, "foot": foot, "foot_col": Color("a02a22") if poor else CARD_RATIO})
 		var th := UI.thumb(am.image, Vector2(36, 36))
 		th.position = Vector2(8, 4)
 		b.add_child(th)
@@ -1595,7 +1612,7 @@ func _open_restorer(i: int) -> void:
 		var entry := am
 		var rar := int(d.rar)
 		b.pressed.connect(func():
-			var pool := Run.amulet_candidates(rar + 1)
+			var pool := Run.restore_pool(rar + 1)
 			if pool.is_empty():
 				return
 			var nd: Dictionary = pool.pick_random()
@@ -1603,7 +1620,7 @@ func _open_restorer(i: int) -> void:
 			Sfx.play("level")
 			_grant({"type": "amulet", "id": nd.id, "rar": rar + 1}, cost, {"replace": {"id": entry.id, "pos": entry.pos}}))
 		grid.add_child(b)
-	UI.put(inner, UI.label(Loc.t("Clique l'amulette à lui confier : elle sera remplacée."), 10, CARTEL_DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 208), Vector2(388, 12))
+	UI.put(inner, UI.label(Loc.t("Clique l'amulette à lui confier : elle sera remplacée, sans retour possible."), 10, CARTEL_DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 208), Vector2(388, 12))
 	UI.hotkey(_ev_button(inner, Loc.t("Non merci"), Vector2(144, 226), Vector2(100, 18), func(): _ev_close()), [KEY_ESCAPE])
 
 

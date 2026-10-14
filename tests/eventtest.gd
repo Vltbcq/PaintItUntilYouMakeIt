@@ -243,7 +243,8 @@ func _ready() -> void:
 	await _shot("restaurateur")
 	got_done = null
 	shop.done.connect(func(r): got_done = r)
-	var cells := shop.ev_layer.find_children("*", "Button", true, false).filter(func(b): return b.tooltip_text.begins_with("Sablier"))
+	# (les cases des amulettes : 52×62 ; leur fiche s'affiche au survol)
+	var cells := shop.ev_layer.find_children("*", "Button", true, false).filter(func(b): return b.custom_minimum_size == Vector2(52, 62))
 	_check(cells.size() == 1, "restaurateur : propose l'amulette possédée")
 	if cells.size() == 1:
 		cells[0].pressed.emit()
@@ -254,6 +255,11 @@ func _ready() -> void:
 	else:
 		_check(false, "restaurateur : achat lancé")
 	shop.queue_free()
+	# jamais d'objet « à l'achat » (Boîte de Pandore, Diplôme) dans ce qu'il rend
+	var rp_ids := []
+	for r in [1, 2, 3]:
+		rp_ids.append_array(Run.restore_pool(r).map(func(d): return d.id))
+	_check(not "pandore" in rp_ids and not "diplome" in rp_ids and not rp_ids.is_empty(), "restaurateur : ni Pandore ni Diplôme")
 
 	# --- Mécène
 	_setup()

@@ -53,7 +53,7 @@ const CASE_DISCOUNT := 0.8
 const EVENTS := ["roulette", "scratch", "auction", "restorer", "patron"]
 const EVENT_CHANCE := 0.35
 const SCRATCH_PRICE := 8
-const RESTORE_PRICE := [15, 30, 50]   # Restaurateur : selon la rareté de l'amulette donnée
+const RESTORE_PRICE := [10.5, 21.0, 35.0]   # Restaurateur : selon la rareté de l'amulette donnée (15 / 30 / 50 - 30 %)
 ## Mécène : [id, multiplicateur d'or, texte du contrat] ; or = (20 + 8 × vague) × multiplicateur
 static var PATRON_DEALS := [["more", 1.0, "+15% d'ennemis à la vague suivante"], ["elites", 1.25, "8 élites en plus à la vague suivante"]]
 const PATRON_MORE := 1.15   # contrat I : ennemis en plus
@@ -1324,9 +1324,15 @@ func restorable() -> Array:
 	var out := []
 	for i in amulets.size():
 		var d := AmuletDB.get_def(amulets[i].id)
-		if not d.is_empty() and int(d.rar) < 3 and not amulet_candidates(int(d.rar) + 1).is_empty():
+		if not d.is_empty() and int(d.rar) < 3 and not restore_pool(int(d.rar) + 1).is_empty():
 			out.append(i)
 	return out
+
+
+## Amulettes que le Restaurateur peut rendre (rareté rar) : pas les objets à effet d'achat
+## (Boîte de Pandore, Diplôme), qui n'ont de sens qu'achetés.
+func restore_pool(rar: int) -> Array:
+	return amulet_candidates(rar).filter(func(d): return not d.get("consume", false) and not d.get("on_buy", false))
 
 
 ## Le prix de base monte avec les vagues, et chaque relance coûte plus cher

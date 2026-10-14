@@ -1,0 +1,48 @@
+Paint It Until You Make It
+Copyright (c) 2026 Malphear. All rights reserved.
+
+The source code, drawings, graphics, texts, game design and all other content
+of this repository are the property of Malphear, except for the third-party
+files listed below.
+
+The repository is public so that the code can be read. No license is granted:
+you may not copy, modify, merge, publish, distribute, sublicense or sell this
+software or any part of it, in source or compiled form, without prior written
+permission from Malphear.
+
+The game itself is distributed by Malphear only (Steam and the official
+releases of this repository).
+
+Third-party files
+-----------------
+These files are not covered by the notice above. They remain the property of
+their authors and are used under their own licenses:
+
+- assets/music/Bozos-Arcade.ogg, Bumbling-Burglars_Looping.ogg,
+  Pixel-City-Cruising.ogg: music by Eric Matyas, www.soundimage.org
+  (free to use with credit).
+- assets/music/party.ogg: source to be confirmed.
+- assets/fonts/YosterIsland.ttf: "Yoster Island" font by codeman38
+  (zone38.net), see assets/fonts/YosterIsland-licence.txt.
+- addons/godotsteam/: GodotSteam by GP Garcia, Chris Ridenour and
+  contributors, MIT license,
+  see addons/godotsteam/license.md.
+- addons/godotsteam/win64/steam_api64.dll and
+  addons/godotsteam/linux64/libsteam_api.so: Steamworks SDK by Valve
+  Corporation, redistributed under the Steamworks SDK Access Agreement.
+- The Godot Engine (godotengine.org), used to build the game, is under the
+  MIT license.
+
+------------------------------------------------------------------------------
+
+Paint It Until You Make It
+Copyright (c) 2026 Malphear. Tous droits réservés.
+
+Le code, les dessins, les graphismes, les textes, le game design et tout le
+reste du contenu de ce dépôt appartiennent à Malphear, sauf les fichiers tiers
+listés plus haut (« Third-party files »).
+
+Le dépôt est public pour que le code puisse être lu. Aucune licence n'est
+accordée : il est interdit de copier, modifier, publier, distribuer ou vendre
+ce logiciel ou une partie de celui-ci, sous forme de code ou compilée, sans
+l'accord écrit préalable de Malphear.

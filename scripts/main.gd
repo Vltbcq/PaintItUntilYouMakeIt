@@ -242,10 +242,13 @@ func _get_familiar(id: String) -> bool:
 	return true
 
 
-func _get_amulet(id: String) -> bool:
+## cancel = false (Restaurateur) : pas de retour possible, il faut dessiner et poser l'amulette.
+func _get_amulet(id: String, cancel := true) -> bool:
 	var def := AmuletDB.get_def(id)
 	if not Run.amulet_art.has(id):
-		var r = await _obtain("amulette_" + id, DrawCfg.amulet(def), 0, Loc.t("TA DERNIÈRE AMULETTE"))
+		var cfg := DrawCfg.amulet(def)
+		cfg.cancel = cancel
+		var r = await _obtain("amulette_" + id, cfg, 0, Loc.t("TA DERNIÈRE AMULETTE"))
 		if r == null:
 			return false
 		Run.set_amulet_art(id, r.image, r.effect, r.outline)
@@ -516,6 +519,16 @@ func _buy(i: int) -> void:
 		ok = await _get_familiar(o.id)
 	elif AmuletDB.get_def(o.id).get("consume", false):
 		ok = await _consume(o.id)
+	elif o.has("replace"):
+		# Restaurateur : l'amulette donnée part tout de suite (sa place se libère pour la nouvelle),
+		# puis la nouvelle se dessine et se pose, sans retour possible
+		for k in Run.amulets.size():
+			var am: Dictionary = Run.amulets[k]
+			if am.id == o.replace.id and Vector2i(am.pos) == Vector2i(o.replace.pos):
+				Run.amulets.remove_at(k)
+				break
+		Run.recompute()
+		ok = await _get_amulet(o.id, false)
 	else:
 		ok = await _get_amulet(o.id)
 		# Le Diplôme : une fois dessiné et posé, son effet d'achat (si le joueur annule le dessin, rien ne se passe)
@@ -535,13 +548,6 @@ func _buy(i: int) -> void:
 	else:
 		Run.log_event("buy", Loc.t("Achat : %s (● %d)") % [what, o.price])
 	Run.apply_capital()   # Le Capital vient d'être acheté : toute la boutique passe au prix moyen
-	if o.has("replace"):
-		# Restaurateur : l'amulette donnée disparaît
-		for k in Run.amulets.size():
-			var am: Dictionary = Run.amulets[k]
-			if am.id == o.replace.id and Vector2i(am.pos) == Vector2i(o.replace.pos):
-				Run.amulets.remove_at(k)
-				break
 	Run.recompute()
 
 
@@ -629,6 +635,8 @@ func _end(win: bool, can_endless := false) -> bool:
 		Run.endless = true
 		Run.endless_base = {"kills": Run.kills, "elites": Run.elite_kills, "pigments": earned, "bosses": Run.bosses, "time": Run.play_time}
 		return true
+	if r is String and r == "atelier":
+		await _ask(AtelierScreen.new())   # (bouton « Atelier » de l'écran de fin)
 	_title()
 	return false
 
@@ -643,5 +651,7 @@ func _end_endless() -> void:
 	var unlocked := Meta.apply_pending_unlocks()
 	Run.active = false
 	Sfx.play("lose")
-	await _ask(ChoiceScreens.end_run(false, earned, unlocked))
+	var r = await _ask(ChoiceScreens.end_run(false, earned, unlocked))
+	if r is String and r == "atelier":
+		await _ask(AtelierScreen.new())
 	_title()

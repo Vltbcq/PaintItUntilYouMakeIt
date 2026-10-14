@@ -87,7 +87,10 @@ func _ready() -> void:
 		vb.add_child(UI.hotkey(UI.button(Loc.t("Nouvelle partie"), func(): done.emit("play")), [KEY_N]))
 	else:
 		vb.add_child(UI.hotkey(UI.button(Loc.t("Nouvelle partie"), func(): done.emit("play"), 20), [KEY_ENTER, KEY_KP_ENTER, KEY_N]))
-	vb.add_child(UI.hotkey(UI.button(Loc.t("Atelier  ◆ %d") % Meta.pigments(), func(): done.emit("atelier")), [KEY_A]))
+	var ab := UI.hotkey(UI.button(Loc.t("Atelier  ◆ %d") % Meta.pigments(), func(): done.emit("atelier")), [KEY_A])
+	vb.add_child(ab)
+	if Meta.atelier_new():
+		_glow(ab)
 	vb.add_child(UI.hotkey(UI.button(Loc.t("Galerie"), func(): done.emit("gallery")), [KEY_G]))
 	# Codex et Statistiques sur la même ligne (le menu tient dans son panneau)
 	var cs := HBoxContainer.new()
@@ -111,6 +114,31 @@ func _ready() -> void:
 
 
 # ------------------------------------------------------------------ Cadres
+
+## Bouton Atelier quand un nouvel achat est possible : il pulse en doré, avec une pastille « ! ».
+func _glow(b: Button) -> void:
+	b.tooltip_text = Loc.t("Tu peux t'offrir quelque chose de nouveau !")
+	b.add_theme_color_override("font_color", Pal.ACCENT)
+	var tw := b.create_tween().set_loops()
+	tw.tween_property(b, "self_modulate", Color(1.45, 1.25, 0.7), 0.6).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(b, "self_modulate", Color.WHITE, 0.6).set_trans(Tween.TRANS_SINE)
+	# Pastille 10×10 dessinée au pixel près (le « ! » de la police est trop haut pour elle)
+	var img := Image.create_empty(10, 10, false, Image.FORMAT_RGBA8)
+	img.fill(UI.GOLD_DARK)
+	img.fill_rect(Rect2i(1, 1, 8, 8), Pal.ACCENT)
+	img.fill_rect(Rect2i(4, 2, 2, 4), Pal.INK)   # la barre
+	img.fill_rect(Rect2i(4, 7, 2, 1), Pal.INK)   # le point
+	var badge := TextureRect.new()
+	badge.texture = ImageTexture.create_from_image(img)
+	badge.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.set_anchors_preset(Control.PRESET_CENTER_RIGHT)   # (centrée verticalement sur le bouton)
+	badge.offset_left = -15.0
+	badge.offset_right = -5.0
+	badge.offset_top = -5.0
+	badge.offset_bottom = 5.0
+	b.add_child(badge)
+
 
 func _make_frame(pos: Vector2) -> Dictionary:
 	# Cadre doré + passe-partout papier

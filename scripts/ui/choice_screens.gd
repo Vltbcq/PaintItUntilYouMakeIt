@@ -218,6 +218,16 @@ static func end_run(win: bool, earned: int, unlocked: Array = [], can_endless :=
 		cb.tooltip_text = Loc.t("Partage-la : un ami peut rejouer les mêmes boss, boutiques et choix de niveau")
 		seed_row.add_child(cb)
 		UI.put(root, UI.label(Loc.t("Pigments gagnés : ◆ %d") % earned, 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(cx, sy + 24), Vector2(640, 12))
+		# Ce que tu peux t'offrir à l'Atelier (les 3 moins chers) : donne envie d'y aller
+		var buys := Meta.atelier_affordable()
+		if not buys.is_empty():
+			var names := buys.slice(0, 3).map(func(d): return String(d.name))
+			var al := UI.label(Loc.t("De quoi t'offrir à l'Atelier : %s") % ", ".join(names) + ("..." if buys.size() > 3 else ""), 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER)
+			al.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			UI.put(root, al, Vector2(170 + cx, sy + 38), Vector2(300, 26))
+		var atb := UI.hotkey(UI.button(Loc.t("Atelier  ◆ %d") % Meta.pigments(), func(): root.done.emit("atelier")), [KEY_A])
+		atb.tooltip_text = Loc.t("Dépense tes pigments : nouvelles couleurs, plus d'encre, outils...")
+		UI.put(root, atb, Vector2(20 if can_endless else 110, 314), Vector2(130, 18))
 		if Run.character:
 			var th := UI.thumb(Run.build_player_image(), Vector2(72, 72))
 			UI.put(root, th, Vector2(284 + cx, 214), Vector2(72, 72))

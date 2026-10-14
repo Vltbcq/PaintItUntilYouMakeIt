@@ -310,6 +310,31 @@ func pigments() -> int:
 	return int(data.pigments)
 
 
+## Ce que tu peux t'offrir tout de suite à l'établi de l'Atelier, du moins cher au plus cher.
+func atelier_affordable() -> Array:
+	var out := UnlockDB.LIST.filter(func(d): return UnlockDB.for_pigments(d) and buy_open(d.id) \
+		and next_cost(d.id) >= 0 and next_cost(d.id) <= pigments())
+	out.sort_custom(func(a, b): return next_cost(a.id) < next_cost(b.id))
+	return out
+
+
+## Achats possibles (« id:niveau ») : le bouton Atelier du titre brille tant que l'un d'eux
+## n'était pas encore possible à ta dernière visite.
+func _atelier_keys() -> Array:
+	return atelier_affordable().map(func(d): return "%s:%d" % [d.id, level(d.id)])
+
+
+func atelier_new() -> bool:
+	var seen: Array = data.get("atelier_seen", [])
+	return _atelier_keys().any(func(k): return not k in seen)
+
+
+## Ouverture de l'Atelier : ce qui est achetable maintenant est « vu », le bouton s'éteint.
+func atelier_visited() -> void:
+	data.atelier_seen = _atelier_keys()
+	save()
+
+
 func base_ink() -> int:
 	return 120 + 25 * level("ink")
 

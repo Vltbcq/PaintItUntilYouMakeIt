@@ -25,6 +25,10 @@ func _ready() -> void:
 	Meta.no_save = true
 	Meta.settings = Meta.settings.duplicate()
 	Meta.settings.tips = false
+	# Copie de la sauvegarde, avec toutes les couleurs (le test dessine en rouge, quelle que soit la vraie sauvegarde)
+	Meta.data = Meta.data.duplicate(true)
+	for e in range(1, Pal.COUNT):
+		Meta.data.unlocks[Pal.UNLOCK[e]] = 1
 	var args := OS.get_cmdline_user_args()
 	shots = args[0] if args.size() > 0 else ""
 	await get_tree().process_frame

@@ -25,6 +25,7 @@ var scroll_mem := {}
 
 func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
+	Meta.atelier_visited()   # (le bouton Atelier du titre arrête de briller)
 	_build()
 	(func(): Tips.show(self, "atelier")).call_deferred()
 
