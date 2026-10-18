@@ -96,7 +96,7 @@ func _ready() -> void:
 	var en_bad := []
 	for k in IDS.size():
 		var d := AmuletDB.get_def(IDS[k])
-		if not LangEn.D.has(fr_names[k]) and not fr_names[k] in ["Red light", "Green light", "Cigarette", "Soda", "Piñata", "Sardines", "Combo", "Merchandising", "Coupon", "Airbag"]:
+		if not LangEn.D.has(fr_names[k]) and not fr_names[k] in ["Red light", "Green light", "Cigarette", "Soda", "Pinata", "Sardines", "Combo", "Merchandising", "Coupon", "Airbag"]:
 			en_bad.append(fr_names[k])
 		if AmuletDB.describe(d).contains("dégâts") or AmuletDB.describe(d).contains("vague") or AmuletDB.describe(d).contains(" tu "):
 			en_bad.append(String(d.id) + " (description)")
@@ -152,7 +152,7 @@ func _ready() -> void:
 	p.take_hit(1.0, 0, null)
 	_check(p.hp < before, "Pouce : après les 5 secondes, on reprend des dégâts")
 
-	# --- Piñata, Poil à gratter, Sardines
+	# --- Pinata, Poil à gratter, Sardines
 	_setup()
 	_give("pinata", 2)
 	_give("poil_gratter")
@@ -167,7 +167,7 @@ func _ready() -> void:
 	for k in 4:
 		p.inv = 0.0
 		p.take_hit(2.0, 0, null)
-	_check(Run.gold - g0 == 4, "Piñata ×2 : 4 coups reçus = +4 or (%d)" % (Run.gold - g0))
+	_check(Run.gold - g0 == 4, "Pinata ×2 : 4 coups reçus = +4 or (%d)" % (Run.gold - g0))
 	_check(p.itch_t > 1.5, "Poil à gratter : 2 s de vitesse après un coup")
 	arena.crowd = 0
 	p.inv = 0.0

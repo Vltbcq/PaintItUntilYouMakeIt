@@ -47,7 +47,7 @@ static var LIST := [
 	{"id": "cigarette", "ink": 18, "name": "Cigarette", "rar": 0, "flag": true, "desc": "+25% dégâts contre un ennemi qui a encore tous ses PV · {m}% critique", "malus": ["crit", -2.0]},
 	{"id": "biere", "ink": 24, "name": "Bière", "rar": 0, "flag": true, "desc": "+25% dégâts contre un ennemi sous 30% de ses PV · {m}% portée", "malus": ["range", -3.0]},
 	{"id": "soda", "ink": 24, "name": "Soda", "rar": 0, "flag": true, "desc": "Soigne 3 PV au début de chaque vague · {m}% dégâts", "malus": ["dmg", -3.0]},
-	{"id": "pinata", "ink": 28, "name": "Piñata", "rar": 0, "flag": true, "desc": "+1 or tous les 2 coups reçus · {m} PV max", "malus": ["max_hp", -2.0]},
+	{"id": "pinata", "ink": 28, "name": "Pinata", "rar": 0, "flag": true, "desc": "+1 or tous les 2 coups reçus · {m} PV max", "malus": ["max_hp", -2.0]},
 	{"id": "avis_recherche", "ink": 20, "name": "Avis de recherche", "rar": 0, "flag": true, "desc": "+2 or par élite tuée · {m} chance", "malus": ["luck", -2.0]},
 	{"id": "sardines", "ink": 26, "name": "Sardines", "rar": 0, "flag": true, "desc": "+2 armure quand 5 ennemis ou plus sont proches de toi · {m}% dégâts", "malus": ["dmg", -3.0]},
 	{"id": "poil_gratter", "ink": 18, "name": "Poil à gratter", "rar": 0, "flag": true, "desc": "Après un coup reçu : +15% vitesse pendant 2 s · {m} PV max", "malus": ["max_hp", -2.0]},

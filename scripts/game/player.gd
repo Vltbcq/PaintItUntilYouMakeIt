@@ -34,7 +34,7 @@ var poop_t := 0.0           # Pigeon : une fiente sur la tête, on avance moins 
 var size_k := 1.0           # Le Curseur : perso redimensionné (1,8 = énorme, 0,55 = minuscule)
 var size_t := 0.0
 var size_base := 0.0        # son rayon d'origine
-var hits_taken := 0         # Piñata : coups reçus pendant la vague
+var hits_taken := 0         # Pinata : coups reçus pendant la vague
 var itch_t := 0.0           # Poil à gratter : vitesse en plus après un coup reçu (s)
 var airbag_used := false    # Airbag : une fois par vague
 var punch_n := 0            # Punching-ball : coups reçus pendant la vague
@@ -297,7 +297,7 @@ func take_hit(dmg: float, element: int, src: Node) -> void:
 			return
 	hp -= d
 	was_hurt = true
-	# Piñata : 1 or tous les 2 coups reçus, par exemplaire
+	# Pinata : 1 or tous les 2 coups reçus, par exemplaire
 	hits_taken += 1
 	if Run.amulet_count("punching_ball") > 0:
 		punch_n += 1

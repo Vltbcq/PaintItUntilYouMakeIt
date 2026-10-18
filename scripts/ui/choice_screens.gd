@@ -107,18 +107,24 @@ static func difficulty(map_id := 1) -> Control:
 	s.build = func(root: _Screen):
 		UI.put(root, UI.label(Loc.t("Choisis la difficulté"), 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 22), Vector2(640, 24))
 		UI.put(root, UI.label(MapDB.get_def(map_id).name, 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 50), Vector2(640, 14))
+		UI.put(root, UI.label(Loc.t("Chaque difficulté garde les mécaniques des précédentes."), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 63), Vector2(640, 12))
 		var maxd := Meta.max_diff(map_id)
 		for i in Meta.DIFFICULTIES.size():
 			var d: Dictionary = Meta.DIFFICULTIES[i]
 			var idx := i
-			var y := 80 + i * 44
+			var y := 80 + i * 47
 			var b := UI.button(d.name, func(): root.done.emit(idx), 20)
 			UI.put(root, b, Vector2(150, y), Vector2(160, 30))
-			var txt: String = d.desc + Loc.t("\nRécompense : ×%.2f pigments") % d.reward
+			var txt: String = d.desc
 			if i > maxd:
 				b.disabled = true
 				txt = Loc.t("Gagne une partie en %s sur cette carte pour débloquer.") % Meta.DIFFICULTIES[i - 1].name
-			UI.put(root, UI.label(txt, 10, Pal.DIM if i > maxd else Pal.TEXT), Vector2(322, y + 4), Vector2(300, 30))
+			else:
+				# (la récompense sous le bouton : la description a toute la place à côté)
+				UI.put(root, UI.label(Loc.t("Récompense : ×%.2f pigments") % d.reward, 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(150, y + 31), Vector2(160, 12))
+			var dl := UI.label(txt, 10, Pal.DIM if i > maxd else Pal.TEXT)
+			dl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			UI.put(root, dl, Vector2(322, y), Vector2(306, 44))
 		UI.put(root, UI.hotkey(UI.button(Loc.t("Retour"), func(): root.done.emit(null)), [KEY_ESCAPE]), Vector2(20, 330), Vector2(80, 18))
 		# Jouer la seed d'une autre partie (code partagé) : même tirage, mais rien ne se débloque
 		var sl := UI.label("", 10, Pal.BAD)

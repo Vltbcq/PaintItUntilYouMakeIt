@@ -8,11 +8,11 @@ const SLOTS := 3
 const RUN_SCRIPT := preload("res://scripts/autoload/run.gd")
 
 static var DIFFICULTIES := [
-	{"name": "Esquisse", "desc": "Déjà pas facile.", "hp": 1.0, "dmg": 1.0, "spawn": 1.0, "reward": 1.0},
-	{"name": "Croquis", "desc": "Ennemis plus coriaces. Les élites arrivent.", "hp": 1.3, "dmg": 1.2, "spawn": 1.15, "reward": 1.3},
-	{"name": "Aquarelle", "desc": "Plus d'ennemis, plus rapides. Les tireurs visent où tu vas.", "hp": 1.65, "dmg": 1.45, "spawn": 1.3, "reward": 1.6},
-	{"name": "Huile", "desc": "Les ennemis frappent très fort. Élites à pouvoirs, taches qui ralentissent.", "hp": 2.0, "dmg": 1.75, "spawn": 1.45, "reward": 2.0},
-	{"name": "Chef-d'œuvre", "desc": "Seuls les vrais artistes survivent. Les boss entrent en fureur.", "hp": 2.3, "dmg": 2.1, "spawn": 1.6, "reward": 2.5},
+	{"name": "Esquisse", "desc": "La base. Déjà pas facile.", "hp": 1.0, "dmg": 1.0, "spawn": 1.0, "reward": 1.0},
+	{"name": "Croquis", "desc": "Ennemis plus coriaces. NOUVEAU : des ÉLITES à partir de la vague 4.", "hp": 1.3, "dmg": 1.2, "spawn": 1.15, "reward": 1.3},
+	{"name": "Aquarelle", "desc": "Plus d'ennemis, plus rapides. NOUVEAU : les tireurs visent où tu vas, et chaque ennemi a une couleur imposée à dessiner.", "hp": 1.65, "dmg": 1.45, "spawn": 1.3, "reward": 1.6},
+	{"name": "Huile", "desc": "Les ennemis frappent très fort. NOUVEAU : chaque élite a un pouvoir, et les ennemis tués laissent une flaque qui ralentit.", "hp": 2.0, "dmg": 1.75, "spawn": 1.45, "reward": 2.0},
+	{"name": "Chef-d'œuvre", "desc": "Seuls les vrais artistes survivent. NOUVEAU : sous 25 % de PV, les boss entrent en fureur.", "hp": 2.3, "dmg": 2.1, "spawn": 1.6, "reward": 2.5},
 ]
 
 const DEFAULT_SETTINGS := {"volume": 0.8, "window_mode": "fenetre", "zoom": 1.5, "tips": true, "show_amulets": true, "music_volume": 0.8, "sfx_volume": 0.8, "lang": ""}
