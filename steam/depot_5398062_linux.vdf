@@ -1,0 +1,11 @@
+"DepotBuild"
+{
+	"DepotID" "5398062"
+	// Le jeu Linux / Steam Deck : PaintIt.x86_64 + les .so de GodotSteam et de Steam (exportés par upload.sh)
+	"FileMapping"
+	{
+		"LocalPath" "linux/*"
+		"DepotPath" "."
+		"Recursive" "1"
+	}
+}

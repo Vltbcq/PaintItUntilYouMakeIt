@@ -13,3 +13,7 @@ scripts/dev/
 tests/devtest.gd
 tests/devtest.gd.uid
 tests/devtest.tscn
+
+# SteamPipe : contenu exporté et journaux d'envoi (steam/upload.sh)
+steam/content/
+steam/output/

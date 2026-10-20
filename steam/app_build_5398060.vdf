@@ -1,0 +1,18 @@
+"AppBuild"
+{
+	"AppID" "5398060"
+	"Desc" "Paint It Until You Make It"   // (upload.sh donne la version et le commit avec -desc)
+
+	// Chemins relatifs à ce fichier : steam/
+	"ContentRoot" "content/"
+	"BuildOutput" "output/"
+
+	// Vide : le build arrive dans Steamworks -> Builds, et tu le mets en ligne à la main
+	"SetLive" ""
+
+	"Depots"
+	{
+		"5398061" "depot_5398061_windows.vdf"
+		"5398062" "depot_5398062_linux.vdf"
+	}
+}

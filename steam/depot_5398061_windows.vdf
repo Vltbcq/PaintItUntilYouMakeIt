@@ -1,0 +1,11 @@
+"DepotBuild"
+{
+	"DepotID" "5398061"
+	// Le jeu Windows : PaintIt.exe + les .dll de GodotSteam et de Steam (exportés par upload.sh)
+	"FileMapping"
+	{
+		"LocalPath" "windows/*"
+		"DepotPath" "."
+		"Recursive" "1"
+	}
+}
