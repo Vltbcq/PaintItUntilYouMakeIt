@@ -57,6 +57,9 @@ var st_t := 0.0
 var cd := 0.0
 var cd2 := 0.0
 var cd3 := 0.0
+var cd4 := 5.0           # Le Bug : prochaine série de copies glitchées
+var load_k := 0          # Le Curseur, Chargement : points de chargement déjà tirés
+var glitches: Array = []   # Le Bug : ses copies glitchées en cours ({g, t, shots})
 var dash_dir := Vector2.ZERO
 var tp_pos := Vector2.ZERO     # Raturé : où il va réapparaître (annoncé 1 s avant)
 var tp_mark := {}
@@ -1243,6 +1246,7 @@ func _boss_bug(delta: float, dirp: Vector2, dist: float) -> Vector2:
 	var rage := _enraged()
 	cd -= delta
 	cd2 -= delta
+	_tick_glitches(delta)   # (ses copies tirent aussi pendant qu'il se téléporte)
 	if state == "tp":
 		st_t -= delta
 		flash = 0.6 if int(t * 18.0) % 2 == 0 else 0.0
@@ -1284,12 +1288,56 @@ func _boss_bug(delta: float, dirp: Vector2, dist: float) -> Vector2:
 			arena.spawn_enemy_bullet(self, at, Vector2.ZERO, 0.7 + 0.12 * k)
 			arena.burst(at, ink_col, 4, 50.0)
 		Sfx.play("zap")
+	# Glitch : il se dédouble, 2 copies (3 sous 50 % de PV) qui lui ressemblent et tirent sur toi 4 s
+	cd4 -= delta
+	if cd4 <= 0.0:
+		cd4 = 6.5 if rage else 9.0
+		_glitch_copies(3 if rage else 2)
 	if cd2 <= 0.0:
 		cd2 = 5.0 if rage else 7.0
 		var ch := arena.ensure_bugs().heavy_choices()
 		if not ch.is_empty():
 			arena.bugs.launch(ch.pick_random(), ScreenBugs.WARN_HEAVY)
 	return dirp.orthogonal() * speed * 0.9 + dirp * speed * (0.5 if dist > 150.0 else -0.5)
+
+
+## Le Bug, Glitch : n copies de lui autour du joueur (intouchables), qui tirent chacune 4 salves
+## de 3 tirs vers lui (une par seconde), puis s'effacent.
+func _glitch_copies(n: int) -> void:
+	var a0 := randf() * TAU
+	arena.float_text(position + Vector2(0, -50), Loc.t("GLITCH !"), Color("6cf0a0"))
+	Sfx.play("zap")
+	for k in n:
+		var g := Sprite2D.new()
+		g.texture = arena.enemy_tex(id, elite)
+		g.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		g.scale = sprite.scale if sprite else Vector2.ONE
+		g.position = (arena.player.position + Vector2.from_angle(a0 + TAU * k / n) * randf_range(120.0, 170.0)).clamp(Vector2(30, 30), Vector2(Arena.W - 30, Arena.H - 30))
+		g.modulate = Color(0.6, 1.0, 0.8, 0.0)
+		arena.world.add_child(g)
+		var tw := g.create_tween()
+		tw.tween_property(g, "modulate:a", 0.7, 0.3)
+		tw.tween_interval(3.9)
+		tw.tween_property(g, "modulate:a", 0.0, 0.4)
+		tw.tween_callback(g.queue_free)
+		arena.burst(g.position, ink_col, 10, 90.0)
+		glitches.append({"g": g, "t": 0.0, "shots": 0})
+
+
+## Les copies glitchées tirent au rythme du boss (pas de minuteur : rien ne tire pendant la pause).
+func _tick_glitches(delta: float) -> void:
+	for c in glitches.duplicate():
+		c.t += delta
+		var g: Sprite2D = c.g
+		if not is_instance_valid(g) or int(c.shots) >= 4:
+			glitches.erase(c)
+			continue
+		if c.t >= 0.6 + c.shots * 1.0:
+			c.shots += 1
+			g.offset = Vector2(randf_range(-3, 3), randf_range(-2, 2))   # (il tremble, comme un bug d'affichage)
+			var aim := (arena.player.position - g.position).angle()
+			for da in [-0.22, 0.0, 0.22]:
+				arena.spawn_enemy_bullet(self, g.position, Vector2.from_angle(aim + da) * 130.0)
 
 
 ## Le Bug : une croix de tirs à 4 branches depuis `from` (n tirs par branche, de plus en plus rapides).
@@ -1421,9 +1469,10 @@ func _thrown_tick(delta: float) -> void:
 ## 2. Il sélectionne : un rectangle de sélection se trace, puis SUPPR : tout ce qui est dedans est
 ##    supprimé (ses ennemis aussi) ; il te REDIMENSIONNE (énorme et lent, ou minuscule et faible).
 ## 3. Il s'en prend à la fenêtre : il la RÉDUIT (faux bureau, à rouvrir d'un clic), il la TRAÎNE
-##    (toute l'image glisse), il tente un ALT+F4 (frappe-le assez fort pour l'arrêter). Et quand
-##    il semble vaincu : fausse victoire... il revient.
-const ALTF4_SEC := 3.0
+##    (toute l'image glisse), il te fait RAMER (curseur « occupé » : une spirale de points de
+##    chargement, et tu es ralenti). Et quand il semble vaincu : fausse victoire... il revient.
+const LOADING_SEC := 3.0
+const LOADING_EVERY := 0.07   # un point de chargement par branche toutes les 0,07 s
 const HAND_REACH := 30.0     # rayon dans lequel sa main attrape le joueur
 const STRUGGLE_NEED := 6     # secousses pour se libérer
 
@@ -1529,25 +1578,25 @@ func _boss_cursor(delta: float, dirp: Vector2, dist: float) -> Vector2:
 				st_t = 1.6
 				return Vector2.ZERO
 			return (Arena.TRASH_POS - position).normalized() * 105.0
-		"altf4":
-			flash = 0.4 if int(t * 12.0) % 2 == 0 else 0.0
-			if cast_hp - hp >= max_hp * 0.035:
-				state = "jam"
-				st_t = 1.8
-				arena.float_text(position + Vector2(0, -40), Loc.t("ALT+F4 ANNULÉ !"), Pal.GOOD)
-			elif st_t <= 0.0:
-				arena.hud.screen("closed", 0.9)
-				arena.hitstop(0.9)
-				p.inv = 0.0   # (pareil : un Alt+F4 réussi ne se rate pas)
-				p.take_hit(dmg * 2.2, 0, null)
+		"loading":
+			# Chargement : le curseur « occupé » tourne sur place et crache une spirale de points
+			# (2 branches, 3 sous 25 % de PV) ; pendant ce temps ton ordi rame (tu es ralenti)
+			var due := int((LOADING_SEC - st_t) / LOADING_EVERY)
+			var arms := 3 if hp < max_hp * 0.25 else 2
+			while load_k < due:
+				var a := load_k * 0.33
+				for arm in arms:
+					arena.spawn_enemy_bullet(self, position, Vector2.from_angle(a + TAU * arm / arms) * 95.0)
+				load_k += 1
+			if st_t <= 0.0:
 				state = "walk"
-				st_t = 1.6
+				st_t = 1.2
 			return Vector2.ZERO
 	if st_t <= 0.0:
 		st_t = [2.3, 2.0, 1.7][toile_phase - 1]
 		if atk_bag.is_empty():
 			atk_bag = [["throw", "arrows", "throw", "hunt"], ["select", "resize", "arrows", "throw", "select", "hunt", "arrows"],
-				["minimize", "altf4", "dragwin", "select", "arrows", "throw", "hunt", "resize", "arrows"]][toile_phase - 1].duplicate()
+				["minimize", "loading", "dragwin", "select", "arrows", "throw", "hunt", "resize", "arrows"]][toile_phase - 1].duplicate()
 			atk_bag.shuffle()
 		flash = 0.8
 		match String(atk_bag.pop_front()):
@@ -1602,10 +1651,13 @@ func _boss_cursor(delta: float, dirp: Vector2, dist: float) -> Vector2:
 			"dragwin":
 				arena.win_drag_t = Arena.WIN_DRAG_SEC
 				arena.hud.announce(Loc.t("IL TRAÎNE LA FENÊTRE !"), Pal.BAD)
-			"altf4":
-				state = "altf4"
-				st_t = ALTF4_SEC
-				cast_hp = hp
+			"loading":
+				state = "loading"
+				st_t = LOADING_SEC
+				load_k = 0
+				p.lag_t = LOADING_SEC
+				arena.hud.announce(Loc.t("CHARGEMENT EN COURS..."), Pal.BAD)
+				Sfx.play("zap")
 	return dirp * speed * (1.0 if dist > 150.0 else -0.4) + dirp.orthogonal() * speed * 0.6
 
 

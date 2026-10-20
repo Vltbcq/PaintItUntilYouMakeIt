@@ -34,6 +34,7 @@ var poop_t := 0.0           # Pigeon : une fiente sur la tête, on avance moins 
 var size_k := 1.0           # Le Curseur : perso redimensionné (1,8 = énorme, 0,55 = minuscule)
 var size_t := 0.0
 var size_base := 0.0        # son rayon d'origine
+var lag_t := 0.0           # Le Curseur, Chargement : ralenti
 var hits_taken := 0         # Pinata : coups reçus pendant la vague
 var itch_t := 0.0           # Poil à gratter : vitesse en plus après un coup reçu (s)
 var airbag_used := false    # Airbag : une fois par vague
@@ -144,6 +145,9 @@ func tick(delta: float) -> void:
 	if poop_t > 0.0:
 		poop_t -= delta
 		boost *= 0.55   # Pigeon : beurk
+	if lag_t > 0.0:
+		lag_t -= delta
+		boost *= 0.6    # Le Curseur, Chargement : ton ordi rame
 	if not arena.formula.is_empty():
 		boost *= float(arena.formula.speed)   # Le Tableur : sa formule s'applique à ta vitesse
 	if size_t > 0.0:

@@ -1,10 +1,15 @@
 extends Node
 ## Progression permanente entre les parties : pigments, déblocages, galerie de dessins.
 ## 3 SAUVEGARDES : chacune a sa progression, sa galerie, son Codex et sa partie en cours.
-## La sauvegarde 1 garde les emplacements historiques (user://vowel_save.json, user://gallery...),
+## La sauvegarde 1 garde les emplacements historiques (user://save.json, user://gallery...),
 ## les 2 et 3 sont dans user://slot2/ et user://slot3/. Les réglages sont communs (settings.json).
+## user:// = %APPDATA%/PaintItUntilYouMakeIt (Windows), ~/.local/share/PaintItUntilYouMakeIt (Linux).
+## Avant le renommage du jeu c'était « VowelGame » : au premier lancement, tout y est recopié.
 
 const SLOTS := 3
+const OLD_USER_DIR := "VowelGame"          # ancien dossier de sauvegarde (le jeu s'appelait Vowel)
+const LEGACY_SAVE := "vowel_save.json"     # ancien nom du fichier de sauvegarde
+const MIGRATE_SKIP := ["logs", "shader_cache", "objectdb_snapshots"]   # propres à chaque PC : pas recopiés
 const RUN_SCRIPT := preload("res://scripts/autoload/run.gd")
 
 static var DIFFICULTIES := [
@@ -25,10 +30,50 @@ var no_save := false        # tests : interdit toute écriture de la sauvegarde 
 
 
 func _ready() -> void:
+	_migrate_old_dir()
+	_rename_legacy_saves()
 	_load_settings()
 	slot = clampi(int(settings.get("slot", 1)), 1, SLOTS)
 	load_data()
 	apply_settings()
+
+
+# ------------------------------------------------------------------ Ancien nom du jeu
+
+## Premier lancement sous le nouveau nom : on recopie l'ancien dossier « VowelGame » (s'il existe et
+## que le nouveau n'a encore aucune sauvegarde). L'ancien dossier n'est pas touché (secours).
+func _migrate_old_dir() -> void:
+	if root != "user://":
+		return
+	var old := OS.get_data_dir().path_join(OLD_USER_DIR)
+	var new := OS.get_user_data_dir()
+	if old.simplify_path() == new.simplify_path() or not DirAccess.dir_exists_absolute(old):
+		return
+	for f in ["settings.json", "save.json", LEGACY_SAVE]:
+		if FileAccess.file_exists(new.path_join(f)):
+			return   # le nouveau dossier a déjà une sauvegarde : on ne l'écrase jamais
+	_copy_dir(old, new, true)
+
+
+func _copy_dir(from: String, to: String, top := false) -> void:
+	DirAccess.make_dir_recursive_absolute(to)
+	var d := DirAccess.open(from)
+	if d == null:
+		return
+	for f in d.get_files():
+		DirAccess.copy_absolute(from.path_join(f), to.path_join(f))
+	for sub in d.get_directories():
+		if top and sub in MIGRATE_SKIP:
+			continue
+		_copy_dir(from.path_join(sub), to.path_join(sub))
+
+
+## vowel_save.json -> save.json, dans chaque emplacement (une seule fois).
+func _rename_legacy_saves() -> void:
+	for n in range(1, SLOTS + 1):
+		var old := slot_dir(n) + LEGACY_SAVE
+		if FileAccess.file_exists(old) and not FileAccess.file_exists(save_path(n)):
+			DirAccess.rename_absolute(old, save_path(n))
 
 
 # ------------------------------------------------------------------ Emplacements de sauvegarde
@@ -43,7 +88,7 @@ func settings_path() -> String:
 
 
 func save_path(n := -1) -> String:
-	return slot_dir(n) + "vowel_save.json"
+	return slot_dir(n) + "save.json"
 
 
 func run_path(n := -1) -> String:
@@ -197,7 +242,7 @@ func set_setting(key: String, value, persist := true) -> void:
 func _load_settings() -> void:
 	settings = _read_json(settings_path())
 	if settings.is_empty():
-		var old := _read_json(root + "vowel_save.json")
+		var old := _read_json(save_path(1))
 		settings = (old.get("settings", {}) as Dictionary).duplicate()
 		if old.has("zoom"):
 			settings["zoom"] = old.zoom

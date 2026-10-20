@@ -56,7 +56,7 @@ var rulers: Array = []    # lignes tracées à la règle {a, b, t, life}
 var erasers: Array = []   # coups de gomme de la Toile Blanche {pos, r, t, dur, dmg}
 var bands: Array = []     # Tableur / Curseur : bandes annoncées qui explosent, puis restent effacées {rect, t, dmg, col, hold, done, acc}
 var win_drag_t := 0.0     # Le Curseur : il traîne la fenêtre du jeu (toute l'image glisse)
-const WIN_DRAG_SEC := 5.0
+const WIN_DRAG_SEC := 8.0
 const TRASH_POS := Vector2(W - 44, H - 44)   # Le Curseur : la Corbeille où il jette le joueur
 var formula := {}         # Tableur : formule appliquée à tes stats {text, t, dmg, speed}
 var bugs: ScreenBugs      # L'Écran : les bugs (règle de la carte, et le boss Le Bug)
@@ -2052,18 +2052,22 @@ func _tick_wells(delta: float) -> void:
 	wells = keep
 
 
-## Grande Signature : un trait cursif géant qui traverse l'écran.
-func signature(y: float, dmg: float, wst: Dictionary) -> void:
-	var pts := PackedVector2Array()
-	var phase := randf() * TAU
-	var x := -10.0
-	while x <= W + 10:
-		var loop := sin(x * 0.045 + phase) * 14.0 + sin(x * 0.11 + phase * 2.0) * 5.0
-		pts.append(Vector2(x, clampf(y + loop, 10.0, H - 10.0)))
-		x += 14.0
+## Surligneur : un trait cursif géant qui traverse l'écran. Il profite des amulettes de projectiles :
+## Polygunnus = trait 2× plus épais, Élastique = il repasse en sens inverse (une fois par Élastique),
+## Mise en abyme = chaque ennemi touché lâche 2 petits projectiles (tex : ceux de l'arme).
+func signature(y: float, dmg: float, wst: Dictionary, tex: Texture2D = null, pass_k := 0, path := PackedVector2Array()) -> void:
+	var pts := path
+	if pts.is_empty():
+		var phase := randf() * TAU
+		var x := -10.0
+		while x <= W + 10:
+			var loop := sin(x * 0.045 + phase) * 14.0 + sin(x * 0.11 + phase * 2.0) * 5.0
+			pts.append(Vector2(x, clampf(y + loop, 10.0, H - 10.0)))
+			x += 14.0
+	var fat := 2.0 if Run.amulet_count("polygunnus") > 0 else 1.0
 	var l := Line2D.new()
 	l.points = pts
-	l.width = 7.0
+	l.width = 7.0 * fat
 	l.default_color = Color(Pal.INK, 0.9)
 	l.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	l.end_cap_mode = Line2D.LINE_CAP_ROUND
@@ -2079,9 +2083,20 @@ func signature(y: float, dmg: float, wst: Dictionary) -> void:
 		if e.dead:
 			continue
 		for i in pts.size() - 1:
-			if Geometry2D.get_closest_point_to_segment(e.position, pts[i], pts[i + 1]).distance_to(e.position) < e.radius + 14.0:
+			if Geometry2D.get_closest_point_to_segment(e.position, pts[i], pts[i + 1]).distance_to(e.position) < e.radius + 14.0 * fat:
 				hit_enemy(e, dmg, wst, Vector2.UP, 40.0)
+				if tex and Run.amulet_count("mise_abyme") > 0 and bullets.size() < 400:
+					for da in [-0.6, 0.6]:
+						var c := spawn_bullet(e.position, Vector2.UP.rotated(randf() * TAU + da) * 200.0, {"damage": dmg * 0.25, "radius": 3.0, "pierce": 0}, wst, tex, "", 0.5)
+						c.child = true
+						c.scale = Vector2(0.6, 0.6)
 				break
+	# Élastique : le trait repasse sur le même chemin, en sens inverse
+	if pass_k < Run.amulet_count("elastique"):
+		var back := pts.duplicate()
+		back.reverse()
+		# (minuteur arrêté pendant la pause ; la liaison disparaît si l'arène est libérée entre-temps)
+		get_tree().create_timer(0.35, false).timeout.connect(signature.bind(y, dmg, wst, tex, pass_k + 1, back))
 
 
 func add_square(pos: Vector2, half: float, dur: float, dmg: float, col: Color) -> void:

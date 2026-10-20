@@ -193,14 +193,14 @@ func _draw_hud() -> void:
 	_draw_party()
 	_draw_arrows()
 	var cb = arena.boss
-	if cb and is_instance_valid(cb) and cb.state == "altf4":
-		# Le Curseur tente de fermer le jeu : la barre se remplit, il faut le frapper pour l'arrêter
-		var ak := clampf(1.0 - cb.st_t / Enemy.ALTF4_SEC, 0.0, 1.0)
+	if cb and is_instance_valid(cb) and cb.state == "loading":
+		# Le Curseur fait ramer le jeu : une barre de chargement (et des points de suspension qui tournent)
+		var ak := clampf(1.0 - cb.st_t / Enemy.LOADING_SEC, 0.0, 1.0)
 		draw_layer.draw_rect(Rect2(200, 62, 240, 30), Color(0.05, 0.05, 0.1, 0.9))
 		draw_layer.draw_rect(Rect2(200, 62, 240, 30), Pal.BAD, false, 2.0)
-		draw_layer.draw_string(UI.font, Vector2(200, 75), Loc.t("ALT + F4 : FRAPPE-LE !"), HORIZONTAL_ALIGNMENT_CENTER, 240, UI.fs(10), Color.WHITE)
+		draw_layer.draw_string(UI.font, Vector2(200, 75), Loc.t("CHARGEMENT") + ".".repeat(1 + int(arena.elapsed * 4.0) % 3), HORIZONTAL_ALIGNMENT_CENTER, 240, UI.fs(10), Color.WHITE)
 		draw_layer.draw_rect(Rect2(208, 80, 224, 6), Color(1, 1, 1, 0.25))
-		draw_layer.draw_rect(Rect2(208, 80, 224 * ak, 6), Pal.BAD)
+		draw_layer.draw_rect(Rect2(208, 80, 224 * ak, 6), Color("3a86ff"))
 	if not arena.formula.is_empty():
 		# Le Tableur : la barre de formule, en haut
 		draw_layer.draw_rect(Rect2(210, 44, 220, 14), Color(0.95, 0.95, 0.9))

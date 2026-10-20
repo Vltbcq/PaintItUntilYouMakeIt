@@ -45,7 +45,7 @@ Panneau de test (jeu en pause) : stats du perso (−/+), invincibilité, soin, o
 
 ## Publier une version (GitHub)
 
-Dépôt : https://github.com/Vltbcq/VowelGame. Lien à donner aux joueurs : https://github.com/Vltbcq/VowelGame/releases/latest
+Dépôt : https://github.com/Vltbcq/PaintItUntilYouMakeIt. Lien à donner aux joueurs : https://github.com/Vltbcq/PaintItUntilYouMakeIt/releases/latest
 
 La pipeline `.github/workflows/release.yml` exporte le jeu sur les serveurs de GitHub (Godot 4.7.2, Windows), vérifie que tous les scripts compilent, puis publie une Release avec `Vowel.exe` et `Vowel-windows.zip` :
 - à la main : onglet **Actions → Release → Run workflow**, choisir **contenu** ou **correctif** : le numéro est **calculé tout seul** depuis le dernier tag (contenu : v0.4 → v0.5 ; correctif : v0.4 → v0.4.1 → v0.4.2). Le champ « version précise » sert seulement pour forcer un numéro (ex. le jour du v1.0) ;
@@ -58,7 +58,7 @@ La pipeline `.github/workflows/release.yml` exporte le jeu sur les serveurs de G
 - La galerie ne supprime jamais rien toute seule (plus de limite par catégorie).
 
 - **3 sauvegardes** au lancement du jeu : chacune a sa progression (pigments, déblocages, records), sa galerie, son Codex et sa partie en cours. Les options sont communes. Bouton **Supprimer** avec confirmation (il faut cliquer, Entrée ne suffit pas). Depuis le titre : « Sauvegarde N · changer » (touche **S**).
-- La sauvegarde 1 utilise les fichiers d'origine (`user://vowel_save.json`, `gallery/`, `bestiary/`) ; les 2 et 3 sont dans `user://slot2/` et `user://slot3/`. Options : `user://settings.json`.
+- La sauvegarde 1 utilise les fichiers d'origine (`user://save.json`, `gallery/`, `bestiary/`) ; les 2 et 3 sont dans `user://slot2/` et `user://slot3/`. Options : `user://settings.json`.
 - **Reprise de partie** : la partie est enregistrée automatiquement au début de chaque vague, à la fin de chaque vague, après chaque niveau et à chaque action en boutique (`run_save.dat`). **Sauvegarder et quitter** est dans le menu pause et dans la boutique ; au titre, **Reprendre** (Entrée). Quitter en pleine vague (ou fermer le jeu) fait recommencer cette vague depuis son début, avec les PV du début de vague. Commencer une nouvelle partie remplace la partie en cours (après confirmation, sans compter de défaite).
 - Test : `res://tests/savetest.tscn` (travaille dans un dossier temporaire, jamais dans les vraies sauvegardes).
 
@@ -172,7 +172,7 @@ Quand un ennemi, un boss ou un élite apparaît pour la première fois dans une 
 - s'il y est déjà : **Garder ce dessin** (par défaut) ou **Redessiner** en partant de l'ancien (+2 ◆ ennemi, +3 élite, +5 boss si tu le modifies) ;
 - sinon : choisis d'abord un **dessin existant de ta galerie** (taille et encre compatibles, 95 % pour les boss), ou dessine-le.
 
-Le carnet est conservé d'une partie à l'autre (`%APPDATA%/VowelGame/bestiary/`). Les **projectiles ennemis ne se dessinent plus** : ce sont des gouttes d'encre de la couleur de l'ennemi.
+Le carnet est conservé d'une partie à l'autre (`%APPDATA%/PaintItUntilYouMakeIt/bestiary/`). Les **projectiles ennemis ne se dessinent plus** : ce sont des gouttes d'encre de la couleur de l'ennemi.
 
 ## Raretés d'armes : un dessin par rareté
 
@@ -303,7 +303,7 @@ shaders/sprite.gdshader  contour 1px, flash, teintes de statut, encres animées
 ```
 
 Il n'y a aucun asset externe : la police pixel, les sons 8 bits et le décor papier sont générés en code.
-Sauvegarde : `%APPDATA%/VowelGame/`.
+Sauvegarde : `%APPDATA%/PaintItUntilYouMakeIt/` (Linux : `~/.local/share/PaintItUntilYouMakeIt/`). Avant le renommage du jeu c'était `VowelGame/` : il est recopié automatiquement au premier lancement.
 
 ## Idées pour la suite
 

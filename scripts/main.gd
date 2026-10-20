@@ -547,7 +547,11 @@ func _buy(i: int) -> void:
 		Run.log_event("event", Loc.t("Obtenu : %s%s") % [what, (" (● %d)" % o.price) if o.price > 0 else ""])
 	else:
 		Run.log_event("buy", Loc.t("Achat : %s (● %d)") % [what, o.price])
-	Run.apply_capital()   # Le Capital vient d'être acheté : toute la boutique passe au prix moyen
+	if o.type == "amulet" and o.id in ["capital", "de_pipe"]:
+		# Le Capital ou le Dé pipé vient d'être acheté : les prix changent tout de suite (prix moyen,
+		# puis tirés au dé). Les autres achats ne touchent plus aux prix (le dé garde son tirage).
+		Run.apply_capital()
+		Run.roll_dice_prices()
 	Run.recompute()
 
 

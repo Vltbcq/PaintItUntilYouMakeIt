@@ -130,7 +130,7 @@ static var TYPES := {
 		"desc": "Légendaire. MARQUE les ennemis. Un marqué qui meurt éclabousse ses voisins, qui sont marqués à leur tour : réaction en chaîne."},
 	"grande_signature": {"name": "Surligneur", "kind": "ranged", "style": "signature", "ink": 102, "bink": 25, "canvas": 32, "bcanvas": 16,
 		"min_rar": 3, "nobullet": true, "dmg": 1.0, "cd": 1.0, "speed": 1.0,
-		"desc": "Légendaire. Toutes les 8 s, trace une SIGNATURE géante à travers l'écran. Plus fort avec les ennemis tués dans la partie."},
+		"desc": "Légendaire. Toutes les 5 s, trace une SIGNATURE géante à travers l'écran. Plus fort avec les ennemis tués dans la partie."},
 	"point_final": {"name": "Trou noir", "kind": "ranged", "style": "well", "ink": 102, "bink": 25, "canvas": 32, "bcanvas": 16,
 		"min_rar": 3, "nobullet": true, "dmg": 1.1, "cd": 2.2, "speed": 1.0,
 		"desc": "Légendaire. Pose un point noir qui grossit, ASPIRE les ennemis autour, puis implose."},

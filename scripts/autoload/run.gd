@@ -277,8 +277,7 @@ func amulet_count(id: String) -> int:
 const LATE_FROM := 8
 const LATE_HP := 1.12
 const LATE_DMG := 1.06
-const LEVEL_DECAY := 0.97
-const LEVEL_DECAY_FROM := 10
+const LEVEL_BONUS := 0.85   # bonus de niveau (le même à tous les niveaux : plus de baisse après le niveau 10)
 var late_on := true   # (les tests de réglage comparent avec / sans)
 
 
@@ -307,12 +306,6 @@ func late_dmg() -> float:
 
 
 ## Bonus de niveau dégressifs : ×0,97 par niveau au-delà du 10e (jamais sous ×0,5).
-func level_decay() -> float:
-	if not late_on:
-		return 1.0
-	return maxf(0.5, pow(LEVEL_DECAY, maxi(0, level - LEVEL_DECAY_FROM)))
-
-
 func eff_wave() -> float:
 	return 1.0 + (wave - 1) * 19.0 / (WAVES - 1)
 
@@ -789,7 +782,7 @@ func _roll_upgrades() -> Array:
 		var u: Array = pool[i]
 		var rar := roll_rarity()
 		var pact := randf() < PACT_CHANCE
-		var v := maxf(0.5, snappedf(u[1] * UPGRADE_MULT[rar] * (2.0 if pact else 1.0) * level_decay(), 0.5))
+		var v := maxf(0.5, snappedf(u[1] * UPGRADE_MULT[rar] * (2.0 if pact else 1.0) * LEVEL_BONUS, 0.5))
 		# (le texte montre ce que tu gagnes vraiment : ×2 avec le Palimpseste, ×1,5 par Stéroïdes)
 		var bm := bonus_mult()
 		var up := {"stat": u[0], "v": v, "rar": rar, "text": String(u[2]).replace("{v}", _num(snappedf(v * bm, 0.1)))}
@@ -933,6 +926,15 @@ func apply_capital() -> void:
 			continue
 		if owned or (o.type == "amulet" and o.id == "capital"):
 			o.price = avg
+
+
+## Dé pipé : chaque prix est tiré au hasard, de gratuit à ×2 (à partir du prix moyen avec le Capital).
+func roll_dice_prices() -> void:
+	if amulet_count("de_pipe") == 0:
+		return
+	for o in shop_offers:
+		if not o.sold and not o.get("gift", false) and o.type in ["weapon", "amulet", "familiar"]:
+			o.price = roundi(float(o.price) * randf_range(0.0, 2.0))
 
 
 func make_case(tier: int, kind: String) -> Dictionary:
@@ -1107,11 +1109,7 @@ func _roll_shop() -> void:
 	for key in fresh:
 		Meta.mark_seen(key)
 	apply_capital()
-	# Dé pipé : chaque prix est tiré au hasard, de gratuit à ×2
-	if amulet_count("de_pipe") > 0:
-		for o in shop_offers:
-			if o.type in ["weapon", "amulet", "familiar"]:
-				o.price = roundi(float(o.price) * randf_range(0.0, 2.0))
+	roll_dice_prices()
 	# Case « potion » : une fois sur deux
 	if randf() < POTION_CHANCE:
 		var roll := randf()

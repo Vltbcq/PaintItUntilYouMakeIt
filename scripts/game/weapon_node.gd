@@ -562,14 +562,14 @@ func _special_step(delta: float) -> void:
 		if n > 0:
 			arena.float_text(player.position + Vector2(0, -26), Loc.t("RENVOI ×%d") % n, Color(0.8, 0.9, 1.0))
 	else:
-		special_t = 8.0
+		special_t = 5.0
 		var mult := 1.0 + Run.kills * 0.004   # plus fort avec les ennemis tués dans la partie
 		# Passe à la hauteur d'un des ennemis les plus proches (sinon près de toi)
 		var y := player.position.y + randf_range(-40.0, 40.0)
 		var close := arena.enemies.filter(func(e): return not e.dead and e.position.distance_to(player.position) < 220.0)
 		if not close.is_empty():
 			y = (close.pick_random() as Enemy).position.y
-		arena.signature(y, b.damage * 4.0 * mult, st)
+		arena.signature(y, b.damage * 4.0 * mult, st, null if bullet_tex.is_empty() else bullet_tex[0])
 
 
 ## Palette vivante : un orbe chercheur par couleur du dessin, avec son effet garanti.

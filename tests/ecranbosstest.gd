@@ -27,6 +27,20 @@ func _ready() -> void:
 
 	# ============================================================ Le Bug
 	var boss := await _fight("bug", 10)
+	# Glitch : des copies apparaissent autour du joueur et tirent sur lui
+	boss.cd = 99.0
+	boss.cd2 = 99.0
+	boss.cd3 = 99.0
+	boss.cd4 = 0.0
+	for b0 in arena.bullets.duplicate():
+		arena.bullets.erase(b0)
+		b0.queue_free()
+	_steps(int(1.0 / DT))
+	var glitch_shots: Array = arena.bullets.filter(func(b): return b.hostile)
+	_check(glitch_shots.size() >= 6 and boss.cd4 > 5.0, "Le Bug se dédouble : ses copies tirent (%d tirs en 1 s)" % glitch_shots.size())
+	boss.cd = 0.0
+	boss.cd2 = 0.0
+	boss.cd3 = 0.0
 	var p := arena.player
 	var tp := 0
 	var last_pos := boss.position
@@ -281,33 +295,25 @@ func _ready() -> void:
 	_check(max_off > 40.0, "Le Curseur traîne la fenêtre : l'image se décale (jusqu'à %d px)" % int(max_off))
 	arena.win_drag_t = 0.0
 
-	# Alt+F4 : frappé assez fort il rate, sinon le jeu « se ferme » et ça fait très mal
-	boss.atk_bag = ["altf4"]
+	# Chargement (à la place de l'Alt+F4) : immobile, il crache une spirale de points, et tu rames
+	for b0 in arena.bullets.duplicate():
+		arena.bullets.erase(b0)
+		b0.queue_free()
+	boss.atk_bag = ["loading"]
 	boss.state = "walk"
 	boss.st_t = 0.0
 	boss.boss_inv = 0.0
 	_steps(2)
-	_check(boss.state == "altf4", "Le Curseur tente un Alt+F4")
+	_check(boss.state == "loading" and p.lag_t > 0.0, "Le Curseur lance un Chargement : le joueur est ralenti")
+	var pos0 := boss.position
+	_steps(int(1.5 / DT))
+	var spiral: Array = arena.bullets.filter(func(b): return b.hostile)
+	_check(spiral.size() >= 30 and boss.position.distance_to(pos0) < 1.0, "Chargement : une spirale de %d points, et il ne bouge pas" % spiral.size())
 	if shots.size() > 0:
-		for k in 30:
-			_step()
-		await _shot("curseur_altf4")
-	boss.hp -= boss.max_hp * 0.04
-	_steps(2)
-	_check(boss.state == "jam", "Alt+F4 : frappé assez fort, il est annulé et le boss est sonné")
-	boss.state = "altf4"
-	boss.st_t = 0.05
-	boss.cast_hp = boss.hp
-	p.god = false
-	p.max_hp = 99999.0
-	p.hp = p.max_hp
-	p.inv = 0.0
-	arena.hitstop_t = 0.0
-	_step_raw(4)
-	_check(arena.hud.crash_kind == "closed" and p.hp < p.max_hp, "Alt+F4 réussi : « le jeu a été fermé », le joueur perd %d PV" % int(p.max_hp - p.hp))
-	p.god = true
-	arena.hud.crash_t = 0.0
-	arena.hitstop_t = 0.0
+		await _shot("curseur_chargement")
+	_steps(int(2.0 / DT))
+	_check(boss.state != "loading", "Chargement : il s'arrête au bout de 3 s")
+	_check(Arena.WIN_DRAG_SEC >= 8.0, "La fenêtre traînée dure %d s" % int(Arena.WIN_DRAG_SEC))
 
 	# fausse victoire : presque mort, il revient
 	boss.state = "walk"
