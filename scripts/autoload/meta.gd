@@ -149,7 +149,7 @@ func _read_json(path: String) -> Dictionary:
 	for p in [path, path + ".bak"]:
 		if not FileAccess.file_exists(p):
 			continue
-		var f := FileAccess.open(p, FileAccess.READ)
+		var f := _open_read(p)
 		if f == null:
 			continue
 		var parsed = JSON.parse_string(f.get_as_text())
@@ -158,11 +158,28 @@ func _read_json(path: String) -> Dictionary:
 	return {}
 
 
+## Sauvegarde et partie en cours chiffrées (comme la plupart des jeux) : plus modifiables dans un
+## bloc-notes. shortcut: la clé est dans le code (dépôt public) : ça arrête la triche facile, pas un
+## bidouilleur ; il faudrait une clé hors du dépôt pour aller plus loin.
+const SAVE_KEY := "PaintIt-sauvegarde-2026"
+
+
+## Ouvre en lecture un fichier chiffré (en-tête « GDEC » de Godot) ou en clair (anciennes sauvegardes).
+func _open_read(p: String) -> FileAccess:
+	var f := FileAccess.open(p, FileAccess.READ)
+	if f and f.get_length() >= 4 and f.get_buffer(4).get_string_from_ascii() == "GDEC":
+		f.close()
+		return FileAccess.open_encrypted_with_pass(p, FileAccess.READ, SAVE_KEY)
+	if f:
+		f.seek(0)
+	return f
+
+
 ## Écrit d'abord à côté (.tmp), puis met le fichier en place : une coupure pendant l'écriture ne
-## détruit jamais la version d'avant (gardée en .bak). value : texte, ou Variant si as_var.
-func _store(path: String, value, as_var := false) -> void:
+## détruit jamais la version d'avant (gardée en .bak). value : texte, ou Variant si as_var ; secret : chiffré.
+func _store(path: String, value, as_var := false, secret := false) -> void:
 	var tmp := path + ".tmp"
-	var f := FileAccess.open(tmp, FileAccess.WRITE)
+	var f := FileAccess.open_encrypted_with_pass(tmp, FileAccess.WRITE, SAVE_KEY) if secret else FileAccess.open(tmp, FileAccess.WRITE)
 	if f == null:
 		return
 	if as_var:
@@ -197,14 +214,14 @@ func write_text(path: String, text: String) -> void:
 func save_run(state: Dictionary) -> void:
 	if no_save:
 		return
-	_store(run_path(), state, true)
+	_store(run_path(), state, true, true)
 
 
 func read_run(n := -1) -> Dictionary:
 	var p := run_path(n)
 	if not FileAccess.file_exists(p):
 		return {}
-	var f := FileAccess.open(p, FileAccess.READ)
+	var f := _open_read(p)
 	if f == null:
 		return {}
 	var v = f.get_var()
@@ -326,7 +343,7 @@ func save() -> void:
 		return
 	DirAccess.make_dir_recursive_absolute(gallery_dir())
 	DirAccess.make_dir_recursive_absolute(bestiary_dir())
-	_store(save_path(), JSON.stringify(data, "\t"))
+	_store(save_path(), JSON.stringify(data, "\t"), false, true)
 
 
 # ------------------------------------------------------------------ Déblocages
@@ -635,7 +652,7 @@ func add_to_gallery(kind: String, img: Image, effect: String, imported := false,
 	var path := "%s/%s_%d.png" % [gallery_dir(), kind, id]
 	img.save_png(path)
 	var entry := {"id": id, "kind": kind, "file": path, "effect": effect, "hash": h,
-		"w": img.get_width(), "h": img.get_height(), "px": Analyzer.count_pixels(img)}
+		"w": img.get_width(), "h": img.get_height(), "px": Analyzer.count_pixels(img), "el": element_counts(img)}
 	if outline:
 		entry.outline = true
 	if imported:
@@ -867,6 +884,19 @@ func remove_from_gallery(entry: Dictionary) -> void:
 			data.gallery.erase(e)
 			break
 	save()
+
+
+## Nombre de pixels de chaque couleur (élément) d'un dessin (même seuil que Analyzer.analyze).
+static func element_counts(img: Image) -> Array:
+	var out := []
+	out.resize(Pal.COUNT)
+	out.fill(0)
+	for y in img.get_height():
+		for x in img.get_width():
+			var c := img.get_pixel(x, y)
+			if c.a > 0.5:
+				out[Pal.element_of(c)] += 1
+	return out
 
 
 func gallery_image(entry: Dictionary) -> Image:

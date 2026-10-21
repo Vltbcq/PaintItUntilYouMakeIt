@@ -11,12 +11,45 @@ const LAST := 30   # parties montrées sur les courbes
 
 var tab := "resume"
 var history: Array = []
+var _count_task := -1      # comptage des couleurs des dessins, en arrière-plan
+var _counted := {}         # fichier -> pixels par couleur (rempli par la tâche)
 
 
 func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
 	history = Meta.data.get("history", [])
+	# Les dessins jamais comptés le sont en arrière-plan dès l'ouverture : l'écran s'affiche tout de suite
+	var files: Array = (Meta.data.get("gallery", []) as Array).filter(func(e): return not e.has("el")).map(func(e): return String(e.file))
+	if not files.is_empty():
+		_count_task = WorkerThreadPool.add_task(_count_files.bind(files))
 	_build()
+
+
+func _process(_delta: float) -> void:
+	if _count_task >= 0 and WorkerThreadPool.is_task_completed(_count_task):
+		WorkerThreadPool.wait_for_task_completion(_count_task)
+		_count_task = -1
+		for e in Meta.data.get("gallery", []):
+			if _counted.has(e.file):
+				e.el = _counted[e.file]
+		Meta.save()
+		if tab == "dessins":
+			_build()
+
+
+func _exit_tree() -> void:
+	if _count_task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_count_task)
+
+
+## (tâche d'arrière-plan : ne touche qu'à _counted, la sauvegarde est mise à jour par _process)
+func _count_files(files: Array) -> void:
+	# shortcut: Pal.element_of remplit un cache partagé, sans verrou ; sûr tant que l'écran des stats ne
+	# l'appelle pas lui-même pendant le comptage (sinon : compter avec un cache local à la tâche)
+	for f in files:
+		var img := Image.load_from_file(f)
+		if img:
+			_counted[f] = Meta.element_counts(img)
 
 
 func _build() -> void:
@@ -64,8 +97,7 @@ func _resume() -> void:
 		[Loc.t("Dégâts infligés"), _big(int(c.get("damage", 0)))],
 		[Loc.t("Or ramassé"), _big(int(c.get("gold_earned", 0)))],
 		[Loc.t("Or dépensé"), _big(int(c.get("gold_spent", 0)))],
-		[Loc.t("Record de vague"), str(mini(int(d.get("best_wave", 0)), Run.WAVES))],
-		[Loc.t("Record en mode infini"), (Loc.t("vague %d") % int(d.best_endless)) if int(d.get("best_endless", 0)) > 0 else "—"],
+		[Loc.t("Record de vague"), str(maxi(int(d.get("best_wave", 0)), int(d.get("best_endless", 0))))],   # (mode infini compris)
 	]
 	var p := UI.panel()
 	UI.put(self, p, Vector2(12, 40), Vector2(290, 290))
@@ -180,26 +212,24 @@ func _item_name(kind: String, id: String) -> String:
 # ------------------------------------------------------------------ Dessins et couleurs
 
 func _dessins() -> void:
-	# Couleurs de tous les dessins de la galerie (au pixel près)
+	# Pixels de chaque couleur dans toute la galerie : comptés une fois par dessin, puis gardés
+	# dans sa fiche (« el »), car relire des centaines de fichiers prend près d'une seconde
+	var entries: Array = Meta.data.get("gallery", [])
 	var px := []
 	px.resize(Pal.COUNT)
 	px.fill(0.0)
-	var entries: Array = Meta.data.get("gallery", [])
 	for e in entries:
-		var img := Meta.gallery_image(e)
-		if img == null:
-			continue
-		var a := Analyzer.analyze(img)
-		var fr: Array = a.get("frac", [])
-		for k in mini(fr.size(), Pal.COUNT):
-			px[k] += float(fr[k]) * float(a.get("pixels", 0))
+		for k in mini((e.get("el", []) as Array).size(), Pal.COUNT):
+			px[k] += float(e.el[k])
 	var p := UI.panel()
 	UI.put(self, p, Vector2(12, 40), Vector2(330, 290))
 	UI.put(p, UI.label(Loc.t("COULEURS DE TES DESSINS"), 10, Pal.ACCENT), Vector2(10, 8))
 	var total: float = 0.0
 	for v in px:
 		total += v
-	if total <= 0.0:
+	if _count_task >= 0:
+		UI.put(p, UI.label(Loc.t("Calcul des couleurs..."), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 130), Vector2(330, 12))
+	elif total <= 0.0:
 		_empty(p, Vector2(330, 290))
 	else:
 		var pie := _Pie.new()

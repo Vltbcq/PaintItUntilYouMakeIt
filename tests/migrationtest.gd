@@ -54,6 +54,15 @@ func _ready() -> void:
 		"écriture sûre : la version d'avant est gardée en .bak, pas de .tmp qui traîne")
 	_write(Meta.save_path(1), '{"pigments": 1')   # coupure en pleine écriture
 	_check(int(Meta._read_json(Meta.save_path(1)).get("pigments", -1)) == 99, "save.json illisible : on relit la version .bak")
+	# 5. sauvegarde chiffrée : illisible dans un bloc-notes, relue normalement par le jeu
+	Meta._store(Meta.save_path(1), '{"pigments": 123}', false, true)
+	var raw := FileAccess.get_file_as_bytes(Meta.save_path(1))
+	_check(raw.slice(0, 4).get_string_from_ascii() == "GDEC" and not raw.get_string_from_utf8().contains("123"),
+		"sauvegarde chiffrée : rien de lisible dans le fichier")
+	_check(int(Meta._read_json(Meta.save_path(1)).get("pigments", -1)) == 123, "sauvegarde chiffrée : le jeu la relit")
+	Meta._store(Meta.save_path(1) + ".run", {"gold": 7}, true, true)
+	var f := Meta._open_read(Meta.save_path(1) + ".run")
+	_check(f != null and int((f.get_var() as Dictionary).get("gold", -1)) == 7, "partie en cours chiffrée : relue")
 	Meta.root = root0
 	_rm(tmp)
 	print("MIGRATION : %d échec(s)" % fails)
