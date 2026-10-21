@@ -81,12 +81,42 @@ func _ready() -> void:
 	else:
 		UI.put(self, UI.label(Loc.t("%s  (se change depuis l'écran-titre)") % Loc.LANG_NAMES[Loc.lang], 10, Pal.DIM), Vector2(280, y + 2), Vector2(300, 12))
 
-	# Crédit obligatoire des musiques (licence de soundimage.org)
+	# Crédits : l'équipe, les testeurs, et le crédit obligatoire des musiques (licence de soundimage.org)
 	y += 30
 	UI.put(self, UI.label(Loc.t("Crédits"), 10, Pal.TEXT), Vector2(150, y + 2))
-	UI.put(self, UI.label(Loc.t("Musique : Eric Matyas · soundimage.org"), 10, Pal.DIM), Vector2(280, y + 2), Vector2(300, 12))
+	UI.put(self, UI.button(Loc.t("Voir les crédits"), _credits), Vector2(280, y), Vector2(140, 16))
 
 	UI.put(self, UI.hotkey(UI.button(Loc.t("Fermer"), func(): done.emit(null), 20), [KEY_ESCAPE, KEY_ENTER, KEY_KP_ENTER]), Vector2(260, 316), Vector2(120, 26))
+
+
+## Testeurs : par ordre alphabétique (pseudos tels quels, jamais traduits)
+const TESTERS := "CoffeGopher · cecilouXe · chuck joris · elouanr · Enderguigui · fan de moi · Gold Luckyy · KC Dory · Newedgar · Petit Aros · POM'S · Scarab · scraccio"
+
+
+func _credits() -> void:
+	var ov := Control.new()
+	ov.process_mode = Node.PROCESS_MODE_ALWAYS
+	ov.mouse_filter = Control.MOUSE_FILTER_STOP
+	UI.put(self, ov, Vector2.ZERO, Vector2(640, 360))
+	UI.fill_bg(ov, Color(0, 0, 0, 0.6))
+	var p := UI.panel(Pal.PANEL, Pal.BORDER, 2)
+	UI.put(ov, p, Vector2(110, 45), Vector2(420, 270))
+	UI.put(p, UI.label("PAINT IT UNTIL YOU MAKE IT", 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 8), Vector2(420, 24))
+	var y := 40.0
+	for part in [[Loc.t("Un jeu de Malphear"), Loc.t("Idée, développement et game design")], [Loc.t("Logo et illustrations"), "cecilouXe"],
+			[Loc.t("Testeurs"), TESTERS]]:
+		UI.put(p, UI.label(part[0], 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, y), Vector2(420, 12))
+		var t := UI.label(part[1], 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		t.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED   # (les pseudos ne se traduisent pas)
+		var h := 12.0 if part[1] != TESTERS else 40.0
+		UI.put(p, t, Vector2(20, y + 13), Vector2(380, h))
+		y += 13.0 + h + 10.0
+	var small := UI.label("\n".join([Loc.t("Musique : Eric Matyas · soundimage.org"), Loc.t("Police : Yoster Island, par codeman38"),
+		Loc.t("Fait avec Godot Engine · intégration Steam : GodotSteam")]), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER)
+	UI.put(p, small, Vector2(0, y), Vector2(420, 40))
+	UI.put(p, UI.label(Loc.t("Merci d'avoir joué !"), 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, y + 46), Vector2(420, 12))
+	UI.put(p, UI.hotkey(UI.button(Loc.t("Fermer"), func(): ov.queue_free()), [KEY_ESCAPE]), Vector2(160, 246), Vector2(100, 16))
 
 
 func _choices(key: String, values: Array, pos: Vector2) -> void:
