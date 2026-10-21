@@ -242,6 +242,7 @@ func default_data() -> Dictionary:
 
 
 func load_data() -> void:
+	_reset_cache()
 	data = default_data()
 	var parsed := _read_json(save_path())
 	for k in parsed:
@@ -651,8 +652,11 @@ func add_to_gallery(kind: String, img: Image, effect: String, imported := false,
 	data.next_id = id + 1
 	var path := "%s/%s_%d.png" % [gallery_dir(), kind, id]
 	img.save_png(path)
+	invalidate(path)
 	var entry := {"id": id, "kind": kind, "file": path, "effect": effect, "hash": h,
-		"w": img.get_width(), "h": img.get_height(), "px": Analyzer.count_pixels(img), "el": element_counts(img)}
+		"w": img.get_width(), "h": img.get_height()}
+	entry.merge(drawing_info(img))
+	_entries[path] = entry
 	if outline:
 		entry.outline = true
 	if imported:
@@ -672,10 +676,14 @@ func own_gallery_size() -> int:
 ## Couleurs (éléments) de ce dessin que tu n'as pas encore débloquées (pack primaire / secondaire).
 ## Un dessin importé peut en contenir : il reste dans la galerie, mais inutilisable jusque-là.
 func locked_colors(img: Image) -> Array:
+	return locked_colors_el(element_counts(img))
+
+
+## Même chose d'après les pixels par couleur (les infos d'une fiche de galerie : sans relire l'image).
+func locked_colors_el(el: Array) -> Array:
 	var out := []
-	var frac: Array = Analyzer.analyze(img).get("frac", [])
-	for e in range(1, mini(frac.size(), Pal.COUNT)):
-		if float(frac[e]) > 0.0 and not has(Pal.UNLOCK[e]):
+	for e in range(1, mini(el.size(), Pal.COUNT)):
+		if int(el[e]) > 0 and not has(Pal.UNLOCK[e]):
 			out.append(Pal.COLOR_NAMES[e])
 	return out
 
@@ -825,7 +833,7 @@ const GALLERY_HIDDEN := ["mark", "eproj"]
 
 
 func gallery(kind: String) -> Array:
-	var out: Array = data.gallery.filter(func(e): return (e.kind == kind or (kind == "all" and not e.kind in GALLERY_HIDDEN)) and FileAccess.file_exists(e.file))
+	var out: Array = data.gallery.filter(func(e): return (e.kind == kind or (kind == "all" and not e.kind in GALLERY_HIDDEN)) and not _missing.has(e.file))
 	out.reverse()
 	return out
 
@@ -838,9 +846,7 @@ func bestiary_get(key: String):
 	if not b.has(key):
 		return null
 	var e: Dictionary = b[key]
-	if not FileAccess.file_exists(e.file):
-		return null
-	var img := Image.load_from_file(e.file)
+	var img := drawing_image(e.file)
 	if img == null:
 		return null
 	return {"image": img, "effect": e.get("effect", ""), "outline": e.get("outline", false)}
@@ -853,6 +859,7 @@ func bestiary_set(key: String, img: Image, effect: String, outline: bool) -> voi
 		data.bestiary = {}
 	var path := "%s/%s.png" % [bestiary_dir(), key]
 	img.save_png(path)
+	invalidate(path)
 	data.bestiary[key] = {"file": path, "effect": effect, "outline": outline}
 	save()
 
@@ -863,6 +870,7 @@ func bestiary_remove(key: String) -> void:
 	var b: Dictionary = data.get("bestiary", {})
 	if b.has(key):
 		DirAccess.remove_absolute(b[key].file)
+		invalidate(b[key].file)
 		b.erase(key)
 		save()
 
@@ -881,26 +889,248 @@ func remove_from_gallery(entry: Dictionary) -> void:
 	for e in data.gallery:
 		if e.file == entry.file:
 			DirAccess.remove_absolute(e.file)
+			invalidate(e.file)
+			_entries.erase(e.file)
 			data.gallery.erase(e)
 			break
 	save()
 
 
 ## Nombre de pixels de chaque couleur (élément) d'un dessin (même seuil que Analyzer.analyze).
+## (Sans le cache partagé de Pal.element_of : appelée aussi par la lecture en arrière-plan.)
 static func element_counts(img: Image) -> Array:
 	var out := []
 	out.resize(Pal.COUNT)
 	out.fill(0)
+	var seen := {}
 	for y in img.get_height():
 		for x in img.get_width():
 			var c := img.get_pixel(x, y)
 			if c.a > 0.5:
-				out[Pal.element_of(c)] += 1
+				var k := c.to_rgba32()
+				if not seen.has(k):
+					seen[k] = Pal.nearest_element(c)
+				out[seen[k]] += 1
 	return out
 
 
 func gallery_image(entry: Dictionary) -> Image:
-	return Image.load_from_file(entry.file)
+	return drawing_image(entry.file)
+
+
+## Fichier du dessin par défaut d'une case du Codex ("" si aucun) : pour une vignette, sans lire l'image.
+func bestiary_file(key: String) -> String:
+	var e = data.get("bestiary", {}).get(key)
+	if e == null or _missing.has(e.file) or (not _cache.has(e.file) and not FileAccess.file_exists(e.file)):
+		return ""
+	return e.file
+
+
+# ------------------------------------------------------------------ Dessins : cache et infos
+## Les écrans (galerie, Codex, Stats, choix d'un dessin) ne relisent pas les PNG eux-mêmes :
+## - les infos d'un dessin de la galerie (zone dessinée, encre, pixels par couleur) sont calculées une
+##   fois et gardées dans sa fiche. INFO_V : à augmenter si une de ces formules change (tout est recalculé) ;
+## - les images lues restent en mémoire, avec leur texture (au plus CACHE_MAX : les moins récemment
+##   vues sont libérées, et relues au besoin) ;
+## - prefetch() (lancé par l'écran titre) lit tout en arrière-plan, par paquets, sans bloquer le jeu ;
+##   une vignette demandée par un écran (texture_async) passe devant.
+
+signal infos_done   # prefetch() : toutes les fiches de la galerie ont leurs infos
+
+const INFO_V := 1
+const CACHE_MAX := 1500
+const BATCH := 24
+
+var _cache := {}        # chemin -> {img, tex, rect}, du moins au plus récemment vu
+var _missing := {}      # chemins introuvables sur le disque
+var _entries := {}      # chemin -> fiche de galerie (pour y ranger les infos calculées en arrière-plan)
+var _queue: Array = []  # à lire en arrière-plan
+var _urgent: Array = [] # demandés par un écran : lus d'abord
+var _wanted := {}       # chemin -> [Callable(texture, zone dessinée)] en attente
+var _stamp := {}        # chemin -> n° de version (augmente quand le fichier est réécrit ou supprimé)
+var _epoch := 0         # change à chaque sauvegarde chargée : un paquet lu pour l'ancienne est jeté
+var _prefetched := false
+var _info_wait := false
+var _task := -1
+var _task_out := {}     # (rempli par la tâche, lu seulement une fois la tâche finie)
+var _task_stamp := {}
+var _task_epoch := 0
+
+
+## Infos d'un dessin, tirées de ses pixels (lent : à faire une fois par dessin).
+static func drawing_info(img: Image) -> Dictionary:
+	var r := img.get_used_rect()
+	return {"iv": INFO_V, "rect": [r.position.x, r.position.y, r.size.x, r.size.y],
+		"ink": Analyzer.ink_cost(img), "px": Analyzer.count_pixels(img), "el": element_counts(img)}
+
+
+## Fiche de galerie avec ses infos (calculées tout de suite si elles manquent encore). Sans « rect » :
+## le fichier est introuvable.
+func info(e: Dictionary) -> Dictionary:
+	if int(e.get("iv", 0)) < INFO_V:
+		var c = _load_now(String(e.file))
+		if c != null:
+			e.merge(drawing_info(c.img), true)
+	return e
+
+
+## Image d'un dessin (une copie : l'appelant peut la modifier), ou null si le fichier n'existe pas.
+func drawing_image(path: String) -> Image:
+	var c = _load_now(path)
+	return c.img.duplicate() if c != null else null
+
+
+## Texture d'un dessin pour une vignette : cb(texture, zone dessinée) tout de suite si elle est prête,
+## sinon dès qu'elle est lue (en arrière-plan). Rien si le fichier n'existe pas.
+func texture_async(path: String, cb: Callable) -> void:
+	var c = _cached(path)
+	if c != null:
+		cb.call(c.tex, c.rect)
+		return
+	if _missing.has(path):
+		return
+	if not _wanted.has(path):
+		_wanted[path] = []
+	_wanted[path].append(cb)
+	_urgent.append(path)
+
+
+## Lit en arrière-plan tous les dessins (les plus récents d'abord) et calcule les infos qui manquent.
+## Déjà fait : relance seulement les infos manquantes. infos_done est émis à la fin.
+func prefetch() -> void:
+	var g: Array = data.get("gallery", [])
+	for i in range(g.size() - 1, -1, -1):
+		var e: Dictionary = g[i]
+		_entries[String(e.file)] = e
+		if not _prefetched or int(e.get("iv", 0)) < INFO_V:
+			_queue.append(String(e.file))
+	if not _prefetched:
+		for k in data.get("bestiary", {}):
+			_queue.append(String(data.bestiary[k].file))
+	_prefetched = true
+	_info_wait = true
+
+
+## Le fichier vient d'être réécrit ou supprimé : on oublie ce qu'on en savait.
+func invalidate(path: String) -> void:
+	_cache.erase(path)
+	_missing.erase(path)
+	_stamp[path] = int(_stamp.get(path, 0)) + 1
+
+
+func _reset_cache() -> void:
+	for d in [_cache, _missing, _entries, _wanted]:
+		d.clear()
+	_queue.clear()
+	_urgent.clear()
+	_prefetched = false
+	_epoch += 1
+
+
+func _cached(path: String):
+	if not _cache.has(path):
+		return null
+	var c: Dictionary = _cache[path]
+	_cache.erase(path)   # (remis à la fin : le plus récemment vu)
+	_cache[path] = c
+	return c
+
+
+func _load_now(path: String):
+	var c = _cached(path)
+	if c != null:
+		return c
+	if _missing.has(path) or not FileAccess.file_exists(path):
+		return null
+	var img := Image.load_from_file(path)
+	if img == null:
+		_missing[path] = true
+		return null
+	return _put(path, img)
+
+
+## Met une image en mémoire, et la donne aux vignettes qui l'attendaient (lue ici ou en arrière-plan).
+func _put(path: String, img: Image) -> Dictionary:
+	var c := {"img": img, "tex": ImageTexture.create_from_image(img), "rect": img.get_used_rect()}
+	_cache[path] = c
+	while _cache.size() > CACHE_MAX:
+		_cache.erase(_cache.keys()[0])
+	for cb in _wanted.get(path, []):
+		cb.call(c.tex, c.rect)
+	_wanted.erase(path)
+	return c
+
+
+func _process(_delta: float) -> void:
+	if _task >= 0:
+		if not WorkerThreadPool.is_task_completed(_task):
+			return
+		WorkerThreadPool.wait_for_task_completion(_task)
+		_task = -1
+		_apply_batch()
+	_start_batch()
+
+
+func _start_batch() -> void:
+	var paths := []
+	var want_info := {}
+	while paths.size() < BATCH and not (_urgent.is_empty() and _queue.is_empty()):
+		var p: String = _urgent.pop_front() if not _urgent.is_empty() else _queue.pop_front()
+		var e = _entries.get(p)
+		var needs_info: bool = e != null and int(e.get("iv", 0)) < INFO_V
+		if p in paths or _missing.has(p) or (_cache.has(p) and not needs_info):
+			continue
+		if not _cache.has(p) and not _wanted.has(p) and not needs_info and _cache.size() >= CACHE_MAX:
+			continue   # (préchargement au-delà de la limite : inutile)
+		paths.append(p)
+		if needs_info:
+			want_info[p] = true
+	if paths.is_empty():
+		if _info_wait:
+			_info_wait = false
+			infos_done.emit()
+		return
+	_task_out = {}
+	_task_stamp = {}
+	for p in paths:
+		_task_stamp[p] = int(_stamp.get(p, 0))
+	_task_epoch = _epoch
+	_task = WorkerThreadPool.add_task(_load_batch.bind(paths, want_info, _task_out))
+
+
+## (tâche d'arrière-plan : n'écrit que dans out ; le résultat est rangé par _apply_batch)
+func _load_batch(paths: Array, want_info: Dictionary, out: Dictionary) -> void:
+	for p in paths:
+		var img: Image = Image.load_from_file(p) if FileAccess.file_exists(p) else null
+		var r := {"img": img}
+		if img != null and want_info.has(p):
+			r.info = drawing_info(img)
+		out[p] = r
+
+
+func _apply_batch() -> void:
+	if _task_epoch != _epoch:
+		return   # une autre sauvegarde a été chargée entre-temps
+	for p in _task_out:
+		var r: Dictionary = _task_out[p]
+		if int(_stamp.get(p, 0)) != int(_task_stamp[p]):
+			if _wanted.has(p):
+				_urgent.append(p)   # réécrit pendant la lecture : on relit la nouvelle version
+			continue
+		if r.img == null:
+			_missing[p] = true
+			_wanted.erase(p)
+			continue
+		if r.has("info") and _entries.has(p):
+			_entries[p].merge(r.info, true)
+		if _wanted.has(p) or (not _cache.has(p) and _cache.size() < CACHE_MAX):
+			_put(p, r.img)
+
+
+func _exit_tree() -> void:
+	if _task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_task)
+	_cache.clear()   # (textures libérées avant l'arrêt du moteur de rendu)
 
 
 # ------------------------------------------------------------------ Fin de partie

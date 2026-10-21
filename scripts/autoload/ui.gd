@@ -55,6 +55,17 @@ func _ready() -> void:
 	get_tree().root.theme = theme
 
 
+## Comme sb(), mais un seul exemplaire par style (grilles de centaines de cases) : à ne pas modifier.
+func sbc(bg: Color, border: Color, bw: int) -> StyleBoxFlat:
+	var k := "%s %s %d" % [bg.to_html(), border.to_html(), bw]
+	if not _sb_shared.has(k):
+		_sb_shared[k] = sb(bg, border, bw)
+	return _sb_shared[k]
+
+
+var _sb_shared := {}
+
+
 func sb(bg: Color, border: Color = Color.TRANSPARENT, bw := 0, mx := 6, my := 3) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
 	s.bg_color = bg
@@ -169,7 +180,18 @@ func button(text: String, cb: Callable, size := 10) -> Button:
 	b.pressed.connect(func():
 		Sfx.play("click")
 		cb.call())
+	b.mouse_entered.connect(func(): _bump(b, 1.06))
+	b.mouse_exited.connect(func(): _bump(b, 1.0))
+	b.button_down.connect(func(): _bump(b, 0.93))
+	b.button_up.connect(func(): _bump(b, 1.06 if b.is_hovered() else 1.0))
 	return b
+
+
+func _bump(b: Button, s: float) -> void:
+	if not is_instance_valid(b) or (b.disabled and s > 1.0):
+		return
+	b.pivot_offset = b.size / 2.0
+	b.create_tween().tween_property(b, "scale", Vector2(s, s), 0.08)
 
 
 ## Raccourci clavier sur un bouton (rappelé dans l'infobulle). Les chiffres utilisent la
@@ -326,13 +348,32 @@ class _Wall extends Control:
 ## Vignette d'un dessin (TextureRect pixel-perfect).
 func thumb(img: Image, size: Vector2) -> TextureRect:
 	var tr := TextureRect.new()
-	tr.texture = ImageTexture.create_from_image(img)
+	if img:
+		tr.texture = ImageTexture.create_from_image(img)
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	tr.custom_minimum_size = size
 	tr.size = size
 	tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return tr
+
+
+## Vignette d'un dessin (son fichier), affichée dès que l'image est prête (lue en arrière-plan au besoin).
+## trim : seulement la partie dessinée, sans les bords vides de la toile.
+func drawing_thumb(path: String, size: Vector2, trim := false) -> TextureRect:
+	var tr := thumb(null, size)
+	var w: WeakRef = weakref(tr)   # (la case a pu être fermée avant que l'image arrive)
+	Meta.texture_async(path, func(tex: Texture2D, r: Rect2i):
+		var t: TextureRect = w.get_ref()
+		if t == null:
+			return
+		if trim and r.size.x > 0:
+			var at := AtlasTexture.new()
+			at.atlas = tex
+			at.region = Rect2(r)
+			tex = at
+		t.texture = tex)
 	return tr
 
 

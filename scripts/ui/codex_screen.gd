@@ -12,6 +12,8 @@ static var TABS := [["armes", "Armes"], ["amulettes", "Amulettes"], ["familiers"
 var tab := "armes"
 var sel := ""
 var picker: Control
+var _detail: Control       # panneau de droite : seul refait quand on clique dans la liste
+var _list_btns := {}       # id -> bouton de la liste
 static var scroll_mem := {}  # position de défilement de la liste, par onglet (gardée quand on revient d'un dessin)
 
 
@@ -30,24 +32,22 @@ func _ready() -> void:
 # ------------------------------------------------------------------ Données
 
 func _items() -> Array:
-	var out := []
+	# par rareté (minimum pour une arme), puis ordre alphabétique ; clé de tri calculée une fois par objet
+	var key := {}
 	match tab:
 		"armes":
 			for id in WeaponDB.TYPES:
-				out.append(id)
-			# par rareté (minimum), puis ordre alphabétique
-			out.sort_custom(func(a, b): return _order(int(WeaponDB.TYPES[a].get("min_rar", 0)), WeaponDB.TYPES[a].name) < _order(int(WeaponDB.TYPES[b].get("min_rar", 0)), WeaponDB.TYPES[b].name))
+				key[id] = _order(int(WeaponDB.TYPES[id].get("min_rar", 0)), WeaponDB.TYPES[id].name)
 		"amulettes":
 			for d in AmuletDB.LIST:
-				out.append(d.id)
-			out.sort_custom(func(a, b): return _order(int(AmuletDB.get_def(a).rar), AmuletDB.get_def(a).name) < _order(int(AmuletDB.get_def(b).rar), AmuletDB.get_def(b).name))
+				key[d.id] = _order(int(d.rar), d.name)
 		"familiers":
 			for d in FamiliarDB.LIST:
-				out.append(d.id)
-			out.sort_custom(func(a, b): return _order(int(FamiliarDB.get_def(a).rar), FamiliarDB.get_def(a).name) < _order(int(FamiliarDB.get_def(b).rar), FamiliarDB.get_def(b).name))
+				key[d.id] = _order(int(d.rar), d.name)
 		"ennemis":
-			for id in EnemyDB.TYPES:
-				out.append(id)
+			return EnemyDB.TYPES.keys()
+	var out := key.keys()
+	out.sort_custom(func(a, b): return key[a] < key[b])
 	return out
 
 
@@ -71,7 +71,7 @@ func _lockable(id: String) -> bool:
 func _locked(id: String) -> bool:
 	if tab != "ennemis":
 		return not Meta.item_open(_item_key(id))   # arme / amulette pas encore débloquée : « ??? »
-	return Meta.bestiary_get(id) == null   # ennemi jamais rencontré (on dessine chaque ennemi la 1re fois qu'il arrive)
+	return Meta.bestiary_file(id) == ""   # ennemi jamais rencontré (on dessine chaque ennemi la 1re fois qu'il arrive)
 
 
 func _name(id: String) -> String:
@@ -138,26 +138,38 @@ func _slot_keys(id: String) -> Array:
 
 ## Complétion d'un onglet (ou de tout le Codex) : [% dessiné, % débloqué].
 func _completion(only := "") -> Array:
+	return _pct(_completion_counts(), only)
+
+
+## Comptes de chaque onglet, en un seul passage : {onglet: [cases dessinées, cases, débloqués, à débloquer]}.
+func _completion_counts() -> Dictionary:
 	var keep := tab
-	var slots_n := 0
-	var drawn := 0
-	var items_n := 0
-	var open := 0
+	var b: Dictionary = Meta.data.get("bestiary", {})
+	var out := {}
 	for t in TABS:
-		if only != "" and t[0] != only:
-			continue
 		tab = t[0]
+		var c := [0, 0, 0, 0]
 		for id in _items():
 			if _lockable(id):   # seulement ce qui se débloque (succès, nouvelle carte)
-				items_n += 1
+				c[3] += 1
 				if not _locked(id):
-					open += 1
+					c[2] += 1
 			for k in _slot_keys(id):
-				slots_n += 1
-				if (Meta.data.get("bestiary", {}) as Dictionary).has(k):
-					drawn += 1
+				c[1] += 1
+				if b.has(k):
+					c[0] += 1
+		out[tab] = c
 	tab = keep
-	return [100.0 * drawn / maxi(1, slots_n), 100.0 * open / items_n if items_n > 0 else 100.0]
+	return out
+
+
+static func _pct(counts: Dictionary, only := "") -> Array:
+	var c := [0, 0, 0, 0]
+	for t in counts:
+		if only == "" or t == only:
+			for i in 4:
+				c[i] += counts[t][i]
+	return [100.0 * c[0] / maxi(1, c[1]), 100.0 * c[2] / c[3] if c[3] > 0 else 100.0]
 
 
 func _default_or_blank(key: String, size: Vector2i) -> Image:
@@ -178,6 +190,7 @@ func _build() -> void:
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 3)
 	UI.put(self, tabs, Vector2(12, 34), Vector2(250, 16))
+	var counts := _completion_counts()
 	for t in TABS:
 		var tid: String = t[0]
 		var b := UI.button(t[1], func():
@@ -187,11 +200,11 @@ func _build() -> void:
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if tid == tab:
 			b.add_theme_stylebox_override("normal", UI.sb(UI.SELECTED, Pal.ACCENT, 1))
-		var tc := _completion(tid)
+		var tc := _pct(counts, tid)
 		b.tooltip_text = Loc.t("%s : %d%% dessiné · %d%% débloqué") % [t[1], roundi(tc[0]), roundi(tc[1])]
 		tabs.add_child(b)
 	# Complétion du Codex (tout confondu) et de l'onglet ouvert
-	var all := _completion()
+	var all := _pct(counts)
 	var cl := UI.label(Loc.t("COMPLÉTION  %d%% dessiné · %d%% débloqué") % [roundi(all[0]), roundi(all[1])], 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_RIGHT)
 	cl.mouse_filter = Control.MOUSE_FILTER_STOP
 	cl.tooltip_text = Loc.t("Dessiné : cases du Codex qui ont un dessin par défaut (chaque rareté d'arme compte)\nDébloqué : armes, amulettes et ennemis disponibles")
@@ -214,6 +227,8 @@ func _build() -> void:
 	vb.add_theme_constant_override("separation", 2)
 	vb.custom_minimum_size = Vector2(238, 0)
 	sc.add_child(vb)
+	_list_btns.clear()
+	var unknown := ImageTexture.create_from_image(Gfx.icon(Gfx.ICON_UNKNOWN))
 	for id in items:
 		var iid: String = id
 		var b := Button.new()
@@ -221,10 +236,11 @@ func _build() -> void:
 		b.custom_minimum_size = Vector2(236, 24)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		var locked := _locked(iid)
-		var has_default: bool = not locked and Meta.bestiary_get(_slots(iid)[0][0]) != null
+		var bf := "" if locked else Meta.bestiary_file(_slot_keys(iid)[0])
+		var has_default := bf != ""
 		b.text = "      " + _name(iid) + ("  ✓" if has_default else "")
 		if iid == sel:
-			b.add_theme_stylebox_override("normal", UI.sb(UI.SELECTED, Pal.ACCENT, 1))
+			b.add_theme_stylebox_override("normal", UI.sbc(UI.SELECTED, Pal.ACCENT, 1))
 		if tab == "amulettes":
 			b.add_theme_color_override("font_color", Pal.RARITY[AmuletDB.get_def(iid).rar])
 		elif tab == "familiers":
@@ -232,20 +248,38 @@ func _build() -> void:
 		elif tab == "armes":
 			# couleur de la rareté minimum de l'arme (commune blanc, rare bleu, épique violet, légendaire orange)
 			b.add_theme_color_override("font_color", Pal.RARITY[int(WeaponDB.TYPES[iid].get("min_rar", 0))])
-		var d = null if locked else Meta.bestiary_get(_slots(iid)[0][0])
 		if locked:
 			b.add_theme_color_override("font_color", Pal.DISABLED)
-		var th := UI.thumb(Analyzer.trim(d.image) if d != null else Gfx.icon(Gfx.ICON_UNKNOWN), Vector2(18, 18))
+		var th := UI.drawing_thumb(bf, Vector2(18, 18), true) if has_default else UI.thumb(null, Vector2(18, 18))
+		if not has_default:
+			th.texture = unknown
 		th.position = Vector2(4, 3)
 		b.add_child(th)
 		b.pressed.connect(func():
 			Sfx.play("click")
-			sel = iid
-			_build())
+			_select(iid))
 		vb.add_child(b)
+		_list_btns[iid] = b
+	UI.put(self, UI.hotkey(UI.button(Loc.t("Retour"), func(): done.emit(null)), [KEY_ESCAPE]), Vector2(12, 334), Vector2(80, 18))
+	_show_detail()
 
-	# --- Détail
+
+## Clic dans la liste : seuls la surbrillance et le panneau de droite changent (la liste reste).
+func _select(id: String) -> void:
+	sel = id
+	for k in _list_btns:
+		if k == sel:
+			_list_btns[k].add_theme_stylebox_override("normal", UI.sbc(UI.SELECTED, Pal.ACCENT, 1))
+		else:
+			_list_btns[k].remove_theme_stylebox_override("normal")
+	_show_detail()
+
+
+func _show_detail() -> void:
+	if is_instance_valid(_detail):
+		_detail.queue_free()
 	var p := UI.panel()
+	_detail = p
 	UI.put(self, p, Vector2(270, 56), Vector2(358, 272))
 	UI.put(p, UI.label(_name(sel), 20, Pal.ACCENT), Vector2(10, 6), Vector2(338, 24))
 	if _locked(sel):
@@ -263,7 +297,6 @@ func _build() -> void:
 		var lk := UI.label(Loc.t("VERROUILLÉ\n\n") + why, 10, Pal.DIM)
 		lk.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		UI.put(p, lk, Vector2(96, 36), Vector2(250, 120))
-		UI.put(self, UI.hotkey(UI.button(Loc.t("Retour"), func(): done.emit(null)), [KEY_ESCAPE]), Vector2(12, 334), Vector2(80, 18))
 		return
 	var slots := _slots(sel)
 	var compact := slots.size() > 2
@@ -275,7 +308,6 @@ func _build() -> void:
 	var info := UI.rich(_stats_text(sel), 10, Pal.TEXT, 11)   # quantités de stats en icônes
 	info.custom_minimum_size.x = 338
 	UI.put(p, info, Vector2(10, 146 if compact else 128), Vector2(338, 120))
-	UI.put(self, UI.hotkey(UI.button(Loc.t("Retour"), func(): done.emit(null)), [KEY_ESCAPE]), Vector2(12, 334), Vector2(80, 18))
 
 
 ## Version compacte (armes : une case par rareté + balles).
@@ -410,41 +442,36 @@ func _open_picker(key: String, cfg: Dictionary) -> void:
 	UI.put(picker, UI.hotkey(UI.button(Loc.t("Fermer"), func():
 		picker.queue_free()
 		picker = null), [KEY_ESCAPE]), Vector2(530, 6), Vector2(60, 16))
-	var sc := ScrollContainer.new()
-	UI.put(picker, sc, Vector2(10, 30), Vector2(580, 280))
-	var grid := GridContainer.new()
-	grid.columns = 10
-	grid.add_theme_constant_override("h_separation", 4)
-	grid.add_theme_constant_override("v_separation", 4)
-	sc.add_child(grid)
 	var s: Vector2i = cfg.size
-	var shown := 0
-	for e in Meta.gallery(cfg.gallery):
+	# (seulement ceux qui rentrent dans la toile, d'après leurs infos : sans relire les images)
+	var fits := Meta.gallery(cfg.gallery).filter(func(e):
+		return Meta.info(e).has("rect") and int(e.rect[2]) <= s.x and int(e.rect[3]) <= s.y)
+	UI.put(picker, DrawingGrid.new(fits, 10, Vector2(52, 52), func(e): return _picker_cell(e, key, cfg)), Vector2(10, 30), Vector2(580, 280))
+	if fits.is_empty():
+		UI.put(picker, UI.label(Loc.t("Aucun dessin de ta galerie n'a la bonne taille."), 10, Pal.DIM), Vector2(10, 40))
+
+
+func _picker_cell(e: Dictionary, key: String, cfg: Dictionary) -> Control:
+	var s: Vector2i = cfg.size
+	var b := Button.new()
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = Vector2(52, 52)
+	b.add_theme_stylebox_override("normal", UI.sbc(Pal.PAPER, Pal.BORDER, 1))
+	b.add_theme_stylebox_override("hover", UI.sbc(Pal.PAPER, Pal.ACCENT, 2))
+	var th := UI.drawing_thumb(e.file, Vector2(44, 44))
+	th.position = Vector2(4, 4)
+	b.add_child(th)
+	b.tooltip_text = Loc.t("Encre : %d / %d") % [int(e.get("ink", 0)), int(cfg.ink)]
+	var fx: String = e.get("effect", "")
+	b.pressed.connect(func():
 		var gi := Meta.gallery_image(e)
 		if gi == null:
-			continue
-		var r := gi.get_used_rect()
-		if r.size.x > s.x or r.size.y > s.y:
-			continue
-		var b := Button.new()
-		b.focus_mode = Control.FOCUS_NONE
-		b.custom_minimum_size = Vector2(52, 52)
-		b.add_theme_stylebox_override("normal", UI.sb(Pal.PAPER, Pal.BORDER, 1))
-		b.add_theme_stylebox_override("hover", UI.sb(Pal.PAPER, Pal.ACCENT, 2))
-		var th := UI.thumb(gi, Vector2(44, 44))
-		th.position = Vector2(4, 4)
-		b.add_child(th)
-		b.tooltip_text = Loc.t("Encre : %d / %d") % [Analyzer.ink_cost(gi), int(cfg.ink)]
-		var fx: String = e.get("effect", "")
-		b.pressed.connect(func():
-			var out := Image.create_empty(s.x, s.y, false, Image.FORMAT_RGBA8)
-			var t := Analyzer.trim(gi)
-			@warning_ignore("integer_division")
-			out.blit_rect(t, Rect2i(Vector2i.ZERO, t.get_size()), Vector2i((s.x - t.get_width()) / 2, (s.y - t.get_height()) / 2))
-			Meta.bestiary_set(key, out, fx, e.get("outline", false))   # bord : celui choisi dans la galerie
-			Sfx.play("buy")
-			_build())
-		grid.add_child(b)
-		shown += 1
-	if shown == 0:
-		UI.put(picker, UI.label(Loc.t("Aucun dessin de ta galerie n'a la bonne taille."), 10, Pal.DIM), Vector2(10, 40))
+			return
+		var out := Image.create_empty(s.x, s.y, false, Image.FORMAT_RGBA8)
+		var t := Analyzer.trim(gi)
+		@warning_ignore("integer_division")
+		out.blit_rect(t, Rect2i(Vector2i.ZERO, t.get_size()), Vector2i((s.x - t.get_width()) / 2, (s.y - t.get_height()) / 2))
+		Meta.bestiary_set(key, out, fx, e.get("outline", false))   # bord : celui choisi dans la galerie
+		Sfx.play("buy")
+		_build())
+	return b

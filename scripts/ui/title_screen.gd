@@ -32,6 +32,7 @@ var hero: TextureRect
 func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
 	UI.fill_bg(self)
+	Meta.prefetch()   # les dessins se lisent en arrière-plan : la galerie et le Codex seront prêts
 	for k in FRAME_KINDS + ["bullet"]:
 		entries += Meta.gallery(k)
 	installing = entries.is_empty()

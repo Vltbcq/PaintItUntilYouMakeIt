@@ -92,18 +92,12 @@ static func analyze(img: Image) -> Dictionary:
 		comps.append({"count": n, "rect": Rect2i(cx0, cy0, cx1 - cx0 + 1, cy1 - cy0 + 1)})
 
 	var frac := []
-	var dominant := 0
-	var dom_count := 0
 	var elements := 0
 	for e in Pal.COUNT:
 		frac.append(float(el[e]) / count)
-		if e > 0 and el[e] > dom_count:
-			dom_count = el[e]
-			dominant = e
 		if el[e] > 0 and float(el[e]) / count >= 0.03:
 			elements += 1
-	if float(dom_count) / count < 0.25:
-		dominant = 0
+	var dominant := dominant_of(el)
 
 	r.rect = Rect2i(minx, miny, bw, bh)
 	r.bw = bw
@@ -152,6 +146,22 @@ static func split_components(img: Image, a: Dictionary, max_parts := 12) -> Arra
 	if out.size() > max_parts:
 		out.resize(max_parts)
 	return out
+
+
+## Couleur dominante d'après les pixels par couleur (0 si aucune ne fait 25 % du dessin).
+static func dominant_of(el: Array) -> int:
+	var count := 0
+	for v in el:
+		count += int(v)
+	var dominant := 0
+	var dom_count := 0
+	for e in range(1, mini(el.size(), Pal.COUNT)):
+		if int(el[e]) > dom_count:
+			dom_count = int(el[e])
+			dominant = e
+	if count == 0 or float(dom_count) / count < 0.25:
+		return 0
+	return dominant
 
 
 static func trim(img: Image) -> Image:

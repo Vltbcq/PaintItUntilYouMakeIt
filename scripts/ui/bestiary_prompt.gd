@@ -102,49 +102,7 @@ func _ready() -> void:
 	# --- Droite : dessins de la galerie qui conviennent
 	var fits := _fitting()
 	UI.put(self, UI.label(Loc.t("TA GALERIE"), 10, Pal.DIM), Vector2(248, 64))
-	var sc := ScrollContainer.new()
-	UI.put(self, sc, Vector2(248, 78), Vector2(380, 252))
-	var grid := GridContainer.new()
-	grid.columns = 6
-	grid.add_theme_constant_override("h_separation", 4)
-	grid.add_theme_constant_override("v_separation", 4)
-	sc.add_child(grid)
-	for f in fits:
-		var e: Dictionary = f[0]
-		var gi: Image = f[1]
-		var block: String = f[2]
-		var b := Button.new()
-		b.focus_mode = Control.FOCUS_NONE
-		b.custom_minimum_size = Vector2(58, 58)
-		_style_thumb(b, false)
-		var th := UI.thumb(gi, Vector2(50, 50))
-		th.position = Vector2(4, 4)
-		b.add_child(th)
-		b.tooltip_text = Loc.t("Encre : %d") % Analyzer.ink_cost(gi)
-		if show_el:
-			# icône de l'élément de sa couleur dominante, dans le coin
-			var gel := int(Analyzer.analyze(gi).dominant)
-			var ic := _el_icon(gel, 13)
-			ic.position = Vector2(43, 2)
-			b.add_child(ic)
-			b.tooltip_text += "\n" + Loc.t("Élément : %s") % Pal.NAMES[maxi(gel, 0)]
-		var issue: String = block if block != "" else f[3]
-		if issue != "":
-			# pas utilisable tel quel (trop grand, couleurs verrouillées, mauvaise couleur) : pâli,
-			# mais on peut le prendre pour le MODIFIER ; c'est au joueur de le rendre valide
-			th.modulate = Color(1, 1, 1, 0.3)
-			b.tooltip_text = Loc.t("%s\n(tu peux le prendre et le modifier)") % issue
-		b.pressed.connect(func():
-			Sfx.play("click")
-			from_carnet = false
-			frame_cap.text = Loc.t("DESSIN CHOISI DANS TA GALERIE")
-			outline = e.get("outline", false)   # le bord choisi dans la galerie
-			bord_btn.text = Loc.t("Bord : %s") % (Loc.t("oui") if outline else Loc.t("non"))
-			_select(gi, _effect_ok(e.get("effect", "")))
-			for o in gallery_btns:
-				_style_thumb(o, o == b))
-		grid.add_child(b)
-		gallery_btns.append(b)
+	UI.put(self, DrawingGrid.new(fits, 6, Vector2(58, 58), _gallery_cell), Vector2(248, 78), Vector2(380, 252))
 	if existing != null:
 		UI.put(self, UI.button(Loc.t("< Remettre le dessin de base"), func():
 			from_carnet = true
@@ -157,11 +115,53 @@ func _ready() -> void:
 		UI.put(self, UI.hotkey(UI.button(String(cfg.get("cancel_label", Loc.t("Retour"))), func(): done.emit({"a": "cancel"})), [KEY_ESCAPE]), Vector2(528, 338), Vector2(100, 18))
 
 
+## Une case de la galerie (créée seulement quand sa ligne devient visible). f : [fiche, blocage, couleur].
+func _gallery_cell(f: Array) -> Control:
+	var e: Dictionary = f[0]
+	var block: String = f[1]
+	var b := Button.new()
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = Vector2(58, 58)
+	_style_thumb(b, false)
+	var th := UI.drawing_thumb(e.file, Vector2(50, 50))
+	th.position = Vector2(4, 4)
+	b.add_child(th)
+	b.tooltip_text = Loc.t("Encre : %d") % int(e.get("ink", 0))
+	if show_el:
+		# icône de l'élément de sa couleur dominante, dans le coin
+		var gel := Analyzer.dominant_of(e.get("el", []))
+		var ic := _el_icon(gel, 13)
+		ic.position = Vector2(43, 2)
+		b.add_child(ic)
+		b.tooltip_text += "\n" + Loc.t("Élément : %s") % Pal.NAMES[maxi(gel, 0)]
+	var issue: String = block if block != "" else f[2]
+	if issue != "":
+		# pas utilisable tel quel (trop grand, couleurs verrouillées, mauvaise couleur) : pâli,
+		# mais on peut le prendre pour le MODIFIER ; c'est au joueur de le rendre valide
+		th.modulate = Color(1, 1, 1, 0.3)
+		b.tooltip_text = Loc.t("%s\n(tu peux le prendre et le modifier)") % issue
+	b.pressed.connect(func():
+		var gi := Meta.gallery_image(e)
+		if gi == null:
+			return
+		Sfx.play("click")
+		from_carnet = false
+		frame_cap.text = Loc.t("DESSIN CHOISI DANS TA GALERIE")
+		outline = e.get("outline", false)   # le bord choisi dans la galerie
+		bord_btn.text = Loc.t("Bord : %s") % (Loc.t("oui") if outline else Loc.t("non"))
+		_select(gi, _effect_ok(e.get("effect", "")))
+		for o in gallery_btns:
+			if is_instance_valid(o):
+				_style_thumb(o, o == b))
+	gallery_btns.append(b)
+	return b
+
+
 func _style_thumb(b: Button, on: bool) -> void:
-	b.add_theme_stylebox_override("normal", UI.sb(Pal.PAPER, Pal.ACCENT if on else Pal.BORDER, 3 if on else 1))
-	b.add_theme_stylebox_override("hover", UI.sb(Pal.PAPER, Pal.ACCENT, 2))
-	b.add_theme_stylebox_override("pressed", UI.sb(Pal.PAPER, Pal.ACCENT, 3))
-	b.add_theme_stylebox_override("disabled", UI.sb(Pal.PAPER, Pal.BORDER, 1))   # (pas de case sombre)
+	b.add_theme_stylebox_override("normal", UI.sbc(Pal.PAPER, Pal.ACCENT if on else Pal.BORDER, 3 if on else 1))
+	b.add_theme_stylebox_override("hover", UI.sbc(Pal.PAPER, Pal.ACCENT, 2))
+	b.add_theme_stylebox_override("pressed", UI.sbc(Pal.PAPER, Pal.ACCENT, 3))
+	b.add_theme_stylebox_override("disabled", UI.sbc(Pal.PAPER, Pal.BORDER, 1))   # (pas de case sombre)
 
 
 ## Icône d'un élément (0 = l'Ombre), agrandie au pixel près.
@@ -244,18 +244,18 @@ func _usable(img: Image) -> String:
 
 ## Dessins de la galerie compatibles (taille). L'encre est vérifiée sur le dessin choisi :
 ## un dessin trop gourmand peut quand même être pris puis modifié.
-## TOUS les dessins de la galerie de ce type : [entrée, image, raison du blocage ou ""].
+## TOUS les dessins de la galerie de ce type : [entrée, raison du blocage ou "", souci de couleur ou ""].
+## (D'après les infos de chaque fiche : aucune image n'est relue ici.)
 ## (Avant, les trop grands étaient cachés et la liste s'arrêtait à 48 : des dessins « disparaissaient ».)
 func _fitting() -> Array:
 	var out := []
 	for e in Meta.gallery(cfg.gallery):
-		var gi := Meta.gallery_image(e)
-		if gi == null:
-			continue
-		var block := DrawCfg.gallery_block(cfg, gi)
-		out.append([e, gi, block, DrawCfg.color_issue(cfg, gi) if block == "" else ""])
+		if not Meta.info(e).has("rect"):
+			continue   # (fichier introuvable)
+		var block := DrawCfg.entry_block(cfg, e)
+		out.append([e, block, DrawCfg.entry_color_issue(cfg, e) if block == "" else ""])
 	# les utilisables d'abord, puis ceux de la mauvaise couleur, puis les bloqués
-	var rank := func(f: Array) -> int: return 2 if f[2] != "" else (1 if f[3] != "" else 0)
+	var rank := func(f: Array) -> int: return 2 if f[1] != "" else (1 if f[2] != "" else 0)
 	out.sort_custom(func(a, b): return rank.call(a) < rank.call(b))
 	return out
 

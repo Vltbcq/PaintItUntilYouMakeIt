@@ -109,6 +109,13 @@ static func element_of(c: Color) -> int:
 	var key := c.to_rgba32()
 	if _cache.has(key):
 		return _cache[key]
+	var best := nearest_element(c)
+	_cache[key] = best
+	return best
+
+
+## Comme element_of, sans cache (ne touche à rien de partagé : utilisable en arrière-plan).
+static func nearest_element(c: Color) -> int:
 	var best := 0
 	var best_d := 1e9
 	for e in COUNT:
@@ -117,5 +124,4 @@ static func element_of(c: Color) -> int:
 			if d < best_d:
 				best_d = d
 				best = e
-	_cache[key] = best
 	return best

@@ -1106,55 +1106,51 @@ func _open_gallery() -> void:
 	UI.put(self, overlay, Vector2(20, 20), Vector2(600, 320))
 	UI.put(overlay, UI.label(Loc.t("GALERIE — réutilise un ancien dessin"), 10, Pal.ACCENT), Vector2(10, 8))
 	UI.put(overlay, UI.hotkey(UI.button(Loc.t("Fermer"), _close_gallery), [KEY_ESCAPE]), Vector2(530, 6), Vector2(60, 16))
-	var sc := ScrollContainer.new()
-	UI.put(overlay, sc, Vector2(10, 30), Vector2(580, 280))
-	var grid := GridContainer.new()
-	grid.columns = 10
-	grid.add_theme_constant_override("h_separation", 4)
-	grid.add_theme_constant_override("v_separation", 4)
-	sc.add_child(grid)
-	var s: Vector2i = cfg.size
-	var shown := 0
-	for e in entries:
-		var ok: bool = int(e.w) <= s.x and int(e.h) <= s.y
-		var gi := Meta.gallery_image(e)
-		if gi == null:
-			continue
-		var cost := Analyzer.ink_cost(gi)
-		var fits: bool = cost <= (budget if e.get("effect", "") == "" else budget - ceili(budget * Stats.EFFECT_COST))
-		var b := Button.new()
-		b.custom_minimum_size = Vector2(52, 52)
-		b.focus_mode = Control.FOCUS_NONE
-		var th := UI.thumb(gi, Vector2(44, 44))
-		th.position = Vector2(4, 4)
-		b.add_child(th)
-		# Pas utilisable tel quel : pâli, mais on peut quand même le charger et le retoucher
-		# (la validation refuse tant que ce n'est pas réglé)
-		var issue := DrawCfg.gallery_block(cfg, gi)
-		if issue == "" and not (ok and fits):
-			issue = Loc.t("Trop d'encre (%d)") % cost
-		if issue == "":
-			issue = DrawCfg.color_issue(cfg, gi)
-		b.tooltip_text = Loc.t("Encre : %d") % cost
-		var too_big := gi.get_used_rect().size.x > s.x or gi.get_used_rect().size.y > s.y
-		if too_big:
-			# (ici il serait coupé : on le prend depuis l'écran de choix, qui ouvre une toile agrandie)
-			th.modulate = Color(1, 1, 1, 0.3)
-			b.tooltip_text = Loc.t("Trop grand pour cette toile\n(choisis-le avant de dessiner, puis « Modifier »)")
-		elif issue != "":
-			th.modulate = Color(1, 1, 1, 0.3)
-			b.tooltip_text = Loc.t("%s\n(tu peux le charger et le retoucher)") % issue
-		if not too_big:
-			var entry: Dictionary = e
-			b.pressed.connect(func(): _load_gallery(entry, gi))
-		if cfg.has("need_el"):
-			var ic := BestiaryPrompt._el_icon(int(Analyzer.analyze(gi).dominant), 13)
-			ic.position = Vector2(37, 2)
-			b.add_child(ic)
-		grid.add_child(b)
-		shown += 1
-	if shown == 0:
+	UI.put(overlay, DrawingGrid.new(entries, 10, Vector2(52, 52), _gallery_cell), Vector2(10, 30), Vector2(580, 280))
+	if entries.is_empty():
 		UI.put(overlay, UI.label(Loc.t("Rien pour l'instant : tes dessins validés arriveront ici."), 10, Pal.DIM), Vector2(10, 40))
+
+
+## Une case de la galerie (créée seulement quand sa ligne devient visible), d'après les infos de la fiche.
+func _gallery_cell(e: Dictionary) -> Control:
+	var s: Vector2i = cfg.size
+	var b := Button.new()
+	b.custom_minimum_size = Vector2(52, 52)
+	b.focus_mode = Control.FOCUS_NONE
+	var ok: bool = int(e.w) <= s.x and int(e.h) <= s.y
+	if not Meta.info(e).has("rect"):
+		return b
+	var cost := int(e.ink)
+	var fits: bool = cost <= (budget if e.get("effect", "") == "" else budget - ceili(budget * Stats.EFFECT_COST))
+	var th := UI.drawing_thumb(e.file, Vector2(44, 44))
+	th.position = Vector2(4, 4)
+	b.add_child(th)
+	# Pas utilisable tel quel : pâli, mais on peut quand même le charger et le retoucher
+	# (la validation refuse tant que ce n'est pas réglé)
+	var issue := DrawCfg.entry_block(cfg, e)
+	if issue == "" and not (ok and fits):
+		issue = Loc.t("Trop d'encre (%d)") % cost
+	if issue == "":
+		issue = DrawCfg.entry_color_issue(cfg, e)
+	b.tooltip_text = Loc.t("Encre : %d") % cost
+	var too_big: bool = int(e.rect[2]) > s.x or int(e.rect[3]) > s.y
+	if too_big:
+		# (ici il serait coupé : on le prend depuis l'écran de choix, qui ouvre une toile agrandie)
+		th.modulate = Color(1, 1, 1, 0.3)
+		b.tooltip_text = Loc.t("Trop grand pour cette toile\n(choisis-le avant de dessiner, puis « Modifier »)")
+	elif issue != "":
+		th.modulate = Color(1, 1, 1, 0.3)
+		b.tooltip_text = Loc.t("%s\n(tu peux le charger et le retoucher)") % issue
+	if not too_big:
+		b.pressed.connect(func():
+			var gi := Meta.gallery_image(e)
+			if gi != null:
+				_load_gallery(e, gi))
+	if cfg.has("need_el"):
+		var ic := BestiaryPrompt._el_icon(Analyzer.dominant_of(e.el), 13)
+		ic.position = Vector2(37, 2)
+		b.add_child(ic)
+	return b
 
 
 func _load_gallery(entry: Dictionary, gi: Image) -> void:

@@ -43,6 +43,17 @@ func _ready() -> void:
 		var up: Dictionary = u
 		var bw := minf(100.0, cw - 12.0)
 		UI.put(p, UI.button(Loc.t("Choisir"), func(): done.emit(up)), Vector2((cw - bw) / 2.0, 116), Vector2(bw, 20))
+		# Arrivée : la carte monte en apparaissant, une par une
+		p.modulate.a = 0.0
+		p.position.y += 30.0
+		var tw := p.create_tween().set_parallel()
+		tw.tween_property(p, "modulate:a", 1.0, 0.25).set_delay(0.08 * i)
+		tw.tween_property(p, "position:y", 130.0, 0.3).set_delay(0.08 * i).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		if int(u.rar) >= 2:
+			# épique et légendaire : la carte luit doucement
+			var sh := p.create_tween().set_loops()
+			sh.tween_property(p, "self_modulate", Color(1.35, 1.25, 1.1), 0.6)
+			sh.tween_property(p, "self_modulate", Color.WHITE, 0.6)
 	# Les stats actuelles du perso, pour choisir en connaissance de cause
 	var sp := UI.panel(Pal.PANEL, Pal.BORDER, 2)
 	UI.put(self, sp, Vector2(474, 112), Vector2(150, 236))

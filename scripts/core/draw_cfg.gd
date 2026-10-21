@@ -69,11 +69,21 @@ static func _need_color(cfg: Dictionary, id: String) -> void:
 ## Un dessin de la galerie peut-il servir sur cette toile ? "" si oui, sinon la raison.
 ## (L'encre n'en fait pas partie : un dessin trop gourmand peut être pris puis modifié.)
 static func gallery_block(cfg: Dictionary, img: Image) -> String:
+	return _block(cfg, img.get_used_rect().size, Meta.element_counts(img))
+
+
+## Même chose pour une fiche de la galerie, d'après ses infos (sans relire l'image).
+static func entry_block(cfg: Dictionary, e: Dictionary) -> String:
+	if not Meta.info(e).has("rect"):
+		return ""   # (fichier introuvable : il ne s'affichera pas)
+	return _block(cfg, Vector2i(int(e.rect[2]), int(e.rect[3])), e.el)
+
+
+static func _block(cfg: Dictionary, used: Vector2i, el: Array) -> String:
 	var s: Vector2i = cfg.size
-	var r := img.get_used_rect()
-	if r.size.x > s.x or r.size.y > s.y:
-		return Loc.t("Trop grand pour ta toile (%d px, toile %d px)") % [maxi(r.size.x, r.size.y), maxi(s.x, s.y)]
-	var lc := Meta.locked_colors(img)
+	if used.x > s.x or used.y > s.y:
+		return Loc.t("Trop grand pour ta toile (%d px, toile %d px)") % [maxi(used.x, used.y), maxi(s.x, s.y)]
+	var lc := Meta.locked_colors_el(el)
 	if not lc.is_empty():
 		return Loc.t("Couleurs pas encore débloquées : ") + ", ".join(lc)
 	return ""
@@ -83,9 +93,20 @@ static func gallery_block(cfg: Dictionary, img: Image) -> String:
 static func color_issue(cfg: Dictionary, img: Image) -> String:
 	if not cfg.has("need_el") or img == null:
 		return ""
+	return _color(cfg, int(Analyzer.analyze(img).dominant))
+
+
+## Même chose pour une fiche de la galerie, d'après ses infos.
+static func entry_color_issue(cfg: Dictionary, e: Dictionary) -> String:
+	if not cfg.has("need_el") or not Meta.info(e).has("el"):
+		return ""
+	return _color(cfg, Analyzer.dominant_of(e.el))
+
+
+static func _color(cfg: Dictionary, dominant: int) -> String:
 	var el := int(cfg.need_el)
 	# (la même règle que l'élément de l'ennemi : sa couleur dominante)
-	if int(Analyzer.analyze(img).dominant) != el:
+	if dominant != el:
 		return Loc.t("Couleur imposée : %s doit être la couleur dominante") % Pal.NAMES[el]
 	return ""
 

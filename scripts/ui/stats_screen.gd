@@ -11,45 +11,24 @@ const LAST := 30   # parties montrées sur les courbes
 
 var tab := "resume"
 var history: Array = []
-var _count_task := -1      # comptage des couleurs des dessins, en arrière-plan
-var _counted := {}         # fichier -> pixels par couleur (rempli par la tâche)
+var _counting := false     # des dessins n'ont pas encore leurs couleurs comptées (Meta s'en charge)
 
 
 func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
 	history = Meta.data.get("history", [])
-	# Les dessins jamais comptés le sont en arrière-plan dès l'ouverture : l'écran s'affiche tout de suite
-	var files: Array = (Meta.data.get("gallery", []) as Array).filter(func(e): return not e.has("el")).map(func(e): return String(e.file))
-	if not files.is_empty():
-		_count_task = WorkerThreadPool.add_task(_count_files.bind(files))
+	# Les dessins jamais comptés le sont en arrière-plan (Meta.prefetch) : l'écran s'affiche tout de suite
+	if (Meta.data.get("gallery", []) as Array).any(func(e): return not e.has("el")):
+		_counting = true
+		Meta.infos_done.connect(_on_infos)
+		Meta.prefetch()
 	_build()
 
 
-func _process(_delta: float) -> void:
-	if _count_task >= 0 and WorkerThreadPool.is_task_completed(_count_task):
-		WorkerThreadPool.wait_for_task_completion(_count_task)
-		_count_task = -1
-		for e in Meta.data.get("gallery", []):
-			if _counted.has(e.file):
-				e.el = _counted[e.file]
-		Meta.save()
-		if tab == "dessins":
-			_build()
-
-
-func _exit_tree() -> void:
-	if _count_task >= 0:
-		WorkerThreadPool.wait_for_task_completion(_count_task)
-
-
-## (tâche d'arrière-plan : ne touche qu'à _counted, la sauvegarde est mise à jour par _process)
-func _count_files(files: Array) -> void:
-	# shortcut: Pal.element_of remplit un cache partagé, sans verrou ; sûr tant que l'écran des stats ne
-	# l'appelle pas lui-même pendant le comptage (sinon : compter avec un cache local à la tâche)
-	for f in files:
-		var img := Image.load_from_file(f)
-		if img:
-			_counted[f] = Meta.element_counts(img)
+func _on_infos() -> void:
+	_counting = false
+	if tab == "dessins":
+		_build()
 
 
 func _build() -> void:
@@ -213,7 +192,7 @@ func _item_name(kind: String, id: String) -> String:
 
 func _dessins() -> void:
 	# Pixels de chaque couleur dans toute la galerie : comptés une fois par dessin, puis gardés
-	# dans sa fiche (« el »), car relire des centaines de fichiers prend près d'une seconde
+	# dans sa fiche (« el », voir Meta.drawing_info), car relire des centaines de fichiers est lent
 	var entries: Array = Meta.data.get("gallery", [])
 	var px := []
 	px.resize(Pal.COUNT)
@@ -227,7 +206,7 @@ func _dessins() -> void:
 	var total: float = 0.0
 	for v in px:
 		total += v
-	if _count_task >= 0:
+	if _counting:
 		UI.put(p, UI.label(Loc.t("Calcul des couleurs..."), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 130), Vector2(330, 12))
 	elif total <= 0.0:
 		_empty(p, Vector2(330, 290))

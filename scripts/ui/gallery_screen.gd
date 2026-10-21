@@ -40,55 +40,53 @@ func _build() -> void:
 		var s := GalleryShare.open_export(self)
 		s.done.connect(func(_ch): pass))
 	eb.tooltip_text = Loc.t("Partager tes dessins : crée un fichier .zip à envoyer")
-	eb.disabled = Meta.gallery("all").is_empty()
+	var all := Meta.gallery("all")
+	eb.disabled = all.is_empty()
 	UI.put(self, eb, Vector2(544, 10), Vector2(84, 18))
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 3)
 	UI.put(self, tabs, Vector2(12, 34), Vector2(616, 16))
+	var counts := {"all": all.size()}
+	for e in all:
+		counts[e.kind] = int(counts.get(e.kind, 0)) + 1
 	for k in KINDS:
 		var kid: String = k[0]
 		var b := UI.button(k[1], func():
 			kind = kid
 			selected = {}
 			_build())
-		b.tooltip_text = Loc.t("%d dessin(s)") % Meta.gallery(kid).size()
+		b.tooltip_text = Loc.t("%d dessin(s)") % int(counts.get(kid, 0))
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if kid == kind:
 			b.add_theme_stylebox_override("normal", UI.sb(UI.SELECTED, Pal.ACCENT, 1))
 		tabs.add_child(b)
-	var sc := ScrollContainer.new()
-	UI.put(self, sc, Vector2(12, 58), Vector2(616, 268))
-	UI.keep_scroll(sc, scroll_mem, str(kind))
-	var grid := GridContainer.new()
-	grid.columns = 11
-	grid.add_theme_constant_override("h_separation", 4)
-	grid.add_theme_constant_override("v_separation", 4)
-	sc.add_child(grid)
-	var entries := Meta.gallery(kind)
-	for e in entries:
-		var img := Meta.gallery_image(e)
-		if img == null:
-			continue
-		var b := Button.new()
-		b.focus_mode = Control.FOCUS_NONE
-		b.custom_minimum_size = Vector2(52, 52)
-		b.tooltip_text = Loc.t("Encre : %d\nClique pour voir en grand") % Analyzer.ink_cost(img)
-		b.add_theme_stylebox_override("normal", UI.sb(Pal.PAPER, Pal.BORDER, 1))
-		b.add_theme_stylebox_override("hover", UI.sb(Pal.PAPER, Pal.ACCENT, 2))
-		b.add_theme_stylebox_override("pressed", UI.sb(Pal.PAPER, Pal.ACCENT, 3))
-		var th := UI.thumb(img, Vector2(44, 44))
-		th.position = Vector2(4, 4)
-		b.add_child(th)
-		var entry: Dictionary = e
-		b.pressed.connect(func():
-			Sfx.play("click")
-			_view(entry))
-		grid.add_child(b)
+	var entries := all if kind == "all" else Meta.gallery(kind)
+	var grid := DrawingGrid.new(entries, 11, Vector2(52, 52), _cell)
+	UI.put(self, grid, Vector2(12, 58), Vector2(616, 268))
+	UI.keep_scroll(grid, scroll_mem, str(kind))
 	if entries.is_empty():
 		UI.put(self, UI.label(Loc.t("Aucun dessin ici pour l'instant."), 10, Pal.DIM), Vector2(12, 64))
 	else:
 		UI.put(self, UI.label(Loc.t("%d dessin%s · clique pour voir en grand") % [entries.size(), "s" if entries.size() > 1 else ""], 10, Pal.DIM, HORIZONTAL_ALIGNMENT_RIGHT), Vector2(228, 337), Vector2(400, 14))
 	UI.put(self, UI.hotkey(UI.button(Loc.t("Retour"), func(): done.emit(null)), [KEY_ESCAPE]), Vector2(12, 334), Vector2(80, 18))
+
+
+## Une case de la grille (créée seulement quand sa ligne devient visible).
+func _cell(e: Dictionary) -> Control:
+	var b := Button.new()
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = Vector2(52, 52)
+	b.mouse_entered.connect(func(): if b.tooltip_text == "": b.tooltip_text = Loc.t("Encre : %d\nClique pour voir en grand") % int(Meta.info(e).get("ink", 0)))
+	b.add_theme_stylebox_override("normal", UI.sbc(Pal.PAPER, Pal.BORDER, 1))
+	b.add_theme_stylebox_override("hover", UI.sbc(Pal.PAPER, Pal.ACCENT, 2))
+	b.add_theme_stylebox_override("pressed", UI.sbc(Pal.PAPER, Pal.ACCENT, 3))
+	var th := UI.drawing_thumb(e.file, Vector2(44, 44))
+	th.position = Vector2(4, 4)
+	b.add_child(th)
+	b.pressed.connect(func():
+		Sfx.play("click")
+		_view(e))
+	return b
 
 
 ## Un dessin en grand, avec ses infos et « Supprimer ».
@@ -123,7 +121,7 @@ func _view(e: Dictionary) -> void:
 		Sfx.play("click"))
 	UI.hotkey(ob, [KEY_C])
 	UI.put(p, ob, Vector2(330, 8), Vector2(80, 14))
-	UI.put(p, UI.label(Loc.t("%d × %d px · encre %d") % [img.get_width(), img.get_height(), Analyzer.ink_cost(img)], 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 270), Vector2(420, 12))
+	UI.put(p, UI.label(Loc.t("%d × %d px · encre %d") % [img.get_width(), img.get_height(), int(Meta.info(e).get("ink", 0))], 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 270), Vector2(420, 12))
 	# À quoi ce dessin sert dans le Codex (dessin de base de...)
 	var uses := Meta.gallery_uses(img)
 	var ut := (Loc.t("Dessin de base de : ") + ", ".join(uses)) if not uses.is_empty() else Loc.t("Pas utilisé comme dessin de base")

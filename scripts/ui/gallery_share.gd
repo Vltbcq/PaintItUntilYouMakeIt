@@ -96,16 +96,9 @@ func _build() -> void:
 		row.add_child(b)
 
 	# Les vignettes
-	var sc := ScrollContainer.new()
-	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	UI.put(body, sc, Vector2(12, 70), Vector2(584, 228))
-	var grid := GridContainer.new()
-	grid.columns = 8
-	grid.add_theme_constant_override("h_separation", 6)
-	grid.add_theme_constant_override("v_separation", 6)
-	sc.add_child(grid)
-	for i in _of_kind(kind):
-		grid.add_child(_cell(i))
+	var grid := DrawingGrid.new(_of_kind(kind), 8, Vector2(CELL, CELL), _cell)
+	grid.gap = 6.0
+	UI.put(body, grid, Vector2(12, 70), Vector2(584, 228))
 
 	# Bas : le compte et les boutons
 	var n_sel := _count()
@@ -144,25 +137,24 @@ func _set_all(on: bool) -> void:
 ## Une vignette : cochée = cadre doré + coche ; décochée = pâlie. Import : un doublon est grisé.
 func _cell(i: int) -> Control:
 	var it = items[i]
-	var img: Image = Meta.gallery_image(it) if mode == "export" else it.image
 	var dup: bool = mode == "import" and it.dup
 	var on: bool = picked[i]
 	var b := Button.new()
 	b.focus_mode = Control.FOCUS_NONE
 	b.custom_minimum_size = Vector2(CELL, CELL)
-	b.add_theme_stylebox_override("normal", UI.sb(Pal.PAPER, Pal.ACCENT if on else Pal.BORDER, 2 if on else 1))
-	b.add_theme_stylebox_override("hover", UI.sb(Color.WHITE, Pal.ACCENT, 2))
-	b.add_theme_stylebox_override("pressed", UI.sb(Color.WHITE, Pal.ACCENT, 3))
-	b.add_theme_stylebox_override("disabled", UI.sb(Color("8a8070"), Color("5a5040"), 1))
+	b.add_theme_stylebox_override("normal", UI.sbc(Pal.PAPER, Pal.ACCENT if on else Pal.BORDER, 2 if on else 1))
+	b.add_theme_stylebox_override("hover", UI.sbc(Color.WHITE, Pal.ACCENT, 2))
+	b.add_theme_stylebox_override("pressed", UI.sbc(Color.WHITE, Pal.ACCENT, 3))
+	b.add_theme_stylebox_override("disabled", UI.sbc(Color("8a8070"), Color("5a5040"), 1))
 	var cat := ""
 	for k in KINDS:
 		if k[0] == it.kind:
 			cat = k[1]
 	b.tooltip_text = cat + (Loc.t(" · déjà dans ta galerie") if dup else "")
-	if img:
-		var th := UI.thumb(Analyzer.trim(img), Vector2(CELL - 10, CELL - 10))
-		th.position = Vector2(5, 5)
-		b.add_child(th)
+	# (export : la vignette se charge en arrière-plan ; import : l'image vient du .zip)
+	var th := UI.drawing_thumb(it.file, Vector2(CELL - 10, CELL - 10), true) if mode == "export" else UI.thumb(Analyzer.trim(it.image), Vector2(CELL - 10, CELL - 10))
+	th.position = Vector2(5, 5)
+	b.add_child(th)
 	if dup:
 		b.disabled = true
 		b.modulate = Color(1, 1, 1, 0.45)
