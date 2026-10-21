@@ -11,9 +11,14 @@ cd "$(dirname "$0")/.."
 : "${STEAMCMD:?Donne le chemin de steamcmd.exe : STEAMCMD=...}"
 : "${STEAM_USER:?Donne ton nom de compte Steam : STEAM_USER=...}"
 
-VERSION=$(sed -n 's/^config\/version="\(.*\)"/\1/p' project.godot)
 COMMIT=$(git rev-parse --short HEAD)
 DIRTY=$(git status --porcelain --untracked-files=no | grep -q . && echo " +modifs" || true)
+# La version affichée en jeu : celle du dernier tag (comme la GitHub Action), remise comme avant à la fin
+TAG=$(git describe --tags --abbrev=0)
+VERSION=${TAG#v}
+OLD_PROJECT=$(cat project.godot)
+trap 'printf "%s\n" "$OLD_PROJECT" > project.godot' EXIT
+sed -i "s/^config\/version=.*/config\/version=\"$VERSION\"/" project.godot
 echo "== Version $VERSION ($COMMIT$DIRTY)"
 
 # 1. Export (les .dll / .so de GodotSteam et de Steam sont posés à côté du jeu par Godot)

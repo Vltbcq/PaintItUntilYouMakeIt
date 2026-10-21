@@ -29,8 +29,15 @@ def files():
     return sorted(out)
 
 
+# Noms techniques de Godot (types du thème, bus audio, nœuds) : jamais des textes affichés
+ENGINE_NAMES = {'Button', 'Label', 'Panel', 'PanelContainer', 'ProgressBar', 'TooltipPanel', 'TooltipLabel',
+    'HSlider', 'VScrollBar', 'HScrollBar', 'TipOverlay', 'Master', 'VowelGame'}
+
+
 def displayable(s):
     """Le littéral ressemble-t-il à du texte montré au joueur ?"""
+    if s in ENGINE_NAMES or s.startswith('\\['):   # (ou un motif d'expression régulière)
+        return False
     if not WORD.search(s):
         return False
     if s.startswith(('res://', 'user://', 'uid://')) or s.endswith(('.png', '.ogg', '.tscn', '.gd', '.json')):

@@ -47,7 +47,7 @@ Panneau de test (jeu en pause) : stats du perso (−/+), invincibilité, soin, o
 
 Dépôt : https://github.com/Vltbcq/PaintItUntilYouMakeIt. Lien à donner aux joueurs : https://github.com/Vltbcq/PaintItUntilYouMakeIt/releases/latest
 
-La pipeline `.github/workflows/release.yml` exporte le jeu sur les serveurs de GitHub (Godot 4.7.2, Windows), vérifie que tous les scripts compilent, puis publie une Release avec `Vowel.exe` et `Vowel-windows.zip` :
+La pipeline `.github/workflows/release.yml` exporte le jeu sur les serveurs de GitHub (Godot 4.7.2, Windows), vérifie que tous les scripts compilent, puis publie une Release avec `PaintIt.exe` et `PaintIt-windows.zip` :
 - à la main : onglet **Actions → Release → Run workflow**, choisir **contenu** ou **correctif** : le numéro est **calculé tout seul** depuis le dernier tag (contenu : v0.4 → v0.5 ; correctif : v0.4 → v0.4.1 → v0.4.2). Le champ « version précise » sert seulement pour forcer un numéro (ex. le jour du v1.0) ;
 - ou en poussant un tag de version : `git tag v0.6` puis `git push origin v0.6`.
 - Le résumé de la Release vient de `.github/release-notes/<version>.md` (à écrire avant ; sinon les derniers commits).

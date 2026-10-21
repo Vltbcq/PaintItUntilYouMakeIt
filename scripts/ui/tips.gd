@@ -31,10 +31,10 @@ static func mark(id: String) -> void:
 static func show(parent: Control, id: String, pause_game := false) -> void:
 	if not enabled() or seen(id) or not TEXT.has(id):
 		return
-	var q: _TipOverlay = parent.get_node_or_null(Loc.t("TipOverlay"))
+	var q: _TipOverlay = parent.get_node_or_null("TipOverlay")
 	if q == null:
 		q = _TipOverlay.new()
-		q.name = Loc.t("TipOverlay")
+		q.name = "TipOverlay"
 		q.pause_game = pause_game
 		q.queue_tip(id)          # AVANT add_child : _ready affiche le premier conseil
 		parent.add_child(q)

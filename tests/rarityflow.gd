@@ -46,7 +46,7 @@ func _ready() -> void:
 		Run.weapons.size(), rares, Run.weapon_art["epee#0"].image == art0,
 		Run.has_art("epee", 1) and Run.weapon_art["epee#1"].image.get_data() != art0.get_data(), Run.shop_offers[0].sold])
 	# Dessin par défaut de la rareté ÉPIQUE dans le Codex : il est proposé à l'achat de l'épique
-	var tmp := OS.get_temp_dir().path_join("vowel_test_default.png")
+	var tmp := OS.get_temp_dir().path_join("paintit_test_default.png")
 	var epic := img.duplicate()
 	epic.fill_rect(Rect2i(2, 2, 6, 6), Pal.SHADES[2][1])
 	epic.save_png(tmp)

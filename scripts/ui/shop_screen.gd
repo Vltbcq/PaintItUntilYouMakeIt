@@ -778,7 +778,7 @@ func _card_rich(ct: Control, pos: Vector2, t: String, w: float) -> float:
 ## (pas comme le mot qu'elle remplace).
 func _text_h(t: String, w: float) -> float:
 	var est := UI.stat_bbcode(t)
-	var re := RegEx.create_from_string(Loc.t("\\[img[^\\]]*\\][^\\[]*\\[/img\\]"))
+	var re := RegEx.create_from_string("\\[img[^\\]]*\\][^\\[]*\\[/img\\]")
 	est = re.sub(est, "M", true)
 	return UI.font.get_multiline_string_size(est, HORIZONTAL_ALIGNMENT_LEFT, w, UI.fs(10)).y
 

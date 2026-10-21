@@ -15,7 +15,7 @@ func _check(ok: bool, what: String) -> void:
 
 func _ready() -> void:
 	Meta.no_save = true
-	var tmp := OS.get_temp_dir().path_join("vowel_journaltest") + "/"
+	var tmp := OS.get_temp_dir().path_join("paintit_journaltest") + "/"
 	DirAccess.make_dir_recursive_absolute(tmp)
 	Meta.root = tmp
 	Meta.no_save = false

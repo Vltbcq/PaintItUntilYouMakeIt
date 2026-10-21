@@ -5,7 +5,7 @@ extends Node
 
 func _ready() -> void:
 	Meta.no_save = true
-	var tmp := OS.get_temp_dir().path_join("vowel_savetest") + "/"
+	var tmp := OS.get_temp_dir().path_join("paintit_savetest") + "/"
 	_wipe(tmp)
 	DirAccess.make_dir_recursive_absolute(tmp)
 	Meta.root = tmp
@@ -170,7 +170,7 @@ func _snap() -> Dictionary:
 
 func _wipe(dir: String) -> void:
 	# Ne nettoie QUE le dossier de test temporaire
-	if not dir.contains("vowel_savetest"):
+	if not dir.contains("paintit_savetest"):
 		return
 	var da := DirAccess.open(dir)
 	if da == null:

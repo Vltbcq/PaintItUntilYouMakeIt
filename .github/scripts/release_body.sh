@@ -11,7 +11,7 @@ set -euo pipefail
 VERSION="$1"
 SHORT="0"
 if [ "${2:-}" = "--short" ]; then SHORT="1"; fi
-REPO="${GITHUB_REPOSITORY:-Vltbcq/VowelGame}"
+REPO="${GITHUB_REPOSITORY:-Vltbcq/PaintItUntilYouMakeIt}"
 TO="HEAD"
 if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then TO="$VERSION"; fi
 # Version précédente = le tag juste avant celui-ci (ou le plus récent si ce tag n'existe pas encore)

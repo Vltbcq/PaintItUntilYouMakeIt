@@ -47,14 +47,6 @@ static func for_pigments(d: Dictionary) -> bool:
 	return d.cat in [Loc.t("Encre"), Loc.t("Boutique"), Loc.t("Mécénat")] or d.get("buy", false)
 
 
-## Le succès qui débloque cette amélioration ({} si elle s'achète).
-static func achievement_for(id: String) -> Dictionary:
-	for a in AchievementDB.LIST:
-		if a.unlock == id:
-			return a
-	return {}
-
-
 static func get_def(id: String) -> Dictionary:
 	for d in LIST:
 		if d.id == id:

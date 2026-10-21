@@ -134,7 +134,7 @@ def header():
 
 
 # ------------------------------------------------------------------ Capsule « tu dessines ton perso »
-# Les dessins viennent de la galerie du jeu (docs/steam/dessins, copiés depuis %APPDATA%/VowelGame/bestiary).
+# Les dessins viennent de la galerie du jeu (docs/steam/dessins, copiés depuis %APPDATA%/PaintItUntilYouMakeIt/bestiary).
 DESSINS = os.path.join(OUT, 'dessins')
 CANVAS, CANVAS_LINE, WOOD, WOOD_D = (0xff, 0xfa, 0xee), (0xf1, 0xe8, 0xd4), (0xa0, 0x69, 0x2f), (0x5a, 0x38, 0x18)
 

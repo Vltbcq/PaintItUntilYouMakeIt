@@ -13,6 +13,7 @@ const ZOOM_MAX := 2.5
 const ZOOM_STEP := 0.25
 const CELL := 48
 const MAX_ENEMIES := 170
+const MAX_ENEMIES_LATE := 130   # infini après la vague 25 : moins d'ennemis (ils ont plus de PV), pour rester fluide
 
 var player: Player
 var enemies: Array[Enemy] = []
@@ -521,7 +522,7 @@ func _spawn(delta: float) -> void:
 	spawn_acc += delta * rate
 	while spawn_acc >= 1.0:
 		spawn_acc -= 1.0
-		if enemies.size() + telegraphs.size() >= MAX_ENEMIES:
+		if enemies.size() + telegraphs.size() >= (MAX_ENEMIES_LATE if Run.wave > 25 else MAX_ENEMIES):
 			break
 		var id := _pick_type()
 		if id == "":
@@ -2442,7 +2443,7 @@ func _after(sec: float, cb: Callable) -> void:
 	var tm := Timer.new()
 	tm.one_shot = true
 	tm.wait_time = sec
-	tm.process_mode = Node.PROCESS_MODE_ALWAYS
+	tm.process_mode = Node.PROCESS_MODE_PAUSABLE   # (rien ne tombe sur le joueur pendant la pause)
 	add_child(tm)
 	tm.timeout.connect(cb)
 	tm.start()

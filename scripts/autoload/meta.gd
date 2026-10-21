@@ -30,7 +30,8 @@ var no_save := false        # tests : interdit toute écriture de la sauvegarde 
 
 
 func _ready() -> void:
-	_migrate_old_dir()
+	if root == "user://":
+		migrate_old_dir(OS.get_data_dir().path_join(OLD_USER_DIR), OS.get_user_data_dir())
 	_rename_legacy_saves()
 	_load_settings()
 	slot = clampi(int(settings.get("slot", 1)), 1, SLOTS)
@@ -42,11 +43,7 @@ func _ready() -> void:
 
 ## Premier lancement sous le nouveau nom : on recopie l'ancien dossier « VowelGame » (s'il existe et
 ## que le nouveau n'a encore aucune sauvegarde). L'ancien dossier n'est pas touché (secours).
-func _migrate_old_dir() -> void:
-	if root != "user://":
-		return
-	var old := OS.get_data_dir().path_join(OLD_USER_DIR)
-	var new := OS.get_user_data_dir()
+func migrate_old_dir(old: String, new: String) -> void:
 	if old.simplify_path() == new.simplify_path() or not DirAccess.dir_exists_absolute(old):
 		return
 	for f in ["settings.json", "save.json", LEGACY_SAVE]:
@@ -132,7 +129,7 @@ func slot_summary(n: int) -> Dictionary:
 func delete_slot(n: int) -> void:
 	if no_save:
 		return
-	for f in [save_path(n), run_path(n)]:
+	for f in [save_path(n), save_path(n) + ".bak", run_path(n), run_path(n) + ".bak"]:
 		if FileAccess.file_exists(f):
 			DirAccess.remove_absolute(f)
 	for dir in [gallery_dir(n), bestiary_dir(n)]:
@@ -146,14 +143,39 @@ func delete_slot(n: int) -> void:
 		load_data()
 
 
+## Lit un JSON ; s'il manque ou est illisible (coupure pendant une écriture), reprend la version
+## précédente gardée en .bak par _store().
 func _read_json(path: String) -> Dictionary:
-	if not FileAccess.file_exists(path):
-		return {}
-	var f := FileAccess.open(path, FileAccess.READ)
+	for p in [path, path + ".bak"]:
+		if not FileAccess.file_exists(p):
+			continue
+		var f := FileAccess.open(p, FileAccess.READ)
+		if f == null:
+			continue
+		var parsed = JSON.parse_string(f.get_as_text())
+		if parsed is Dictionary:
+			return parsed
+	return {}
+
+
+## Écrit d'abord à côté (.tmp), puis met le fichier en place : une coupure pendant l'écriture ne
+## détruit jamais la version d'avant (gardée en .bak). value : texte, ou Variant si as_var.
+func _store(path: String, value, as_var := false) -> void:
+	var tmp := path + ".tmp"
+	var f := FileAccess.open(tmp, FileAccess.WRITE)
 	if f == null:
-		return {}
-	var parsed = JSON.parse_string(f.get_as_text())
-	return parsed if parsed is Dictionary else {}
+		return
+	if as_var:
+		f.store_var(value)
+	else:
+		f.store_string(value)
+	f.close()
+	if FileAccess.get_file_as_bytes(tmp).is_empty():
+		return   # écriture ratée (disque plein...) : on garde l'ancien fichier
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(path + ".bak")
+		DirAccess.rename_absolute(path, path + ".bak")
+	DirAccess.rename_absolute(tmp, path)
 
 
 # ------------------------------------------------------------------ Partie en cours (reprise)
@@ -175,9 +197,7 @@ func write_text(path: String, text: String) -> void:
 func save_run(state: Dictionary) -> void:
 	if no_save:
 		return
-	var f := FileAccess.open(run_path(), FileAccess.WRITE)
-	if f:
-		f.store_var(state)
+	_store(run_path(), state, true)
 
 
 func read_run(n := -1) -> Dictionary:
@@ -194,8 +214,9 @@ func read_run(n := -1) -> Dictionary:
 func clear_run() -> void:
 	if no_save:
 		return
-	if FileAccess.file_exists(run_path()):
-		DirAccess.remove_absolute(run_path())
+	for f in [run_path(), run_path() + ".bak"]:
+		if FileAccess.file_exists(f):
+			DirAccess.remove_absolute(f)
 
 
 func default_data() -> Dictionary:
@@ -258,9 +279,7 @@ func ensure_settings_file() -> void:
 func _save_settings() -> void:
 	if no_save:
 		return
-	var f := FileAccess.open(settings_path(), FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify(settings, "\t"))
+	_store(settings_path(), JSON.stringify(settings, "\t"))
 
 
 ## Bus audio : « Musique » et « Bruitages » (sous le volume général, bus 0).
@@ -274,7 +293,7 @@ func _bus(bus_name: String) -> int:
 		AudioServer.add_bus()
 		i = AudioServer.bus_count - 1
 		AudioServer.set_bus_name(i, bus_name)
-		AudioServer.set_bus_send(i, Loc.t("Master"))
+		AudioServer.set_bus_send(i, "Master")
 	return i
 
 
@@ -307,9 +326,7 @@ func save() -> void:
 		return
 	DirAccess.make_dir_recursive_absolute(gallery_dir())
 	DirAccess.make_dir_recursive_absolute(bestiary_dir())
-	var f := FileAccess.open(save_path(), FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify(data, "\t"))
+	_store(save_path(), JSON.stringify(data, "\t"))
 
 
 # ------------------------------------------------------------------ Déblocages
@@ -661,6 +678,7 @@ func gallery_has(kind: String, h: String) -> bool:
 const SHARE_MANIFEST := "paintit_galerie.json"
 const SHARE_KINDS := ["character", "melee", "ranged", "bullet", "amulet", "familiar", "enemy", "boss"]
 const SHARE_MAX_PX := 256   # (un dessin plus grand qu'une toile du jeu est refusé)
+const SHARE_MAX_ITEMS := 500
 
 
 ## Exporte ces entrées de galerie dans un .zip. Retourne le nombre de dessins écrits (-1 : erreur).
@@ -699,11 +717,16 @@ func read_share(path: String) -> Dictionary:
 	var man = JSON.parse_string(zr.read_file(SHARE_MANIFEST).get_string_from_utf8())
 	var out := []
 	if man is Dictionary:
-		for it in man.get("items", []):
+		for it in (man.get("items", []) as Array).slice(0, SHARE_MAX_ITEMS):
 			if not it is Dictionary or not String(it.get("kind", "")) in SHARE_KINDS or not String(it.get("file", "")) in files:
 				continue
+			var buf := zr.read_file(String(it.file))
+			# Largeur et hauteur dans l'en-tête du PNG (octets 16-23) : une image géante (fichier piégé)
+			# est refusée avant d'être décodée en mémoire
+			if buf.size() < 24 or _be32(buf, 16) > SHARE_MAX_PX or _be32(buf, 20) > SHARE_MAX_PX:
+				continue
 			var img := Image.new()
-			if img.load_png_from_buffer(zr.read_file(String(it.file))) != OK:
+			if img.load_png_from_buffer(buf) != OK:
 				continue
 			if img.get_width() > SHARE_MAX_PX or img.get_height() > SHARE_MAX_PX or Analyzer.count_pixels(img) == 0:
 				continue
@@ -717,6 +740,10 @@ func read_share(path: String) -> Dictionary:
 	if out.is_empty():
 		return {"ok": false, "error": Loc.t("Aucun dessin lisible dans ce fichier."), "items": []}
 	return {"ok": true, "error": "", "items": out}
+
+
+static func _be32(b: PackedByteArray, i: int) -> int:
+	return (b[i] << 24) | (b[i + 1] << 16) | (b[i + 2] << 8) | b[i + 3]
 
 
 ## Ajoute ces dessins reçus (les doublons sont ignorés). Retourne le nombre ajouté.

@@ -75,6 +75,25 @@ func _ready() -> void:
 	zp.close_file()
 	zp.close()
 	_check(not Meta.read_share(other).ok, "un .zip sans fiche Paint It est refusé")
+	# Fichier piégé : l'en-tête annonce une image de 30 000 × 30 000 px (refusée sans être décodée)
+	var giant := Image.create_empty(8, 8, false, Image.FORMAT_RGBA8)
+	giant.fill(Color.RED)
+	var png := giant.save_png_to_buffer()
+	for i in 2:
+		png.encode_u32(16 + 4 * i, 0)
+		png[16 + 4 * i + 2] = 0x75   # 0x00007530 = 30000, en gros-boutiste
+		png[16 + 4 * i + 3] = 0x30
+	var trap := tmp + "piege.zip"
+	zp = ZIPPacker.new()
+	zp.open(trap)
+	zp.start_file(Meta.SHARE_MANIFEST)
+	zp.write_file(JSON.stringify({"items": [{"kind": "amulet", "file": "a.png"}]}).to_utf8_buffer())
+	zp.close_file()
+	zp.start_file("a.png")
+	zp.write_file(png)
+	zp.close_file()
+	zp.close()
+	_check(not Meta.read_share(trap).ok, "partage piégé (image géante annoncée) : refusé sans la décoder")
 
 	Meta.delete_slot(2)
 	Meta.delete_slot(3)
