@@ -39,6 +39,8 @@ var frac: Array = []    # part de chaque couleur du dessin : chances d'effet él
 var darts: Array = []   # Teemeo : fléchettes en vol {pos, vel, life}
 var lit: Array = []     # Luciole : ennemis dans son aura
 var life := -1.0        # oiseau de la Cage : durée de vie (s), -1 = permanent
+var copy := {}          # Perroquet : le coup d'arme de mêlée qu'il est en train de copier
+var copy_spr: Sprite2D  # ... et l'arme qu'il tient pendant ce temps
 var bird_dmg := 0.0
 
 
@@ -75,6 +77,7 @@ func _init_form() -> void:
 ## Chimère : abandonne son pouvoir actuel (proprement) et en prend un autre au hasard.
 func _chimera_swap() -> void:
 	_exit_tree_luciole()
+	_end_copy()
 	for f in fetch:
 		Run.gold += int(f.v)
 	fetch.clear()
@@ -723,8 +726,80 @@ func _exit_tree() -> void:
 	fetch.clear()
 
 
+## Perroquet : prend ton dessin d'arme de mêlée et refait son geste (estoc, balayage, fauchage,
+## coup d'écrasement) depuis là où il est, avec les dégâts de l'arme. Il ne bouge pas pendant le coup.
+func _start_copy(wn: WeaponNode, e: Enemy) -> void:
+	var dir := (e.position - position).normalized()
+	var reach: float = wn.st.reach
+	copy = {"st": wn.st, "t": 0.0, "angle": dir.angle(), "reach": reach, "len": wn.length, "hits": {},
+		"slam": position + dir * minf(position.distance_to(e.position), reach), "slammed": false}
+	copy_spr = Gfx.sprite(wn.own_tex, wn.sprite.material)
+	copy_spr.modulate = Color(0.8, 1.0, 0.75)   # (teinte verte du perroquet : on voit que c'est une copie)
+	copy_spr.z_index = 1
+	add_child(copy_spr)
+	_sitflip(dir.x)
+	Sfx.play("swing")
+
+
+func _copy_step(delta: float) -> void:
+	var st: Dictionary = copy.st
+	copy.t += delta / WeaponNode.swing_dur(st)
+	var tt := clampf(float(copy.t), 0.0, 1.0)
+	var pose := WeaponNode.swing_pose(st.style, tt, Vector2.ZERO, copy.angle, copy.reach, copy.len, copy.slam - position)
+	copy_spr.position = pose[0]
+	copy_spr.rotation = pose[1]
+	copy_spr.flip_v = cos(pose[1]) < 0.0
+	match st.style:
+		"spin":
+			if tt > 0.04 and tt < 0.96:
+				# toute la lame coupe, du perroquet à la pointe
+				var d := Vector2.from_angle(pose[1])
+				var to: Vector2 = position + d * float(pose[3])
+				for e in arena.near((position + to) / 2.0, position.distance_to(to) / 2.0 + st.hit_r + 14.0):
+					if Geometry2D.get_closest_point_to_segment(e.position, position, to).distance_to(e.position) <= st.hit_r * 0.8 + e.radius:
+						_copy_hit(e, d, 1.0)
+		"slam", "stamp":
+			if tt >= 0.6 and not copy.slammed:
+				copy.slammed = true
+				var r: float = arena.boom(float(st.aoe))
+				arena.explosion(copy.slam, r, Color("5ec04a", 0.6))
+				for e in arena.near(copy.slam, r):
+					_copy_hit(e, (e.position - copy.slam).normalized(), 1.5)
+		_:
+			if pose[2]:
+				var tip: Vector2 = position + pose[0] + Vector2.from_angle(pose[1]) * float(copy.len) * 0.3
+				for e in arena.near(tip, st.hit_r):
+					_copy_hit(e, Vector2.from_angle(pose[1]), 1.0)
+	if copy.t >= 1.0:
+		_end_copy()
+
+
+## Un ennemi touché par le coup copié (une fois par coup), avec les dégâts de l'arme.
+func _copy_hit(e: Enemy, dir: Vector2, knock_mult: float) -> void:
+	var id_e := e.get_instance_id()
+	if copy.hits.has(id_e):
+		return
+	copy.hits[id_e] = true
+	var st: Dictionary = copy.st
+	var h0: float = e.hp
+	arena.hit_enemy(e, float(st.get("damage", 5.0)), st, dir, float(st.get("knock", 30.0)) * knock_mult)
+	arena.fam_credit(id, h0 - maxf(0.0, e.hp))
+	if e.dead:
+		on_kill()
+
+
+func _end_copy() -> void:
+	copy = {}
+	if copy_spr:
+		copy_spr.queue_free()
+		copy_spr = null
+
+
 ## Perroquet : se balade partout sur la page et répète une de tes armes.
 func _perroquet(delta: float) -> void:
+	if not copy.is_empty():
+		_copy_step(delta)
+		return
 	if position.distance_to(goal) < 8.0:
 		goal = Vector2(randf_range(30.0, Arena.W - 30.0), randf_range(30.0, Arena.H - 30.0))
 	position = position.move_toward(goal, 85.0 * _speed() * delta)
@@ -747,8 +822,10 @@ func _perroquet(delta: float) -> void:
 		arena.spawn_bullet(position + dir * 6.0, dir * sp, b, st, wn.bullet_tex[0], wn.art.get("beffect", ""),
 			280.0 / sp, wn.art.get("boutline", false))
 		Sfx.play("shoot")
+	elif st.kind == "melee" and st.style in WeaponNode.SWING_STYLES:
+		_start_copy(wn, e)
 	else:
-		# arme de mêlée : il fonce donner un coup de bec avec
+		# autre arme (Compas...) : il fonce donner un coup de bec avec
 		position = e.position - dir * 8.0
 		line_to = e.position
 		line_t = 0.12

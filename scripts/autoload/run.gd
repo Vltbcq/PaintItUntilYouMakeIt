@@ -1006,11 +1006,11 @@ func _new_order() -> void:
 	var reward := 20 + 5 * wave
 	var w := wave + 1
 	var kinds := [
-		{"kind": "kills", "n": 20 + 3 * w, "text": Loc.t("Tue %d ennemis")},
-		{"kind": "elem", "n": 6 + w, "text": Loc.t("Tue %d ennemis touchés par un élément (brûlés, gelés...)")},
-		{"kind": "gold", "n": 10 + 3 * w, "text": Loc.t("Ramasse %d or pendant la vague")},
-		{"kind": "nohit", "n": 20, "text": Loc.t("Tiens %d s d'affilée sans perdre de PV")},
-		{"kind": "hp", "n": 60, "text": Loc.t("Termine la vague avec au moins %d%% de tes PV")},
+		{"kind": "kills", "n": 40 + 6 * w, "text": Loc.t("Tue %d ennemis")},
+		{"kind": "elem", "n": 12 + 2 * w, "text": Loc.t("Tue %d ennemis touchés par un élément (brûlés, gelés...)")},
+		{"kind": "gold", "n": 20 + 6 * w, "text": Loc.t("Ramasse %d or pendant la vague")},
+		{"kind": "nohit", "n": 30, "text": Loc.t("Tiens %d s d'affilée sans perdre de PV")},
+		{"kind": "hp", "n": 80, "text": Loc.t("Termine la vague avec au moins %d%% de tes PV")},
 	]
 	var k: Dictionary = kinds.pick_random()
 	order = {"kind": k.kind, "n": int(k.n), "progress": 0.0, "reward": reward, "done": false,

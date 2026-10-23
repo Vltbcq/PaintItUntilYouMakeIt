@@ -187,7 +187,7 @@ static var LIST := [
 	{"id": "pigment_pur", "ink": 30, "name": "Pigment pur", "rar": 1, "flag": true, "desc": "+30% d'effets élémentaires pour l'élément de ton perso · {m}% critique", "malus": ["crit", -4.0]},
 	{"id": "toile_tendue", "ink": 50, "name": "Toile tendue", "rar": 2, "flag": true, "minus": [["atk_speed", -2.0]], "desc": "+10 PV max par boss vaincu dans la partie · {m}% dégâts, -2% vit. d'attaque", "malus": ["dmg", -3.0]},
 	# --- v0.8 : amulettes qui changent le jeu (achat unique)
-	{"id": "carnet_commandes", "ink": 40, "name": "Carnet de commandes", "rar": 2, "flag": true, "limit": 1, "desc": "À chaque boutique, une COMMANDE pour la vague suivante : réussie, elle rapporte de l'or (20 + 5 par vague)"},
+	{"id": "carnet_commandes", "ink": 40, "name": "Carnet de commandes", "rar": 2, "flag": true, "limit": 1, "desc": "Chaque vague, une mission bonus : réussis-la pour gagner de l'or"},
 	{"id": "de_pipe", "ink": 30, "name": "Dé pipé", "rar": 2, "flag": true, "limit": 1, "plus": [["luck", 5.0]], "desc": "Les prix de la boutique sont tirés au HASARD à chaque relance : de gratuit à ×2, +5 chance"},
 	{"id": "performance", "ink": 44, "name": "Performance live", "rar": 2, "flag": true, "limit": 1, "desc": "Vagues 2× plus courtes mais 2× plus d'ennemis à la fois, butin +30%"},
 	{"id": "reflet", "ink": 80, "name": "Reflet", "rar": 3, "flag": true, "desc": "Un DOUBLE de ton perso, en miroir de l'autre côté de la page, attaque avec tes armes (40% des dégâts)"},
@@ -205,7 +205,7 @@ static var LIST := [
 	{"id": "lampe", "ink": 50, "name": "Lampe torche", "rar": 2, "flag": true, "limit": 1, "stat": "dmg", "v": 30.0, "plus": [["crit", 15.0]],
 		"desc": "+{v}% dégâts, +15% critique · l'arène est plongée dans le NOIR, sauf autour de toi"},
 	{"id": "pitcoin", "ink": 30, "name": "Pitcoin", "rar": 1, "flag": true,
-		"desc": "À chaque fin de vague : 1 chance sur 8 de gagner 150 or... sinon tu perds 15 or (les montants suivent les prix)"},
+		"desc": "À chaque fin de vague : 1 chance sur 8 de gagner 150 or... sinon tu perds 15 or"},
 	{"id": "pandore", "ink": 60, "name": "Boîte de Pandore", "rar": 3, "flag": true, "consume": true,
 		"desc": "À l'achat, TOUTES tes amulettes deviennent une amulette au hasard de la rareté au-dessus (une légendaire devient une autre légendaire). Elles gardent ton dessin et leur place. La boîte disparaît."},
 	{"id": "diplome", "ink": 40, "name": "Le Diplôme", "rar": 2, "flag": true, "on_buy": true,

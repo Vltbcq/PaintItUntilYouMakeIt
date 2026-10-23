@@ -227,7 +227,11 @@ func _ready() -> void:
 	var pvh := pv.hp
 	par.cd = 0.0
 	par.tick(1.0 / 60.0)
-	_check(pv.hp < pvh, "Perroquet : copie le coup d'épée (%.0f → %.0f)" % [pvh, pv.hp])
+	var held := par.copy_spr != null   # il tient ton épée et refait son geste (balayage)
+	for f in 40:
+		arena.player.inv = 999.0
+		arena._process(1.0 / 60.0)
+	_check(held and par.copy.is_empty() and pv.hp < pvh, "Perroquet : copie le geste de l'épée (%.0f → %.0f)" % [pvh, pv.hp])
 	# Taupe : dégâts de zone en surgissant
 	var tp: Familiar = null
 	for fm in arena.familiars:

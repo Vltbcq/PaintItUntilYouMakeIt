@@ -236,9 +236,14 @@ func _start_melee(target: Enemy) -> void:
 		p.spin = 12.0
 
 
-func _melee_step(delta: float) -> void:
+## Gestes de mêlée que le Perroquet sait copier (les autres styles ont leur propre mécanique).
+const SWING_STYLES := ["thrust", "erase", "scissors", "pencil", "sweep", "trail", "gust", "spin", "slam", "stamp"]
+
+
+## Durée d'un coup de mêlée (s), avant la vitesse d'attaque. (Aussi utilisée par le Perroquet.)
+static func swing_dur(wst: Dictionary) -> float:
 	var dur := 0.3
-	match st.style:
+	match wst.style:
 		"spin":
 			dur = 0.55
 		"gust":
@@ -247,53 +252,55 @@ func _melee_step(delta: float) -> void:
 			dur = 0.5
 		"erase":
 			dur = 0.35
-	dur *= clampf(st.cooldown / 0.6, 0.35, 1.0)   # petites armes rapides = coups plus vifs
-	dur *= float(st.get("atk_dur", 1.0))          # Lance : estoc sec, revient vite
-	atk_t += delta / (dur / sqrt(_atk_mult()))
-	var t := clampf(atk_t, 0.0, 1.0)
-	var reach: float = st.reach * _range_mult()
-	var home := _home()
-	var hit_on := false
-	match st.style:
-		"thrust", "erase", "scissors", "pencil":
-			var ext := sin(t * PI)
-			position = home * (1.0 - ext) + (home + atk_dir * reach) * ext
-			rotation = atk_angle
-			hit_on = ext > 0.35 and st.style != "erase"
+	dur *= clampf(wst.cooldown / 0.6, 0.35, 1.0)   # petites armes rapides = coups plus vifs
+	dur *= float(wst.get("atk_dur", 1.0))          # Lance : estoc sec, revient vite
+	return dur
+
+
+## Pose de l'arme à l'instant t (0 à 1) d'un coup, par rapport à son porteur :
+## [position, rotation, la pointe touche ?, allonge de la Faux]. (Aussi utilisée par le Perroquet.)
+static func swing_pose(style: String, t: float, home: Vector2, angle: float, reach: float, len: float, slam_local: Vector2) -> Array:
+	match style:
 		"sweep", "trail", "gust":
-			var a := atk_angle - 1.2 + 2.4 * t
+			var a := angle - 1.2 + 2.4 * t
 			var ext := sin(t * PI)
-			position = home * (1.0 - ext) + (home + Vector2.from_angle(a) * reach * 0.75) * ext
-			rotation = a
-			hit_on = ext > 0.25
+			return [home * (1.0 - ext) + (home + Vector2.from_angle(a) * reach * 0.75) * ext, a, ext > 0.25, 0.0]
 		"spin":
 			# Faux : grand fauchage. La lame part près du corps, s'ouvre en spirale jusqu'à
 			# pleine allonge et fait 1 tour 1/4 (accélère puis freine) ; TOUTE la lame coupe.
 			var k := t * t * (3.0 - 2.0 * t)
-			var a := atk_angle - 0.6 + TAU * 1.25 * k
+			var a := angle - 0.6 + TAU * 1.25 * k
 			var open := minf(1.0, t * 2.5)
 			var close := clampf((t - 0.85) / 0.15, 0.0, 1.0)
 			var rr := reach * (0.4 + 0.6 * open) * (1.0 - 0.5 * close)
-			position = Vector2.from_angle(a) * maxf(4.0, rr - length * 0.5)
-			rotation = a
-			if t > 0.04 and t < 0.96:
-				_reap(a, rr)
+			return [Vector2.from_angle(a) * maxf(4.0, rr - len * 0.5), a, false, rr]
 		"slam", "stamp":
-			# Monte, fonce sur le point d'impact, puis revient
-			var local_target := slam_point - player.position
+			# Monte, fonce sur le point d'impact (atteint à t = 0,6), puis revient
 			if t < 0.6:
 				var k := t / 0.6
-				position = home.lerp(local_target, k * k) + Vector2(0, -sin(k * PI) * 18.0)
-				rotation = atk_angle - 1.4 * (1.0 - k)
-			else:
-				if not slam_done:
-					slam_done = true
-					if st.style == "stamp":
-						_stamp_impact()
-					else:
-						_slam_impact()
-				position = local_target.lerp(home, (t - 0.6) / 0.4)
-				rotation = atk_angle
+				return [home.lerp(slam_local, k * k) + Vector2(0, -sin(k * PI) * 18.0), angle - 1.4 * (1.0 - k), false, 0.0]
+			return [slam_local.lerp(home, (t - 0.6) / 0.4), angle, false, 0.0]
+	# estoc (thrust, erase, scissors, pencil)
+	var ext := sin(t * PI)
+	return [home * (1.0 - ext) + (home + Vector2.from_angle(angle) * reach) * ext, angle, ext > 0.35 and style != "erase", 0.0]
+
+
+func _melee_step(delta: float) -> void:
+	atk_t += delta / (swing_dur(st) / sqrt(_atk_mult()))
+	var t := clampf(atk_t, 0.0, 1.0)
+	var reach: float = st.reach * _range_mult()
+	if st.style in ["slam", "stamp"] and t >= 0.6 and not slam_done:
+		slam_done = true
+		if st.style == "stamp":
+			_stamp_impact()
+		else:
+			_slam_impact()
+	var pose := swing_pose(st.style, t, _home(), atk_angle, reach, length, slam_point - player.position)
+	position = pose[0]
+	rotation = pose[1]
+	var hit_on: bool = pose[2]
+	if st.style == "spin" and t > 0.04 and t < 0.96:
+		_reap(rotation, pose[3])
 	sprite.flip_v = cos(rotation) < 0.0
 	if hit_on:
 		var tip := player.position + position + Vector2.from_angle(rotation) * length * 0.3

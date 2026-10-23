@@ -1094,8 +1094,7 @@ func kill_enemy(e: Enemy) -> void:
 	if Run.amulet_count("nuit_etoilee") > 0:
 		star_kills += 1
 		if star_kills % 10 == 0:
-			var spos: Vector2 = e.position
-			_after(0.35, func(): _star(spos))
+			_star(e.position)
 	# Scinde : se divise
 	if e.def.beh == "mirror" and not e.small:
 		for k in 2:
@@ -1920,10 +1919,19 @@ func _amulet_dmg_mult(e: Enemy, wst: Dictionary) -> float:
 	return m
 
 
-## Nuit étoilée : une étoile tombe et explose.
+## Nuit étoilée : une étoile tombe du haut de la page (son point de chute est marqué au sol), puis explose.
 func _star(pos: Vector2) -> void:
+	var s := _FallingStar.new()
+	s.target = pos
+	s.r = boom(60.0)
+	s.landed.connect(_star_hit.bind(pos))
+	fx.add_child(s)
+
+
+func _star_hit(pos: Vector2) -> void:
 	if ended:
 		return
+	shake(4.0)
 	var sr := boom(60.0)
 	explosion(pos, sr, Color(Pal.ACCENT, 0.9))
 	burst(pos, Pal.ACCENT, 16, 120.0)
@@ -2860,6 +2868,43 @@ class _Sparks extends Node2D:
 			var k: float = 1.0 - it.t / it.life
 			var s: float = it.s * (0.5 + 0.5 * k)
 			draw_rect(Rect2(it.pos.round() - Vector2(s, s) / 2.0, Vector2(s, s)), Color(it.col, clampf(k * 1.5, 0.0, 1.0)))
+
+
+## Nuit étoilée : étoile filante qui tombe en diagonale vers sa cible, avec sa traînée ;
+## au sol, un cercle qui se resserre annonce l'impact.
+class _FallingStar extends Node2D:
+	signal landed
+	const FALL := 0.55
+	var target := Vector2.ZERO
+	var r := 60.0
+	var t := 0.0
+
+	func _process(delta: float) -> void:
+		t += delta / FALL
+		if t >= 1.0:
+			landed.emit()
+			queue_free()
+		queue_redraw()
+
+	func _star_at(k: float) -> Vector2:
+		return target + Vector2(-90.0, -260.0) * (1.0 - k)
+
+	func _draw() -> void:
+		var k := minf(t, 1.0)
+		# au sol : le point de chute
+		var gc := Color(Pal.ACCENT, 0.25 + 0.35 * k)
+		draw_arc(target, r * (1.0 - 0.6 * k), 0.0, TAU, 32, gc, 2.0)
+		draw_circle(target, r * 0.12, Color(Pal.ACCENT, 0.2 + 0.4 * k))
+		# la traînée, puis l'étoile qui tourne en tombant
+		var head := _star_at(k * k)
+		var tail := _star_at(maxf(0.0, k - 0.25) * maxf(0.0, k - 0.25))
+		draw_line(tail, head, Color(Pal.ACCENT, 0.35), 5.0)
+		draw_line(tail.lerp(head, 0.5), head, Color(1, 1, 1, 0.7), 2.0)
+		var pts := PackedVector2Array()
+		for i in 10:
+			pts.append(head + Vector2.from_angle(t * 9.0 + i * TAU / 10.0 - PI / 2.0) * (9.0 if i % 2 == 0 else 4.0))
+		draw_colored_polygon(pts, Pal.ACCENT)
+		draw_circle(head, 2.5, Color.WHITE)
 
 
 class _Ring extends Node2D:
