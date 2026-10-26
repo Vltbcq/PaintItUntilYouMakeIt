@@ -175,6 +175,19 @@ func _ready() -> void:
 	for k in 7:
 		arena.add_bird(Gfx.texture(img), "", false, 8.0)
 	_check(arena.familiars.size() == n0 + 5, "Cage : 5 oiseaux max (%d)" % (arena.familiars.size() - n0))
+	# ... lancés sur l'ennemi visé, qui se font picorer
+	for e in arena.enemies.duplicate():
+		arena.kill_enemy(e)
+	var cprey: Enemy = arena.spawn_enemy_now("colosse", arena.player.position + Vector2(90, 0), false)
+	cprey.dodge = 0.0
+	var cph := cprey.hp
+	var near_n := 0   # (au plus fort de l'attaque : l'ennemi finit par mourir et ils repartent)
+	for f in 90:
+		arena.player.inv = 999.0
+		arena._process(1.0 / 60.0)
+		if not cprey.dead:
+			near_n = maxi(near_n, arena.familiars.filter(func(fm): return fm.id == "oiseau" and fm.position.distance_to(cprey.position) < cprey.radius + 12.0).size())
+	_check(near_n >= 3 and cprey.hp < cph, "Cage : les oiseaux se posent sur l'ennemi et le picorent (%d posés, %.0f → %.0f)" % [near_n, cph, cprey.hp])
 	for f in 60 * 7:
 		arena.player.inv = 999.0
 		arena._process(1.0 / 60.0)

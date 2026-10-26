@@ -39,6 +39,8 @@ var frac: Array = []    # part de chaque couleur du dessin : chances d'effet él
 var darts: Array = []   # Teemeo : fléchettes en vol {pos, vel, life}
 var lit: Array = []     # Luciole : ennemis dans son aura
 var life := -1.0        # oiseau de la Cage : durée de vie (s), -1 = permanent
+var perch := Vector2.ZERO   # oiseau de la Cage : de quel côté de l'ennemi il se pose
+var peck_t := 0.0       # ... et son coup de bec en cours
 var copy := {}          # Perroquet : le coup d'arme de mêlée qu'il est en train de copier
 var copy_spr: Sprite2D  # ... et l'arme qu'il tient pendant ce temps
 var bird_dmg := 0.0
@@ -97,11 +99,14 @@ func _chimera_swap() -> void:
 	arena.float_text(position + Vector2(0, -18), String(FamiliarDB.get_def(form).name).to_upper(), Color("c071f0"))
 
 
-## Oiseau de la Cage : vit 6 s, pique l'ennemi le plus proche.
-func setup_bird(a: Arena, tex: Texture2D, effect: String, outline: bool, dmg: float, fr: Array = []) -> void:
+## Oiseau de la Cage : vit 6 s ; fonce sur l'ennemi visé par la cage et le picore jusqu'à ce qu'il meure.
+func setup_bird(a: Arena, tex: Texture2D, effect: String, outline: bool, dmg: float, fr: Array = [], prey: Enemy = null) -> void:
 	frac = fr
 	arena = a
 	id = "oiseau"
+	form = "oiseau"   # (sans ça, il ne faisait rien : il restait sur place)
+	target = prey
+	perch = Vector2.from_angle(randf() * TAU)
 	def = {}
 	life = 6.0
 	bird_dmg = dmg
@@ -671,14 +676,20 @@ func _oiseau(delta: float) -> void:
 		if target == null:
 			_wander(delta, 120.0)
 			return
-	position = position.move_toward(target.position, 260.0 * _speed() * delta)
-	_sitflip(target.position.x - position.x)
-	if cd <= 0.0 and position.distance_to(target.position) < 10.0:
+		perch = Vector2.from_angle(randf() * TAU)
+	# Il vole jusqu'à l'ennemi, se pose contre lui et le picore (petit coup de tête vers lui)
+	var spot: Vector2 = target.position + perch * (target.radius + 4.0)
+	position = position.move_toward(spot, 260.0 * _speed() * delta)
+	var to_e: Vector2 = target.position - position
+	_sitflip(to_e.x)
+	peck_t = maxf(0.0, peck_t - delta)
+	sprite.position = Vector2(0.0, sprite.position.y) + to_e.normalized() * 3.0 * sin(peck_t / 0.15 * PI)
+	if cd <= 0.0 and position.distance_to(spot) < 6.0:
 		cd = fcd(0.6)
-		hit(target, fdmg(bird_dmg, 0.0), (target.position - position).normalized() * 40.0)
+		peck_t = 0.15
+		hit(target, fdmg(bird_dmg, 0.0), to_e.normalized() * 20.0)
 		_action()
-		arena.burst(position, Pal.INK, 5, 60.0)
-		target = null
+		arena.burst(target.position - to_e.normalized() * target.radius, Pal.INK, 3, 50.0)
 
 
 func _coin(at: Vector2, k: int) -> void:

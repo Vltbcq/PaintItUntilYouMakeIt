@@ -450,7 +450,7 @@ func cercle(parent: Node, pos: Vector2, mini := false) -> TextureRect:
 const STAT_WORDS := [["vit. d'attaque", "atk_speed"], ["vitesse d'attaque", "atk_speed"], ["PV max", "max_hp"],
 	["régénération", "regen"], ["armure", "armor"], ["esquive", "dodge"], ["vitesse", "move"], ["dégâts", "dmg"],
 	["dégât", "dmg"], ["critique", "crit"], ["portée", "range"], ["vol de vie", "lifesteal"], ["chance", "luck"],
-	["pourboire", "harvest"], ["épines", "thorns"], ["épine", "thorns"], ["Épines", "thorns"], ["Épine", "thorns"], ["puissance élémentaire", "el_power"],
+	["pourboire", "harvest"], ["épines", "thorns"], ["épine", "thorns"], ["Épines", "thorns"], ["Épine", "thorns"], ["puissance élémentaire", "el_power"], ["puissance élém.", "el_power"],
 	["effets élémentaires", "el_power"]]
 const STAT_WORDS_EN := [["atk speed", "atk_speed"], ["attack speed", "atk_speed"], ["max HP", "max_hp"],
 	["regen", "regen"], ["armor", "armor"], ["dodge", "dodge"], ["speed", "move"], ["damage", "dmg"],

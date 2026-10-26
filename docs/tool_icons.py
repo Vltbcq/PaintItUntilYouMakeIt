@@ -74,27 +74,31 @@ class Icon:
 
 
 def brush():
-	"""Pinceau en diagonale : manche en bois, grosse pointe ronde rose cerclée de magenta."""
+	"""Pinceau court et trapu en diagonale : manche épais en bois orangé, grosse virole argentée,
+	tête de poils rouge bombée qui finit en pointe (contour d'encre ajouté automatiquement)."""
 	i = Icon()
-	i.grid([
-		"................",
-		"............MM..",
-		"..........MMqqM.",
-		".........MqqqppM",
-		"........MqqpppPM",
-		"........MqppppPM",
-		"........MpppPPM.",
-		".......kMPPPMM..",
-		"......knnkMM....",
-		".....knnNk......",
-		"....knnNk.......",
-		"...knnNk........",
-		"..knnNk.........",
-		".knnNk..........",
-		".kNNk...........",
-		"..kk............",
-	], {'k': INK, 'n': C['wood'], 'N': C['wood_d'], 'M': (0x9c, 0x2a, 0x7a), 'P': (0xc8, 0x50, 0x8c),
-		'p': C['pink'], 'q': C['pink_l']})
+	ax, ay, bx, by = 13.5, 2.5, 2.5, 13.5          # du bout du manche (en haut à droite) à la pointe
+	ln = ((bx - ax) ** 2 + (by - ay) ** 2) ** 0.5
+	ux, uy = (bx - ax) / ln, (by - ay) / ln
+	for y in range(N):
+		for x in range(N):
+			px, py = x + 0.5 - ax, y + 0.5 - ay
+			t = (px * ux + py * uy) / ln            # 0 = bout du manche, 1 = pointe
+			d = px * uy - py * ux                   # côté (négatif : côté éclairé)
+			if t < 0.0 or t > 1.0:
+				continue
+			if t < 0.36:
+				w = 1.45
+				col = (0xe0, 0x9a, 0x58) if d < -0.9 else ((0xc0, 0x6c, 0x34) if d < 0.7 else (0x8a, 0x44, 0x22))
+			elif t < 0.52:
+				w = 1.9
+				col = 'white' if d < -0.9 else ('grey' if d < 0.7 else 'grey_d')
+			else:
+				k = (t - 0.52) / 0.48                # tête : bombée puis en pointe
+				w = 2.5 * (1.0 - k) ** 0.75 + 0.35 if k > 0.1 else 2.1 + 0.4 * k / 0.1
+				col = 'red' if d < -0.5 else 'red_d'
+			if abs(d) <= w:
+				i.set(x, y, col)
 	return i
 
 
@@ -104,8 +108,6 @@ def eraser():
 	i.rect(2, 6, 7, 6, 'pink_l')
 	i.rect(8, 6, 13, 11, 'blue_l')
 	i.rect(8, 6, 13, 6, 'white')
-	i.set(4, 13, 'grey_d')               # miettes
-	i.set(7, 14, 'grey_d')
 	return i
 
 

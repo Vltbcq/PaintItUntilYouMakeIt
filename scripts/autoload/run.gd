@@ -1047,12 +1047,18 @@ func _roll_shop() -> void:
 	for o in shop_offers:
 		if o.type in EVENTS and o.sold:
 			event_used = true
+	# Objets verrouillés (cadenas) : ils restent en vitrine, au prix du moment
+	var kept := shop_offers.filter(func(o): return o.get("locked", false) and not o.sold and _still_offerable(o))
 	shop_offers = []
 	var n := 4 + Meta.level("shop_slot")
 	if amulet_count("vernissage") > 0:
 		n = 2   # Vernissage : 2 œuvres seulement... mais plus rares
 	var offered := {}
-	for i in n:
+	for o in kept:
+		o.price = roundi({"weapon": WeaponDB.PRICE, "amulet": AmuletDB.PRICE, "familiar": FamiliarDB.PRICE}[o.type][o.rar] * price_mult())
+		offered[{"weapon": "w:%s#%d" % [o.get("wtype", ""), o.rar], "amulet": o.get("id", ""), "familiar": "f:" + o.get("id", "")}[o.type]] = true
+		shop_offers.append(o)
+	for i in maxi(0, n - kept.size()):
 		var rar := roll_rarity()
 		if amulet_count("vernissage") > 0:
 			rar = mini(3, rar + 1)
@@ -1123,6 +1129,20 @@ func _roll_shop() -> void:
 	if wave >= 2 and not event_used and randf() < EVENT_CHANCE:
 		var evs := EVENTS.filter(func(e): return e != "restorer" or not restorable().is_empty())
 		shop_offers.append(make_event(evs.pick_random()))
+
+
+## Un objet verrouillé peut-il encore être proposé ? (amulette à limite atteinte, familier acheté entre-temps...)
+func _still_offerable(o: Dictionary) -> bool:
+	match o.type:
+		"weapon":
+			return true
+		"familiar":
+			return not o.id in familiars
+		"amulet":
+			var d := AmuletDB.get_def(o.id)
+			var lim := int(d.get("limit", 1 if int(d.get("rar", 0)) == 3 else 0))
+			return not d.is_empty() and (lim == 0 or amulet_count(o.id) < lim) and amulet_usable(d)
+	return false
 
 
 ## Aquarelle et plus : la couleur (élément) imposée au dessin de ce type d'ennemi, tirée une fois

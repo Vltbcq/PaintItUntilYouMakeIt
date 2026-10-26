@@ -136,7 +136,7 @@ static var TYPES := {
 		"desc": "Légendaire. Pose un point noir qui grossit, ASPIRE les ennemis autour, puis implose."},
 	"cage": {"name": "Cage à oiseaux", "kind": "ranged", "style": "cage", "ink": 102, "bink": 25, "canvas": 32, "bcanvas": 16,
 		"min_rar": 3, "pet": true, "dmg": 0.9, "cd": 2.0, "speed": 1.0,
-		"desc": "Légendaire. Libère des oiseaux (ton dessin de balle) qui piquent les ennemis."},
+		"desc": "Légendaire. Libère des oiseaux (ton dessin de balle) qui picorent les ennemis. Ce sont des familiers."},
 	"autoportrait": {"name": "Autoportrait", "kind": "ranged", "style": "clone", "ink": 102, "bink": 30, "canvas": 32, "bcanvas": 16,
 		"min_rar": 3, "nobullet": true, "dmg": 2.4, "cd": 3.0, "speed": 0.5,
 		"desc": "Légendaire. Envoie un clone de TON PERSO qui court vers l'ennemi le plus proche et explose."},

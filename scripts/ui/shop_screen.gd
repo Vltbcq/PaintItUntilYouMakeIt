@@ -430,6 +430,46 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 	elif full:
 		b.tooltip_text = Loc.t("Tes PV sont déjà au max.")
 	UI.put(ct, b, Vector2(fw - 50, 83), Vector2(52, 15))
+	if o.type in ["weapon", "amulet", "familiar"]:
+		_lock_button(ct, o)
+
+
+## Cadenas : l'objet verrouillé reste en vitrine quand on relance et à la boutique suivante.
+func _lock_button(ct: Control, o: Dictionary) -> void:
+	var lb := UI.button("", func(): pass)
+	lb.expand_icon = true
+	for st in ["normal", "hover", "pressed", "focus"]:
+		lb.add_theme_stylebox_override(st, StyleBoxEmpty.new())   # juste le cadenas, sans case autour
+	var paint := func():
+		var on: bool = o.get("locked", false)
+		lb.icon = _lock_icon(on)
+		lb.tooltip_text = Loc.t("Verrouillé : il reste en vitrine à la prochaine boutique (clic : déverrouiller)") if on \
+			else Loc.t("Verrouiller : il reste en vitrine à la prochaine boutique")
+	paint.call()
+	lb.pressed.connect(func():
+		o.locked = not o.get("locked", false)
+		paint.call())
+	UI.put(ct, lb, Vector2(3, 83), Vector2(15, 15))
+
+
+var _lock_tex := {}
+
+
+## Petit cadenas (fermé ou ouvert), dessiné au pixel.
+func _lock_icon(closed: bool) -> Texture2D:
+	if not _lock_tex.has(closed):
+		var rows := ["..###..", ".#...#.", ".#...#.", "#######", "#ooooo#", "#oo#oo#", "#oo#oo#", "#ooooo#", "#######"] if closed \
+			else ["..###..", ".#...#.", ".#.....", "#######", "#ooooo#", "#oo#oo#", "#oo#oo#", "#ooooo#", "#######"]
+		var img := Image.create_empty(7, 9, false, Image.FORMAT_RGBA8)
+		for y in rows.size():
+			for x in rows[y].length():
+				match rows[y][x]:
+					"#":
+						img.set_pixel(x, y, Pal.INK)
+					"o":
+						img.set_pixel(x, y, Pal.ACCENT if closed else CARTEL_DIM)   # fermé : doré ; ouvert : terne
+		_lock_tex[closed] = ImageTexture.create_from_image(img)
+	return _lock_tex[closed]
 
 
 ## Objet débloqué par un succès, vu pour la première fois : gros « ! » qui pulse,
