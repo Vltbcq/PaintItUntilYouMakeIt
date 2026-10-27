@@ -1543,7 +1543,7 @@ func _open_auction(i: int) -> void:
 	var btns := []
 	var st := {"bid": int(o.bid), "mine": false, "busy": false, "n": 0}
 	var refresh := func():
-		bid_l.text = Loc.t("ENCHÈRE : ● %d  (%s)") % [st.bid, "toi" if st.mine else Loc.t("le collectionneur")]
+		bid_l.text = Loc.t("ENCHÈRE : ● %d  (%s)") % [st.bid, Loc.t("toi") if st.mine else Loc.t("le collectionneur")]
 		for b in btns:
 			var add: int = b.get_meta("add", 0)
 			if add > 0:

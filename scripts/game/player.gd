@@ -27,6 +27,7 @@ var shield := 0.0           # Encre carmin : bouclier d'encre (soin en trop)
 var shield_cd := 0.0        # Encre carmin : après une casse, pas de recharge pendant SHIELD_CD s
 const SHIELD_CD := 4.0
 var spike_acc := 0.0        # Hérisson
+var spike_fx := 0.0         # Armure épineuse : les pointes jaillissent autour de toi (1 → 0)
 var vel := Vector2.ZERO     # vitesse actuelle (les boss anticipent tes déplacements)
 var sap_t := 0.0            # Élixir de sève
 var weak_t := 0.0   # affichage « FAIBLESSE ! »
@@ -91,6 +92,16 @@ func setup(a: Arena) -> void:
 
 
 func _draw() -> void:
+	if spike_fx > 0.0:
+		# Armure épineuse : une couronne de pointes d'encre jaillit puis rentre
+		var ext := sin(spike_fx * PI)
+		for k in 10:
+			var a := k * TAU / 10.0 + 0.3
+			var c := Vector2(0, -2)
+			var r := radius + 1.0
+			var tip := c + Vector2.from_angle(a) * (r + 2.0 + 7.0 * ext)
+			draw_colored_polygon(PackedVector2Array([c + Vector2.from_angle(a - 0.22) * r, tip, c + Vector2.from_angle(a + 0.22) * r]), Color(Pal.INK, 0.9))
+			draw_line(c + Vector2.from_angle(a) * r, tip, Color(1, 1, 1, 0.5 * ext), 1.0)
 	if shield > 0.5:
 		# Encre carmin : anneau du bouclier d'encre
 		draw_arc(Vector2(0, -2), radius + 7.0, 0.0, TAU, 28, Color(0.75, 0.1, 0.2, 0.7), 2.0)
@@ -203,7 +214,13 @@ func tick(delta: float) -> void:
 		if spike_acc >= 0.5:
 			spike_acc = 0.0
 			for e in arena.near(position, radius + 8.0):
-				e.hurt(st.thorns, false, (e.position - position).normalized() * 30.0)
+				var dir: Vector2 = (e.position - position).normalized()
+				e.hurt(st.thorns, false, dir * 30.0)
+				arena.burst(e.position - dir * e.radius, Pal.INK, 3, 60.0, dir, 0.6)   # la pointe se plante
+				spike_fx = 1.0
+	if spike_fx > 0.0:
+		spike_fx = maxf(0.0, spike_fx - delta * 5.0)
+		queue_redraw()
 	if shield > 0.0:
 		queue_redraw()
 	if shield_cd > 0.0:

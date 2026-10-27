@@ -656,10 +656,7 @@ static func preview(cfg: Dictionary, img: Image, effect: String) -> String:
 			for e in range(1, Pal.COUNT):
 				if a.frac[e] > 0.0:
 					L.append(Loc.t("Résist. %s +%d%%") % [Pal.NAMES[e], roundi(a.frac[e] * 10.0)])
-		"amulet":
-			var def: Dictionary = cfg.def
-			L.append(AmuletDB.describe(def))
-			L.append(Loc.t("(La taille du dessin ne change pas l'effet.)"))
+		"amulet":   # (la description est déjà affichée en haut de l'écran de dessin)
 			for e in range(1, Pal.COUNT):
 				if a.frac[e] > 0.0:
 					L.append(Loc.t("Résist. %s +%d%%") % [Pal.NAMES[e], roundi(a.frac[e] * 20.0)])
