@@ -508,6 +508,7 @@ func _build_pause() -> void:
 	var sc := ScrollContainer.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	UI.put(left, sc, Vector2(6, 18), Vector2(186, 128))
+	UI.scroll_edges(sc)
 	var stats := StatText.new(2)
 	stats.size = Vector2(174, 10)
 	stats.custom_minimum_size.x = 174

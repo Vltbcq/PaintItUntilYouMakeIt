@@ -112,10 +112,11 @@ func _credits() -> void:
 		var h := 12.0 if part[1] != TESTERS else 40.0
 		UI.put(p, t, Vector2(20, y + 13), Vector2(380, h))
 		y += 13.0 + h + 10.0
-	var small := UI.label("\n".join([Loc.t("Musique : Eric Matyas · soundimage.org"), Loc.t("Police : Yoster Island, par codeman38"),
+	var small := UI.label("\n".join([Loc.t("Musique : Eric Matyas · soundimage.org"), Loc.t("Musique des boss : « Backup Plan », Zane Little"),
+		Loc.t("Police : Yoster Island, par codeman38"),
 		Loc.t("Fait avec Godot Engine · intégration Steam : GodotSteam")]), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER)
-	UI.put(p, small, Vector2(0, y), Vector2(420, 40))
-	UI.put(p, UI.label(Loc.t("Merci d'avoir joué !"), 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, y + 46), Vector2(420, 12))
+	UI.put(p, small, Vector2(0, y), Vector2(420, 52))
+	UI.put(p, UI.label(Loc.t("Merci d'avoir joué !"), 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, y + 56), Vector2(420, 12))
 	UI.put(p, UI.hotkey(UI.button(Loc.t("Fermer"), func(): ov.queue_free()), [KEY_ESCAPE]), Vector2(160, 246), Vector2(100, 16))
 
 

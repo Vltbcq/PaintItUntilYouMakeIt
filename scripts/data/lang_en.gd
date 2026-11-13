@@ -949,6 +949,7 @@ const D := {
 	"Muselière": "Muzzle",
 	"Musique": "Music",
 	"Musique : Eric Matyas · soundimage.org": "Music: Eric Matyas · soundimage.org",
+	"Musique des boss : « Backup Plan », Zane Little": "Boss music: \"Backup Plan\" by Zane Little",
 	"Musée": "Museum",
 	"MÉCÈNE : %d ÉLITES EN PLUS": "PATRON: %d EXTRA ELITES",
 	"MÉCÈNE : +%d%% D'ENNEMIS": "PATRON: +%d%% ENEMIES",

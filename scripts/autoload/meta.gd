@@ -339,6 +339,51 @@ func apply_settings() -> void:
 		DisplayServer.window_set_mode(want)
 
 
+## Fenêtre : on retient sa taille et sa position (ou « agrandie ») en quittant, et on les remet au
+## lancement. Seulement en mode Fenêtre ; en plein écran, la dernière fenêtre connue est gardée.
+func remember_window() -> void:
+	if no_save or DisplayServer.get_name() == "headless":
+		return
+	var w: Dictionary = settings.get("window", {}).duplicate()
+	match DisplayServer.window_get_mode():
+		DisplayServer.WINDOW_MODE_MAXIMIZED:
+			w.max = true
+		DisplayServer.WINDOW_MODE_WINDOWED:
+			var p := DisplayServer.window_get_position()
+			var z := DisplayServer.window_get_size()
+			w = {"x": p.x, "y": p.y, "w": z.x, "h": z.y}
+		_:
+			return
+	settings.window = w
+	_save_settings()
+
+
+func restore_window() -> void:
+	var w: Dictionary = settings.get("window", {})
+	if w.is_empty() or DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_WINDOWED:
+		return
+	if w.get("max", false):
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_MAXIMIZED)
+		return
+	var r := Rect2i(int(w.get("x", 0)), int(w.get("y", 0)), maxi(320, int(w.get("w", 1280))), maxi(180, int(w.get("h", 720))))
+	# L'écran a changé (débranché, autre résolution) : la fenêtre doit rester visible, sinon on la recentre
+	for i in DisplayServer.get_screen_count():
+		var free := DisplayServer.screen_get_usable_rect(i)
+		if free.has_point(r.position + Vector2i(40, 10)) and r.size.x <= free.size.x and r.size.y <= free.size.y:
+			DisplayServer.window_set_size(r.size)
+			DisplayServer.window_set_position(r.position)
+			return
+	var main := DisplayServer.screen_get_usable_rect(DisplayServer.get_primary_screen())
+	var z := Vector2i(mini(r.size.x, main.size.x), mini(r.size.y, main.size.y))
+	DisplayServer.window_set_size(z)
+	DisplayServer.window_set_position(main.position + (main.size - z) / 2)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		remember_window()   # (croix de la fenêtre, Alt+F4)
+
+
 func save() -> void:
 	if no_save:
 		return

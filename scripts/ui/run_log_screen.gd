@@ -73,6 +73,7 @@ func _ready() -> void:
 	var sc := ScrollContainer.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	UI.put(self, sc, Vector2(352, 50), Vector2(276, 274))
+	UI.scroll_edges(sc)
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 2)
 	vb.custom_minimum_size = Vector2(262, 0)

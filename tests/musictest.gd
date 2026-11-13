@@ -28,6 +28,9 @@ func _ready() -> void:
 	Sfx.music("vague")
 	await get_tree().create_timer(1.2).timeout
 	_check(_playing() == "Pixel-City-Cruising.ogg", "vagues : Pixel City Cruising, l'ancienne s'est arrêtée (%s)" % _playing())
+	Sfx.music("boss")
+	await get_tree().create_timer(1.2).timeout
+	_check(_playing() == "Backup-Plan.ogg", "vagues de boss : Backup Plan (%s)" % _playing())
 	Sfx.music("transition")
 	await get_tree().create_timer(1.2).timeout
 	_check(_playing() == "Bumbling-Burglars_Looping.ogg", "entre les vagues : Bumbling Burglars (%s)" % _playing())

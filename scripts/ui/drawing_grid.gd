@@ -26,6 +26,7 @@ func _init(p_items: Array, p_cols: int, p_cell: Vector2, p_make: Callable) -> vo
 
 
 func _ready() -> void:
+	UI.scroll_edges(self)   # (ombre en haut / en bas quand il reste des dessins cachés)
 	get_v_scroll_bar().value_changed.connect(func(_v): _fill())
 	resized.connect(_fill)
 	_fill()

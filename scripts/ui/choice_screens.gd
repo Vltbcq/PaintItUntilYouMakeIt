@@ -93,6 +93,7 @@ static func info(title: String, text: String) -> Control:
 		var sc := ScrollContainer.new()
 		sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 		UI.put(p, sc, Vector2(16, 42), Vector2(348, h - 76))
+		UI.scroll_edges(sc)
 		var l := UI.label(text, 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		l.custom_minimum_size = Vector2(340, 0)
@@ -278,6 +279,7 @@ static func _recap_panel(root: Control, unlocked: Array, pos: Vector2) -> void:
 	var sc := ScrollContainer.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	UI.put(p, sc, Vector2(14, 26), Vector2(282, list_h + 4))
+	UI.scroll_edges(sc)
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 6)
 	vb.custom_minimum_size = Vector2(262, 0)

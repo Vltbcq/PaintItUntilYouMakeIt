@@ -248,6 +248,43 @@ func _restore_scroll(sc: ScrollContainer, v: int, placed: Array) -> void:
 		sc.scroll_vertical = v
 
 
+## Bords d'une liste qui défile : une ombre du côté où il reste
+## du contenu caché (on voit que la liste continue, au lieu d'une ligne tranchée net).
+## À appeler après UI.put(parent, sc, ...) : le cadre se pose par-dessus, à la même place.
+func scroll_edges(sc: ScrollContainer) -> void:
+	var e := _ScrollEdges.new()
+	e.sc = sc
+	e.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sc.add_sibling(e)
+	var sync := func():
+		if is_instance_valid(e):
+			e.position = sc.position
+			e.size = sc.size
+			e.queue_redraw()
+	sync.call()
+	sc.resized.connect(sync)
+	sc.get_v_scroll_bar().value_changed.connect(func(_v): e.queue_redraw())
+	sc.get_v_scroll_bar().changed.connect(func(): e.queue_redraw())
+
+
+class _ScrollEdges extends Control:
+	var sc: ScrollContainer
+
+	func _draw() -> void:
+		var bar := sc.get_v_scroll_bar()
+		if bar.max_value - bar.page <= 0.5:
+			return   # tout tient : rien à signaler
+		var w := size.x - (bar.size.x if bar.visible else 0.0)
+		var hidden_top := bar.value > 0.5
+		var hidden_bottom := bar.value < bar.max_value - bar.page - 0.5
+		for k in 10:
+			var c := Color(0, 0, 0, 0.45 * (1.0 - k / 10.0))
+			if hidden_top:
+				draw_rect(Rect2(0, k, w, 1), c)
+			if hidden_bottom:
+				draw_rect(Rect2(0, size.y - 1 - k, w, 1), c)
+
+
 ## Cartel de musée (papier crème, texte encre) : pour les textes posés sur le mur.
 func cartel() -> Panel:
 	return panel(CARTEL, Color("b9a883"), 1)

@@ -5,7 +5,7 @@ Logo de l'écran titre : `assets/logo.png` (réduit de `docs/logo_jeu_source.png
 
 *(Anciennement « Vowel ». Logo : `docs/logo.png`, régénéré par `python docs/logo.py` à partir du logo d'origine relevé case par case dans `docs/logo_base.txt` (`#` plaque noire, `o` lettres) ; le I de « IT » y devient un crayon.)*
 
-**Musique** (par Eric Matyas – www.soundimage.org, gratuite avec crédit, crédit affiché à l'écran titre) : *Bozos Arcade* dans les menus, *Bumbling Burglars* entre les vagues (niveaux, boutique, dessins), *Pixel City Cruising* pendant les vagues ; fichiers dans `assets/music`, fondus gérés par `Sfx.music()`.
+**Musique** (par Eric Matyas – www.soundimage.org, gratuite avec crédit, crédit affiché à l'écran titre) : *Bozos Arcade* dans les menus, *Bumbling Burglars* entre les vagues (niveaux, boutique, dessins), *Pixel City Cruising* pendant les vagues, et *Backup Plan* (Zane Little, CC0, freemusicarchive.org) pendant les vagues de boss ; fichiers dans `assets/music`, fondus gérés par `Sfx.music()`.
 
 Police du jeu (partout) : **Yoster Island** (codeman38, incluse dans un jeu même payant : `assets/fonts/YosterIsland-licence.txt`), complétée par `docs/yoster_glyphs.py` (parenthèses, symboles, œ, ë..., et de vrais + < > * # & [ ] | que Yoster remplace par des icônes). Tailles via `UI.fs()` (10 → 12, net) ; `UI.put()` réduit un texte trop large pour sa case. Couleurs reprises du logo : texte des boutons crème (« paint »), grands titres dorés contourés de sombre.
 

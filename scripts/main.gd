@@ -7,6 +7,7 @@ var current: Node
 func _ready() -> void:
 	randomize()
 	Meta.ensure_settings_file()
+	Meta.restore_window()
 	SteamLink.start()   # (sans Steam : ne fait rien, le jeu marche pareil)
 	_choose_slot()
 
@@ -16,8 +17,11 @@ func _swap(n: Node) -> void:
 		current.queue_free()
 	current = n
 	add_child(n)
-	# Musique : vagues / entre les vagues (partie en cours) / menus
-	Sfx.music("vague" if n is Arena else ("transition" if Run.active else "menu"))
+	# Musique : vagues de boss / vagues / entre les vagues (partie en cours) / menus
+	if n is Arena:
+		Sfx.music("boss" if EnemyDB.boss_for(Run.wave) != "" else "vague")
+	else:
+		Sfx.music("transition" if Run.active else "menu")
 	# Les écrans sont posés sous un Node : sans taille explicite ils font 0×0, et leurs
 	# voiles / fenêtres (conseils, confirmations...) ne bloqueraient pas les clics.
 	if n is Control:
@@ -75,6 +79,7 @@ func _choose_slot() -> void:
 			"quit":
 				var sure = await _ask(ChoiceScreens.confirm(Loc.t("Quitter le jeu ?"), Loc.t("À bientôt !"), Loc.t("Quitter"), Loc.t("Rester")))
 				if sure:
+					Meta.remember_window()
 					get_tree().quit()
 					return
 	_title()
@@ -123,6 +128,7 @@ func _title() -> void:
 			await _ask(StatsScreen.new())
 			_title()
 		"quit":
+			Meta.remember_window()
 			get_tree().quit()
 
 
@@ -353,7 +359,7 @@ func _game_loop(stage := "wave", start := 1) -> void:
 				if not await _end(true, true):
 					return
 				Run.log_event("wave", Loc.t("Mode infini : la partie continue !"))
-			Run.shop_offers = []
+			Run.close_shop()
 			_checkpoint("after")
 		await _level_ups()
 		if await _shop():
@@ -477,7 +483,7 @@ func _level_ups() -> void:
 
 ## Boutique. Retourne true si le joueur a choisi « Sauvegarder et quitter ».
 func _shop() -> bool:
-	if Run.shop_offers.is_empty():
+	if Run.shop_pending():
 		Run.new_shop()
 	while true:
 		_checkpoint("after")

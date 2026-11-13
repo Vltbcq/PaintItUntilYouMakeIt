@@ -222,6 +222,7 @@ func _build() -> void:
 	# --- Liste
 	var sc := ScrollContainer.new()
 	UI.put(self, sc, Vector2(12, 56), Vector2(250, 272))
+	UI.scroll_edges(sc)
 	UI.keep_scroll(sc, scroll_mem, tab)
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 2)

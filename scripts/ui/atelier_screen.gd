@@ -10,7 +10,6 @@ const PLANK := Color("6b4428")
 const PLANK_DARK := Color("54341d")
 const PLANK_LINE := Color("3b2413")
 const CORK := Color("b98a55")
-const CORK_DOT := Color("a0733f")
 const NOTE := Color("f3e9cf")
 const NOTE_DONE := Color("dcefcf")
 const PIN_ON := Color("4caf50")
@@ -59,6 +58,7 @@ func _bench() -> void:
 	var sc := ScrollContainer.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	UI.put(self, sc, Vector2(12, 56), Vector2(300, 276))
+	UI.scroll_edges(sc)
 	UI.keep_scroll(sc, scroll_mem, "etabli")   # (un achat reconstruit l'écran : l'établi ne remonte pas)
 	var shelf := Control.new()
 	sc.add_child(shelf)
@@ -144,10 +144,6 @@ func _bench_list() -> Array:
 func _board() -> void:
 	var frame := UI.panel(CORK, UI.WOOD, 4)
 	UI.put(self, frame, Vector2(318, 40), Vector2(310, 290))
-	var cork := _Cork.new()
-	cork.set_anchors_preset(PRESET_FULL_RECT)
-	cork.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(cork)
 	var done_n := 0
 	for a in AchievementDB.LIST:
 		if Meta.achieved(a.id):
@@ -156,6 +152,7 @@ func _board() -> void:
 	var sc := ScrollContainer.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	UI.put(frame, sc, Vector2(6, 22), Vector2(298, 262))
+	UI.scroll_edges(sc)
 	UI.keep_scroll(sc, scroll_mem, "succes")
 	var grid := GridContainer.new()
 	grid.columns = 2
@@ -221,11 +218,9 @@ class _Workshop extends Control:
 			var w := 22 + (k * 7) % 9
 			draw_rect(Rect2(x, 0, w, s.y), AtelierScreen.PLANK if k % 2 == 0 else AtelierScreen.PLANK_DARK)
 			draw_line(Vector2(x, 0), Vector2(x, s.y), AtelierScreen.PLANK_LINE, 1.0)
-			draw_circle(Vector2(x + w / 2.0, 22 + (k * 37) % 30), 1.0, AtelierScreen.PLANK_LINE)   # clous
 			x += w
 			k += 1
-		# Étagère sous l'établi + sol
-		draw_rect(Rect2(8, 330, 304, 4), UI.WOOD)
+		# Sol
 		draw_rect(Rect2(0, s.y - 14, s.x, 14), UI.FLOOR)
 		for i in range(0, int(s.x), 40):
 			draw_line(Vector2(i, s.y - 14), Vector2(i, s.y), Color(0, 0, 0, 0.2), 1.0)
@@ -234,19 +229,6 @@ class _Workshop extends Control:
 		for i in 9:
 			var p := Vector2(110 + i * 58 + (i * 13) % 20, s.y - 7 + (i % 3) - 1)
 			draw_circle(p, 2.0 + (i % 3), Color(cols[i % cols.size()], 0.8))
-
-
-class _Cork extends Control:
-	func _draw() -> void:
-		if size.x < 2.0 or size.y < 2.0:
-			return
-		for i in 140:
-			var p := Vector2((i * 53) % int(size.x), (i * 97) % int(size.y))
-			draw_rect(Rect2(p, Vector2(1, 1)), AtelierScreen.CORK_DOT)
-
-	func _notification(what: int) -> void:
-		if what == NOTIFICATION_RESIZED:
-			queue_redraw()
 
 
 ## Pot de peinture : se remplit avec le niveau de l'amélioration.

@@ -1,16 +1,18 @@
 extends Node
-## Bruitages 8 bits générés en code, et musiques (assets/music, par Eric Matyas – soundimage.org).
+## Bruitages 8 bits générés en code, et musiques (assets/music, par Eric Matyas – soundimage.org ;
+## Backup Plan par Zane Little, CC0, freemusicarchive.org).
 
 const RATE := 22050
 var sounds := {}
 var players: Array[AudioStreamPlayer] = []
 var last_played := {}
 
-## Musiques : menus, entre les vagues (niveaux, boutique, dessins), pendant les vagues.
+## Musiques : menus, entre les vagues (niveaux, boutique, dessins), pendant les vagues, vagues de boss.
 const MUSIC := {
 	"menu": "res://assets/music/Bozos-Arcade.ogg",
 	"transition": "res://assets/music/Bumbling-Burglars_Looping.ogg",
 	"vague": "res://assets/music/Pixel-City-Cruising.ogg",
+	"boss": "res://assets/music/Backup-Plan.ogg",   # (volume baissé de 4,7 dB à l'encodage, pour égaler les autres)
 }
 const MUSIC_DB := -10.0      # la musique reste sous les bruitages
 const FADE := 0.8            # fondu entre deux musiques (s)

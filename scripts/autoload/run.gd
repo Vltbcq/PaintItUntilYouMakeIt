@@ -985,6 +985,19 @@ func roll_rarity() -> int:
 	return 0
 
 
+## Fin de vague : la vitrine se vide, sauf les objets verrouillés (cadenas), marqués « kept »
+## en attendant la nouvelle boutique (tirée après les montées de niveau).
+func close_shop() -> void:
+	shop_offers = shop_offers.filter(func(o): return o.get("locked", false) and not o.sold)
+	for o in shop_offers:
+		o.kept = true
+
+
+## La boutique est-elle encore à tirer ? (vitrine vide, ou seulement les objets gardés)
+func shop_pending() -> bool:
+	return shop_offers.all(func(o): return o.get("kept", false))
+
+
 func new_shop() -> void:
 	rerolls = 0
 	event_used = false
@@ -1055,6 +1068,7 @@ func _roll_shop() -> void:
 		n = 2   # Vernissage : 2 œuvres seulement... mais plus rares
 	var offered := {}
 	for o in kept:
+		o.erase("kept")
 		o.price = roundi({"weapon": WeaponDB.PRICE, "amulet": AmuletDB.PRICE, "familiar": FamiliarDB.PRICE}[o.type][o.rar] * price_mult())
 		offered[{"weapon": "w:%s#%d" % [o.get("wtype", ""), o.rar], "amulet": o.get("id", ""), "familiar": "f:" + o.get("id", "")}[o.type]] = true
 		shop_offers.append(o)

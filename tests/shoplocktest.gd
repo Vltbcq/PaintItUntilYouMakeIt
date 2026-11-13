@@ -47,10 +47,14 @@ func _ready() -> void:
 	Run.roll_shop()
 	_check(Run.shop_offers.has(w) and Run.shop_offers.has(a2), "relance : les 2 objets verrouillés restent")
 
-	# Boutique suivante : toujours là, au prix de la nouvelle vague
+	# Boutique suivante (comme main.gd entre deux vagues) : toujours là, au prix de la nouvelle vague
 	var p0 := int(w.price)
+	Run.close_shop()
+	_check(Run.shop_offers.size() == 2 and Run.shop_pending(), "fin de vague : seuls les 2 objets verrouillés attendent, la boutique reste à tirer")
 	Run.wave = 9
-	Run.new_shop()
+	if Run.shop_pending():
+		Run.new_shop()
+	_check(not Run.shop_pending() and Run.shop_offers.size() > 2, "la nouvelle boutique est tirée autour d'eux")
 	_check(Run.shop_offers.has(w) and int(w.price) == roundi(WeaponDB.PRICE[w.rar] * Run.price_mult()) and int(w.price) > p0,
 		"vague suivante : l'arme verrouillée est là, au nouveau prix (%d → %d)" % [p0, int(w.price)])
 
@@ -59,6 +63,17 @@ func _ready() -> void:
 	Run.shop_offers = []
 	Run.from_save(sv)
 	_check(Run.shop_offers.any(func(o): return o.get("locked", false)), "sauvegarde : le cadenas est gardé")
+	_check(not Run.shop_pending(), "reprise en pleine boutique : elle n'est pas retirée")
+	# Quitté juste après la vague (avant la boutique) : à la reprise, la boutique se tire autour des objets gardés
+	var saved := Run.shop_offers.duplicate(true)
+	Run.close_shop()
+	sv = Run.to_save("after")
+	Run.shop_offers = []
+	Run.from_save(sv)
+	_check(Run.shop_pending() and Run.shop_offers.size() == 2, "reprise après la vague : les objets verrouillés attendent toujours")
+	Run.new_shop()
+	_check(Run.shop_offers.filter(func(o): return o.get("locked", false)).size() == 2, "... et sont dans la nouvelle boutique")
+	Run.shop_offers = saved
 
 	# Acheté : il ne reste pas ; déverrouillé : il part à la relance
 	for o in Run.shop_offers:
